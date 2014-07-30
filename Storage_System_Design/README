@@ -1,0 +1,21 @@
+README
+===============================================================================
+This is where I document the design and development of the storage system. 
+While it is for the tickdata system, it will be flexible enough to be used
+in other situations where multi-tiered storage is needed. 
+
+
+System overview:
+
+* FreeBSD based
+* ZFS Filesystem
+* Direct Attached Storage Units  (for now we are using a Fujitsu SAN)
+
+
+Additionally, for the tickdata stuff, we will be doing some file processing
+on the head-unit (assuming we can get it working). If not, then we will have
+a seperate "processing box" for it.
+
+
+- Ognen
+
