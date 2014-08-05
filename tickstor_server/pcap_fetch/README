@@ -1,0 +1,25 @@
+Does what it says on the tin. 
+
+This program will be run by cron daily, and will iterate through a list of key:value pairs in the following format:
+
+	"hostname":"path"
+
+within the path, we will have the following structure:
+	/var/reactor/pcaps/EMDI/
+	/var/reactor/pcaps/ETI/
+
+It will save the path into the following:
+    $hostname/$second_timestamp/
+
+write everything to /storage/scratchdisk/$hostname/$start_of_transfer_timestamp
+then:
+	1. bunzip files (if necessary)
+	2. open each file to denote start of PCAP time (or alternatively, look at ctime/mtime  (make sure rsync has preserve-time set)
+	3. rename file into the following format: $start_timestamp.(ETI/EMDI).pcap
+	4. move to final destination /storage/P2D
+
+# User/system permissions
+
+This script will be ran as the pcapdump user. It will connect to the target as the pcapdump user. This user will be in the "pcap" group on both
+ends. The pulls will happen via a passwordless ssh-key which will be stored on the server (and only there).
+
