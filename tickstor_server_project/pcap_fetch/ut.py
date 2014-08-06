@@ -5,17 +5,18 @@
 __version__ = (0,0,1)
 
 import subprocess as sp
+from time import time
 
 def pout(text):
     ''' Write text to stdout. Use instead of print (as print is a function in python3)  '''     
-    print text
+    sys.stdout.write("%s: %s \n" % (time(),text) )
 
 def perr(text,log=None):
     ''' Write text to stderr, if log != None, append to log. Not multiprocess safe! '''
-    sys.sterr.write(text +"\n")
+    sys.stderr.write("%s: %s \n" % (time(),text) )
     if log != None:
         fd = open(log,"a")
-        fd.write (text + "\n")
+        fd.write ("%s: %s \n" % (time(),text))
         fd.close()
 
 def call(cmd, *args):
@@ -30,5 +31,10 @@ def system(cmd, *args):
     cmd.extend(args)
     return sp.call( cmd, shell=False )
 
-
-
+class flexidict(dict):
+    def __init__(self,*args):
+        dict.__init__(self,args)
+    def __setitem__(self,key,val):
+        try:dict.__setitem__(self,key,val)
+        except KeyError:dict.update(self,{key:value})
+        

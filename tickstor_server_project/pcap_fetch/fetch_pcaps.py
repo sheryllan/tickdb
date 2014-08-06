@@ -1,4 +1,4 @@
-!/usr/local/bin/python
+#!/usr/local/bin/python
 # vim: expandtab ts=4 ai
 
 import os
@@ -8,7 +8,6 @@ from config import scratchpath,sources,logs
 from ut import *
 
 ts = int(time())
-
 
 from multiprocessing import Pool
 def bunzip2dir(directory):
@@ -50,22 +49,34 @@ def pullPCAP(host,path, attempts=3):
             pout("rsync success! Continuing...")
             return (True, targetpath)
 
+    perr("ERROR: Failed rsync! from %s:%s to %s" % (host,path,targetpath),ERRLOG)
     return (False, None) #we failed to do the rsync
 
 
 if __name__ == "__main__":
-    failed_transfers = []
+    failed_transfers = {}
     intray = sources 
 
     for row in intray:
         # 1. Get the data from the remote host
         result, savedpath = pullPCAP(row[0],row[1])
         if result == False: 
-            pout ("We failed rsync transfer! >> %s:%s" % (row[0],row[1]) )
+            perr("ERROR: We failed rsync transfer! >> %s:%s" % (row[0],row[1]) )
             row.append("ERROR: rsync failed")
             failed_transfers.append(row)
+            continue
 
         # 2. Make sure we have the two folders there that we need.
+        if len(filter(lambda x: not os.path.exists(os.path.join(savedpath,x)), target_pcap_folders ) != 0:
+            perr("ERROR: EMDI and/or ETI folders are missing from '%s'" % savedpath,ERRLOG)
+            continue
+
+        #3. All folders are there. bunzip them all!
+        failures = bunzip2dir(savedpath)
+        if len(failures) > 0:
+            map(lambda x: perr(x,ERRLOG), failures)
+            perr("ERROR: Could not bunzip all files. See log for more errors. ",ERRLOG)
+            continue
 
 
 
