@@ -6,6 +6,7 @@ __version__ = (0,0,1)
 
 import subprocess as sp
 from time import time
+import sys
 
 def pout(text):
     ''' Write text to stdout. Use instead of print (as print is a function in python3)  '''     
@@ -37,4 +38,21 @@ class flexidict(dict):
     def __setitem__(self,key,val):
         try:dict.__setitem__(self,key,val)
         except KeyError:dict.update(self,{key:value})
-        
+
+class pflexidict(flexidict):
+    def __init__(self,*args):
+        flexidict.__init__(self,*args)
+    def __setitem__(self,key,val):
+        try:
+            if type( flexidict.__getitem__(self,key)) == list:
+                items = flexidict.__getitem__(self,key)
+                items.append(val)
+                val = items
+            else:
+                val = []
+            flexidict.__setitem__(self,key,val)
+        except KeyError:
+            flexidict.__setitem__(self,key,[val])
+            
+            
+

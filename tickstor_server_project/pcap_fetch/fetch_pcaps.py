@@ -4,7 +4,7 @@
 import os
 import multiprocessing as mp
 from time import time,sleep
-from config import scratchpath,sources,logs
+from config import *
 from ut import *
 
 ts = int(time())
@@ -22,7 +22,7 @@ def bunzip2dir(directory):
         pout(">>>" + x)
         rc = os.system("/usr/bin/bunzip2 %s" % x)
         if rc != 0:
-            perr("ERROR: Could not unzip file: %s, got return code %s" % (x,rc)
+            perr("ERROR: Could not unzip file: %s, got return code %s" % (x,rc))
             failedunzip.append(x)
 
     p = mp.Pool(mp.cpu_count())
@@ -36,9 +36,9 @@ def bunzip2dir(directory):
         return True #all OK
 
 def pullPCAP(host,path, attempts=3):
-    targetpath = "%s/%s/%s" % (scratchdisk, host, ts)
+    targetpath = "%s/%s/%s" % (scratchpath, host, ts)
     if os.path.exists(targetpath) == False:
-        os.mkdirs(targetpath, 0770) #mode 0770 because we need exec for folders to be accessed    
+        os.makedirs(targetpath, 0770) #mode 0770 because we need exec for folders to be accessed    
 
     while (attempts >= 0):
         rc = system("rsync","-z","--skip-compress=bz2","-c","-r","--progress","-t", "pcapdump@%s:%s" % (host,path), targetpath)
@@ -54,7 +54,7 @@ def pullPCAP(host,path, attempts=3):
 
 
 if __name__ == "__main__":
-    failed_transfers = {}
+    failed_transfers = pflexidict()
     intray = sources 
 
     for row in intray:
@@ -63,12 +63,14 @@ if __name__ == "__main__":
         if result == False: 
             perr("ERROR: We failed rsync transfer! >> %s:%s" % (row[0],row[1]) )
             row.append("ERROR: rsync failed")
-            failed_transfers.append(row)
+            failed_transfers[row[0]] = row
             continue
 
         # 2. Make sure we have the two folders there that we need.
-        if len(filter(lambda x: not os.path.exists(os.path.join(savedpath,x)), target_pcap_folders ) != 0:
+        if len(filter(lambda x: not os.path.exists(os.path.join(savedpath,x)), target_pcap_folders )) != 0:
             perr("ERROR: EMDI and/or ETI folders are missing from '%s'" % savedpath,ERRLOG)
+            row.append("ERROR: EMDI/ETI folders are missing from '%s'" % savedpath)
+            failed_transfers[row[0]] = row
             continue
 
         #3. All folders are there. bunzip them all!
@@ -76,7 +78,10 @@ if __name__ == "__main__":
         if len(failures) > 0:
             map(lambda x: perr(x,ERRLOG), failures)
             perr("ERROR: Could not bunzip all files. See log for more errors. ",ERRLOG)
+            row.append("ERROR: Could not bunzip all files. See log for more errors. ", savedpath )
+            failed_transfers[row[0]] = row
             continue
+
 
 
 
