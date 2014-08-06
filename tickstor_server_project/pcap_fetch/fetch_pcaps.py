@@ -34,7 +34,7 @@ def bunzip2dir(directory):
     p = mp.Pool(mp.cpu_count())
     p.map(pbunzip2, files)
 
-    while errorQ.isEmpty == False:
+    while errorQ.empty == False:
         failedunzip.append(errorQ.get())
     #serial write to log file (expensive, due to mass syscalls, but we are not caring here)
     if len(failedunzip) != 0:
