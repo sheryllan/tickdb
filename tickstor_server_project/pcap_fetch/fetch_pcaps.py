@@ -1,0 +1,72 @@
+!/usr/local/bin/python
+# vim: expandtab ts=4 ai
+
+import os
+import multiprocessing as mp
+from time import time,sleep
+from config import scratchpath,sources,logs
+from ut import *
+
+ts = int(time())
+
+
+from multiprocessing import Pool
+def bunzip2dir(directory):
+    ''' does what it says on the tin. Given a dir it walks it and bunzips it all in parallel '''
+    files = os.popen("find %s -type f -name \"*.bz2\"" % directory).readlines()
+    files = map( lambda x: x.strip(), files)
+
+    pout("We are batch bunzipping %d files" % len(files) )
+
+    failedunzip = []
+    def prun(x):
+        pout(">>>" + x)
+        rc = os.system("/usr/bin/bunzip2 %s" % x)
+        if rc != 0:
+            perr("ERROR: Could not unzip file: %s, got return code %s" % (x,rc)
+            failedunzip.append(x)
+
+    p = mp.Pool(mp.cpu_count())
+    p.map(prun, files)
+
+    #serial write to log file (expensive, due to mass syscalls, but we are not caring here)
+    if len(failedunzip) != 0:
+        map(lambda x: perr(x,ERRLOG), failedunzip)
+        return failedunzip
+    else:
+        return True #all OK
+
+def pullPCAP(host,path, attempts=3):
+    targetpath = "%s/%s/%s" % (scratchdisk, host, ts)
+    if os.path.exists(targetpath) == False:
+        os.mkdirs(targetpath, 0770) #mode 0770 because we need exec for folders to be accessed    
+
+    while (attempts >= 0):
+        rc = system("rsync","-z","--skip-compress=bz2","-c","-r","--progress","-t", "pcapdump@%s:%s" % (host,path), targetpath)
+        if rc != 0:
+            attempts -= 1
+            pout("Error with rsync, retrying (%d attempts left)" % attempts)
+        else:
+            pout("rsync success! Continuing...")
+            return (True, targetpath)
+
+    return (False, None) #we failed to do the rsync
+
+
+if __name__ == "__main__":
+    failed_transfers = []
+    intray = sources 
+
+    for row in intray:
+        # 1. Get the data from the remote host
+        result, savedpath = pullPCAP(row[0],row[1])
+        if result == False: 
+            pout ("We failed rsync transfer! >> %s:%s" % (row[0],row[1]) )
+            row.append("ERROR: rsync failed")
+            failed_transfers.append(row)
+
+        # 2. Make sure we have the two folders there that we need.
+
+
+
+
