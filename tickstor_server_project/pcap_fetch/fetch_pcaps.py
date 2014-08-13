@@ -10,17 +10,14 @@ from ut import *
 #ts = int(time())
 ts = 1407332608
 
-from multiprocessing import Pool, Queue
 
 
-errorQ = Queue()
-def pbunzip2(x):
+def pbunzip2(x,errorQ):
     pout(">>>" + x)
     rc = os.system("/usr/bin/bunzip2 %s" % x)
     if rc != 0:
-        perr("ERROR: Could not unzip file: %s, got return code %s" % (x,rc))
-        #failedunzip.append(x)
         errorQ.put(x)
+        perr("ERROR: Could not unzip file: %s, got return code %s" % (x,rc))
 
 def bunzip2dir(directory):
     ''' does what it says on the tin. Given a dir it walks it and bunzips it all in parallel '''
@@ -31,10 +28,22 @@ def bunzip2dir(directory):
 
     failedunzip = []
 
-    p = mp.Pool(mp.cpu_count())
-    p.map(pbunzip2, files)
+    cpus= mp.cpu_count()
+    errorQ = mp.Queue()
+    procs = []
+    while len(files) > 0:
+        while (len(procs) < cpus):
+            if len(files) == 0: break
+            p = mp.Process(target=pbunzip2, args=(files.pop(), errorQ))
+            p.start()
+            procs.append(p)
+        sleep(0.5)
+        procs = filter(lambda x: x.is_alive() == True, procs)
 
-    while errorQ.empty == False:
+
+    map(lambda x: x.join(), procs)
+
+    while errorQ.empty() == False:
         failedunzip.append(errorQ.get())
     #serial write to log file (expensive, due to mass syscalls, but we are not caring here)
     if len(failedunzip) != 0:
