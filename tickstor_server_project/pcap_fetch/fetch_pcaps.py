@@ -8,7 +8,7 @@ from config import *
 from ut import *
 
 #ts = int(time())
-ts = 1407332608
+ts = 1407332608  #for testing
 
 from multiprocessing import Pool, Queue
 
@@ -34,14 +34,19 @@ def bunzip2dir(directory):
     p = mp.Pool(mp.cpu_count())
     p.map(pbunzip2, files)
 
-    while errorQ.isEmpty == False:
+    while errorQ.empty == False:
         failedunzip.append(errorQ.get())
     #serial write to log file (expensive, due to mass syscalls, but we are not caring here)
     if len(failedunzip) != 0:
         map(lambda x: perr(x,ERRLOG), failedunzip)
-        return failedunzip
-    else:
-        return True #all OK
+    return failedunzip
+
+def cleanup():
+    ''' cleans up the tmpdir etc... after finish/abort '''
+    pout("Commencing cleanup.")
+    
+    return False
+
 
 def pullPCAP(host,path, attempts=4):
     targetpath = "%s/%s/%s" % (scratchpath, host, ts)
