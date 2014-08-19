@@ -12,7 +12,6 @@ ts = 1407332608  #for testing
 
 from multiprocessing import Pool, Queue
 
-
 errorQ = Queue()
 def pbunzip2(x):
     pout(">>>" + x)
@@ -69,6 +68,7 @@ if __name__ == "__main__":
     failed_transfers = pflexidict()
     intray = sources 
 
+    out = output(ERRLOG)
     for row in intray:
         # 1. Get the data from the remote host
 #        result, savedpath = pullPCAP(row[0],row[1])
