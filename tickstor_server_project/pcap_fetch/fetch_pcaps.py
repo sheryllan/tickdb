@@ -52,7 +52,8 @@ class massZip:
                 running_procs.append(p)
 
             sleep(0.5)
-            running_procs = filter(lambda x: x.is_alive == True, running_procs) #cleanup
+			print "Wait"
+            running_procs = filter(lambda x: x.is_alive() == True, running_procs) #cleanup
             if len(running_procs) == 0: break
 
 
@@ -68,34 +69,10 @@ class massZip:
         return failures
 
     def bunzipdir(self,x):
-        self.execute(x,"bunzip")
+        return self.execute(x,"bunzip")
 
     def bzipdir(self,directory):
-        ''' as bunzipdir, but in reverse. Zips all non bz2 files in directory ''' 
-        files = os.popen("find %s -type f -not -name \"*.bz2\"" % path).readlines()
-        files = map( lambda x: x.strip(), files)
-
-        self.out.pout("We are batch bunzipping %d files" % len(files))
-
-        def prun(x):
-            self.out.pout(">>>" + x)
-            rc = os.system("/usr/bin/bzip2 %s" % x)
-            if rc != 0:
-                self.out.perr("Could not zip file: %s, got return code %d" % (x,rc))
-                self.errorQ.put(x)
-
-        p = mp.Pool(cpu_count() + (cpu_count() / 4))
-        p.map(prun, files)
-
-        failedzip = []
-        while self.errorQ.empty == False:
-            failedzip.append(self.errorQ.get())
-        
-        if len(failedzip) != 0:
-            map(lambda x: self.out.perr(x), failedzip)
-        return failedzip
-
-
+		return self.execute(x,"bzip")
 
 def pullPCAP(host,path, attempts=4):
     targetpath = "%s/%s/%s" % (scratchpath, host, ts)
