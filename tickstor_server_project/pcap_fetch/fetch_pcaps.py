@@ -14,10 +14,10 @@ from multiprocessing import Pool, Queue
 
 errorQ = Queue()
 def pbunzip2(x):
-    pout(">>>" + x)
+    out.pout(">>>" + x)
     rc = os.system("/usr/bin/bunzip2 %s" % x)
     if rc != 0:
-        perr("ERROR: Could not unzip file: %s, got return code %s" % (x,rc))
+        out.perr("ERROR: Could not unzip file: %s, got return code %s" % (x,rc))
         #failedunzip.append(x)
         errorQ.put(x)
 
@@ -26,7 +26,7 @@ def bunzip2dir(directory):
     files = os.popen("find %s -type f -name \"*.bz2\"" % directory).readlines()
     files = map( lambda x: x.strip(), files)
 
-    pout("We are batch bunzipping %d files" % len(files) )
+    out.pout("We are batch bunzipping %d files" % len(files) )
 
     failedunzip = []
 
@@ -37,12 +37,12 @@ def bunzip2dir(directory):
         failedunzip.append(errorQ.get())
     #serial write to log file (expensive, due to mass syscalls, but we are not caring here)
     if len(failedunzip) != 0:
-        map(lambda x: perr(x,ERRLOG), failedunzip)
+        map(lambda x: out.perr(x), failedunzip)
     return failedunzip
 
 def cleanup():
     ''' cleans up the tmpdir etc... after finish/abort '''
-    pout("Commencing cleanup.")
+    out.pout("Commencing cleanup.")
     
     return False
 
@@ -56,19 +56,19 @@ def pullPCAP(host,path, attempts=4):
         rc = system("rsync","-z","--skip-compress=bz2","-c","-r","--progress","-t", "pcapdump@%s:%s/" % (host,path), targetpath)
         if rc != 0:
             attempts -= 1
-            pout("Error with rsync, retrying (%d attempts left)" % attempts)
+            out.pout("Error with rsync, retrying (%d attempts left)" % attempts)
         else:
-            pout("rsync success! Continuing...")
+            out.pout("rsync success! Continuing...")
             return (True, targetpath)
 
-    perr("ERROR: Failed rsync! from %s:%s to %s" % (host,path,targetpath),ERRLOG)
+    out.perr("ERROR: Failed rsync! from %s:%s to %s" % (host,path,targetpath))
     return (False, None) #we failed to do the rsync
 
 if __name__ == "__main__":
     failed_transfers = pflexidict()
     intray = sources 
 
-    out = output(ERRLOG)
+    out = output(LOGFILE)
     for row in intray:
         # 1. Get the data from the remote host
 #        result, savedpath = pullPCAP(row[0],row[1])
@@ -76,14 +76,14 @@ if __name__ == "__main__":
         savedpath = "/storage/scratchdisk/lcmfrs23/1407332608/"
 
         if result == False: 
-            perr("ERROR: We failed rsync transfer! >> %s:%s" % (row[0],row[1]) )
+            out.perr("ERROR: We failed rsync transfer! >> %s:%s" % (row[0],row[1]) )
             row.append("ERROR: rsync failed")
             failed_transfers[row[0]] = row
             continue
 
         # 2. Make sure we have the two folders there that we need.
         if len(filter(lambda x: not os.path.exists(os.path.join(savedpath,x)), target_pcap_folders )) != 0:
-            perr("ERROR: EMDI and/or ETI folders are missing from '%s'" % savedpath,ERRLOG)
+            out.perr("ERROR: EMDI and/or ETI folders are missing from '%s'" % savedpath)
             row.append("ERROR: EMDI/ETI folders are missing from '%s'" % savedpath)
             failed_transfers[row[0]] = row
             continue
@@ -91,8 +91,8 @@ if __name__ == "__main__":
         #3. All folders are there. bunzip them all!
         failures = bunzip2dir(savedpath)
         if len(failures) > 0:
-            map(lambda x: perr(x,ERRLOG), failures)
-            perr("ERROR: Could not bunzip all files. See log for more errors. ",ERRLOG)
+            map(lambda x: perr(x), failures)
+            out.perr("ERROR: Could not bunzip all files. See log for more errors. ")
             row.append("ERROR: Could not bunzip all files. See log for more errors. ", savedpath )
             failed_transfers[row[0]] = row
             continue

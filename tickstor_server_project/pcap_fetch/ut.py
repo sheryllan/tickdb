@@ -6,11 +6,13 @@ __version__ = (0,0,2)
 import subprocess as sp
 from time import time
 import sys, logging
-
+from config import LOGFILE
 
 class output:
     def __init__(self,logfile=None,loglevel=logging.DEBUG):
         self.logfile = logfile
+        if logfile != None:
+            logging.basicConfig(filename=LOGFILE, level=loglevel)
 
     def pout(self,text):
         ''' Write text to stdout. Use instead of print (as print is a function in python3)  '''     
