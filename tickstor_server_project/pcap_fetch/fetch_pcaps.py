@@ -17,8 +17,8 @@ def pullPCAP(host,path, attempts=4):
     while (attempts >= 0):
         rc = system("rsync","-z","--skip-compress=bz2","-u","-r","--progress","-t", "pcapdump@%s:%s/" % (host,path), targetpath)
         if rc != 0:
-            attempts -= 1
             out.pout("Error with rsync, retrying (%d attempts left)" % attempts)
+            attempts -= 1
         else:
             out.pout("rsync success! Continuing...")
             return (True, targetpath)
