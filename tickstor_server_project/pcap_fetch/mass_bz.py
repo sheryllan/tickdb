@@ -14,7 +14,7 @@ except IndexError:
 files = os.popen("find %s -type f -not -name \"*.bz2\"" % path).readlines()
 files = map( lambda x: x.strip(), files)
 
-print "We are batch bzipping %d files" % len(files)
+print "We are batch bunzipping %d files" % len(files)
 
 def prun(x):
     print ">>>" + x
