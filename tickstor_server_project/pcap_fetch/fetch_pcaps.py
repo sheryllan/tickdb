@@ -6,8 +6,8 @@ from time import time,sleep
 from config import *
 from ut import *
 
-#ts = int(time())
-ts = 1407332608  #for testing
+ts = int(time())
+#ts = 1407332608  #for testing
 
 def pullPCAP(host,path, attempts=4):
     targetpath = "%s/%s/%s" % (scratchpath, host, ts)
@@ -52,9 +52,9 @@ if __name__ == "__main__":
 
     for row in intray:
         # 1. Get the data from the remote host
-#        result, savedpath = pullPCAP(row[0],row[1])
-        result = True
-        savedpath = "/storage/scratchdisk/lcmfrs23/1407332608/"
+        result, savedpath = pullPCAP(row[0],row[1])
+#        result = True
+#        savedpath = "/storage/scratchdisk/lcmfrs23/1407332608/"
 
         if result == False: 
             out.perr("ERROR: We failed rsync transfer! >> %s:%s" % (row[0],row[1]) )
