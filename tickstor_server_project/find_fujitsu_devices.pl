@@ -1,4 +1,6 @@
 #!/usr/bin/perl
+# This script iterates through devices and sees which have FUJITSU ETERNUS in the name
+# Very good to find all the drives that will be assembled into the pools/volumes and arrays
 
 my @devices=`ls /dev/da*[0-9]`;
 

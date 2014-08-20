@@ -1,24 +1,96 @@
-# Useful tools library. for functions which I re-use often in different
-# projects
+# Helper functions, logging, etc...
 # vim: expandtab ts=4 ai
 
-__version__ = (0,0,1)
+__version__ = (0,0,2)
 
 import subprocess as sp
-from time import time
-import sys
+from time import time,sleep
+import sys, logging, os
+from config import LOGFILE
+import multiprocessing as mp
 
-def pout(text):
-    ''' Write text to stdout. Use instead of print (as print is a function in python3)  '''     
-    sys.stdout.write("%s: %s \n" % (time(),text) )
+class massZip:
+    def __init__(self,logginginstance):
+        self.errorQ = mp.Queue()
+        self.out = logginginstance
+    
+    def bz(self,x,cmd):
+        self.out.pout("Proc Spawn >>> " + x)
+        rc = os.system("/usr/bin/bunzip2 %s" % x)
+        if rc != 0:
+            self.out.perr("Could not unzip file: %s, got return code %s" % (x,rc))
+            self.errorQ.put(x)
 
-def perr(text,log=None):
-    ''' Write text to stderr, if log != None, append to log. Not multiprocess safe! '''
-    sys.stderr.write("%s: %s \n" % (time(),text) )
-    if log != None:
-        fd = open(log,"a")
-        fd.write ("%s: %s \n" % (time(),text))
-        fd.close()
+    def execute(self,directory,ziptype):
+        ''' does what it says on the tin. Given a dir it walks it and bunzips it all in parallel '''
+        if ziptype == "bunzip":
+            files = os.popen("find %s -type f -name \"*.bz2\"" % directory).readlines()
+            self.out.pout("We are batch bunzipping %d files" % len(files) )
+            cmd = "/usr/bin/bunzip2" 
+        elif ziptype == "bzip":
+            files = os.popen("find %s -type f -not -name \"*.bz2\"" % path).readlines()
+            self.out.pout("We are batch bunzipping %d files" % len(files))
+            cmd = "/usr/bin/bzip2"
+        else:
+            self.out.perr("Sorry, type '%s' unrecognized, failing" % ziptype)
+            raise AttributeError("ziptype '%s' not recognised" % ziptype)
+
+        files = map( lambda x: x.strip(), files)
+
+        failures = []
+        running_procs = []
+
+        while True:
+            if len(files) == 0: break
+            while (len(running_procs ) < mp.cpu_count() ):
+                try: p = mp.Process(target=self.bz, args=(files.pop(),cmd))
+                except IndexError: break
+                p.start()
+                running_procs.append(p)
+
+            sleep(0.5)
+            running_procs = filter(lambda x: x.is_alive() == True, running_procs) #cleanup
+            if len(running_procs) == 0: break
+
+        while self.errorQ.empty() == False:
+            failures.append(self.errorQ.get())
+        #serial write to log file (expensive, due to mass syscalls, but we are not caring here)
+        if len(failures) != 0:
+            map(lambda x: self.out.perr(x), failures)
+        return failures
+
+    def bunzipdir(self,x):
+        return self.execute(x,"bunzip")
+
+    def bzipdir(self,directory):
+        return self.execute(x,"bzip")
+
+
+class output:
+    def __init__(self,logfile=None,loglevel=logging.DEBUG):
+        self.logfile = logfile
+        if logfile != None:
+            logging.basicConfig(filename=LOGFILE, level=loglevel)
+
+    def pout(self,text):
+        ''' Write text to stdout. Use instead of print (as print is a function in python3)  '''     
+        sys.stdout.write("%s: %s \n" % (time(),text) )
+        logging.info(text)
+
+    def pwarn(self,text):
+        sys.stderr.write("%s:WARNING: %s \n" % (time(),text) )
+        logging.warning(text)
+
+    def perr(self,text):
+        ''' Write text to stderr, if log != None, append to log. Not multiprocess safe! '''
+        sys.stderr.write("%s:ERROR: %s \n" % (time(),text) )
+        logging.error(text)
+
+
+   #     if log != None:
+    #        fd = open(log,"a")
+     #       fd.write ("%s: %s \n" % (time(),text))
+      #      fd.close()
 
 def call(cmd, *args):
     # Execute command specified, and return stdout

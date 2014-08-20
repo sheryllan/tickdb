@@ -1,0 +1,15 @@
+Within the CSV the first 4 fields are common to all messages.  They represent
+*Interface (the interface we are capturing data)
+*Dataflow (the particular message type we have identified) – this is key to finding the correct template
+*Seq number (our sequence number for error checking between datamole and the server – you can ignore this)
+*Timestamp – the nanosecond UTC timestamp for the message.
+ 
+Really you only need worry about column 2 which gives you the dataflow #.  Each dataflow represents different type of message which may contain different data in each field.  All dataflow type 45s for example will have the same format in the CSV but this may be different from dataflow 33 records for example.
+ 
+To understand which dataflow relates to which template file look at the interfaces.xml file.  If you are looking for a dataflow type 45 in the CSV (second column) find the dataflow with id # 45 in interfaces.xml, this shows you the decode is  Eurex-EMDI so look for the Eurex-EMDI template in templates.xml.  This gives you the order and meaning of all of the fields in the csv record. 
+ 
+Please note, not all fields will definitely be populated, though they will always be present as a field in the CSV.
+ 
+I’ve attached the Interfaces.xml and templates.xml from your system as well as a spreadsheet with 3 examples of different message types and the working of how to find the datalow id and template id. 
+ 
+Hope that gives you what you want.  Let me know if you have more questions or want me to call in one day to walk you through this.
