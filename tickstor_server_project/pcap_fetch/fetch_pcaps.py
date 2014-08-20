@@ -2,77 +2,12 @@
 # vim: expandtab ts=4 ai
 
 import os
-import multiprocessing as mp
 from time import time,sleep
 from config import *
 from ut import *
 
 #ts = int(time())
 ts = 1407332608  #for testing
-
-# Exit codes
-# 1 = invalid ziptype when zipping or unzipping
-
-class massZip:
-    def __init__(self,logginginstance):
-        self.errorQ = mp.Queue()
-        self.out = logginginstance
-    
-    def bz(self,x,cmd):
-        self.out.pout(">>>" + x)
-        rc = os.system("/usr/bin/bunzip2 %s" % x)
-        if rc != 0:
-            self.out.perr("Could not unzip file: %s, got return code %s" % (x,rc))
-            self.errorQ.put(x)
-
-    def execute(self,directory,ziptype):
-        ''' does what it says on the tin. Given a dir it walks it and bunzips it all in parallel '''
-        if ziptype == "bunzip":
-            files = os.popen("find %s -type f -name \"*.bz2\"" % directory).readlines()
-            self.out.pout("We are batch bunzipping %d files" % len(files) )
-            cmd = "/usr/bin/bunzip2" 
-        elif ziptype == "bzip":
-            files = os.popen("find %s -type f -not -name \"*.bz2\"" % path).readlines()
-            self.out.pout("We are batch bunzipping %d files" % len(files))
-            cmd = "/usr/bin/bzip2"
-        else:
-            self.out.perr("Sorry, type '%s' unrecognized, failing" % ziptype)
-            sys.exit(1)
-
-        files = map( lambda x: x.strip(), files)
-
-        failures = []
-        running_procs = []
-
-        while True:
-            if len(files) == 0: break
-            while (len(running_procs ) < mp.cpu_count() ):
-                p = mp.Process(target=self.bz, args=(files.pop(),cmd)) 
-                p.start()
-                running_procs.append(p)
-
-            sleep(0.5)
-			print "Wait"
-            running_procs = filter(lambda x: x.is_alive() == True, running_procs) #cleanup
-            if len(running_procs) == 0: break
-
-
-        os.wait()
-       # p = mp.Pool(mp.cpu_count())
-        #p.map(self.pbunzip2, files)
-
-        while self.errorQ.empty == False:
-            failures.append(self.errorQ.get())
-        #serial write to log file (expensive, due to mass syscalls, but we are not caring here)
-        if len(failures) != 0:
-            map(lambda x: self.out.perr(x), failures)
-        return failures
-
-    def bunzipdir(self,x):
-        return self.execute(x,"bunzip")
-
-    def bzipdir(self,directory):
-		return self.execute(x,"bzip")
 
 def pullPCAP(host,path, attempts=4):
     targetpath = "%s/%s/%s" % (scratchpath, host, ts)
@@ -137,16 +72,16 @@ if __name__ == "__main__":
         #3. All folders are there. bunzip them all!
         failures = mZ.bunzipdir(savedpath)
         if len(failures) > 0:
-            map(lambda x: perr(x), failures)
+            map(lambda x: out.perr(x), failures)
             out.perr("ERROR: Could not bunzip all files. See log for more errors. ")
-            row.append("ERROR: Could not bunzip all files. See log for more errors. ", savedpath )
+            row.append("ERROR: Could not bunzip all files. See log for more errors. ")
             failed_transfers[row[0]] = row
-            continue
 
-
-
-    out.pout("Error summary:")
-    for key,value in failed_transfers:
-        out.pout("\t >> %s -> %s" % (key,value) )
+	if len(failed_transfers) != 0:
+	    out.pout("Error summary:")
+	    for key in failed_transfers:
+	        out.pout("\t >> %s -> %s" % (key,failed_transfers[key]) )
+	else:
+		out.pout("No errors reported.")
 
 
