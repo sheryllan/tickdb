@@ -74,16 +74,19 @@ class output:
 
     def pout(self,text):
         ''' Write text to stdout. Use instead of print (as print is a function in python3)  '''     
-        sys.stdout.write("%s: %s \n" % (time(),text) )
+		text = "%s: %s \n" % (time(),text)
+        sys.stdout.write(text)
         logging.info(text)
 
     def pwarn(self,text):
-        sys.stderr.write("%s:WARNING: %s \n" % (time(),text) )
+		text = "%s:WARNING: %s \n" % (time(),text)
+        sys.stderr.write(text)
         logging.warning(text)
 
     def perr(self,text):
         ''' Write text to stderr, if log != None, append to log. Not multiprocess safe! '''
-        sys.stderr.write("%s:ERROR: %s \n" % (time(),text) )
+		text = "%s:ERROR: %s \n" % (time(),text)
+        sys.stderr.write(text)
         logging.error(text)
 
 
