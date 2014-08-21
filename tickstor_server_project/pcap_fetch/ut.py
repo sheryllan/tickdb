@@ -69,31 +69,26 @@ class massZip:
 class output:
     def __init__(self,logfile=None,loglevel=logging.DEBUG):
         self.logfile = logfile
+        self.mt = "%s: %s"
         if logfile != None:
             logging.basicConfig(filename=LOGFILE, level=loglevel)
 
     def pout(self,text):
         ''' Write text to stdout. Use instead of print (as print is a function in python3)  '''     
-		text = "%s: %s \n" % (time(),text)
-        sys.stdout.write(text)
+        text = self.mt % (time(),text)
+        sys.stdout.write(text+"\n")
         logging.info(text)
 
     def pwarn(self,text):
-		text = "%s:WARNING: %s \n" % (time(),text)
-        sys.stderr.write(text)
+        text = self.mt % (time(),text)
+        sys.stderr.write(text+"\n")
         logging.warning(text)
 
     def perr(self,text):
         ''' Write text to stderr, if log != None, append to log. Not multiprocess safe! '''
-		text = "%s:ERROR: %s \n" % (time(),text)
-        sys.stderr.write(text)
+        text = self.mt % (time(),text)
+        sys.stderr.write(text+"\n")
         logging.error(text)
-
-
-   #     if log != None:
-    #        fd = open(log,"a")
-     #       fd.write ("%s: %s \n" % (time(),text))
-      #      fd.close()
 
 def call(cmd, *args):
     # Execute command specified, and return stdout

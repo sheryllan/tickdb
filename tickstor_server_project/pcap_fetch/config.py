@@ -10,6 +10,7 @@ target_pcap_folders = ["EMDI","ETI"]
 LOGFILE="/home/pcapdump/pcap_dump.log"
 
 scratchpath="/storage/scratchdisk"
-pcappath="/storage/P2D"
+raw_pcap_path="/storage/P2D/raw_pcaps/"
+merged_pcap_path="/storage/P2D/merged_pcaps/"
 datamolepath="/storage/P2D_datamole"
 
