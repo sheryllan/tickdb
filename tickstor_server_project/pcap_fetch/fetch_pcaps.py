@@ -9,7 +9,7 @@ from ut import *
 ts = int(time())
 #ts = 1407332608  #for testing
 
-def pullPCAP(host,path, attempts=4):
+def pullPCAP(host,path,targetpath, attempts=4):
     while (attempts >= 0):
         rc = system("rsync","-z","--skip-compress=bz2","-u","-r","--progress","-t", "pcapdump@%s:%s/" % (host,path), targetpath)
         if rc != 0:
@@ -66,7 +66,7 @@ if __name__ == "__main__":
 
 
         # 1. Get the data from the remote host
-        result, savedpath = pullPCAP(targetpath,row[1])
+        result, savedpath = pullPCAP(row[0],row[1],targetpath)
 
         if result == False: 
             out.perr("ERROR: We failed rsync transfer! >> %s:%s" % (row[0],row[1]) )
