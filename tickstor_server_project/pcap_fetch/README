@@ -9,14 +9,11 @@ within the path, we will have the following structure:
 	/var/reactor/pcaps/ETI/
 
 It will save the path into the following:
-    $hostname/$second_timestamp/
+	write everything to /storage/scratchdisk/$hostname/$start_of_transfer_timestamp
 
-write everything to /storage/scratchdisk/$hostname/$start_of_transfer_timestamp
 then:
-	1. bunzip files (if necessary)
-	2. open each file to denote start of PCAP time (or alternatively, look at ctime/mtime  (make sure rsync has preserve-time set)
-	3. rename file into the following format: $start_timestamp.(ETI/EMDI).pcap
-	4. move to final destination /storage/P2D
+	1. bunzip files (if necessary) and move to  /storage/P2D/raw_pcaps/$hostname/$timestamp/...
+	2. Merge pcaps into A.cap and B.pcap in /storage/P2D/merged_pcaps/$hostname/$timestamp/
 
 # User/system permissions
 
@@ -29,3 +26,13 @@ ends. The pulls will happen via a passwordless ssh-key which will be stored on t
 	* exit code 0 = program completed, no errors
 	* exit code 1 = program completed, with errors, please check logs and see if you care
 	* exit code >1 = We had a serious error, cannot continue. Return code depends on called program
+
+
+# ===================================================================================
+
+WORKFLOW:
+
+1. run pcap_dumps.py.  If exit 0 then continue, otherwise investigate
+2. run parallel_pcap_merge.py. If exit 0 then continue, otherwise investigate
+
+

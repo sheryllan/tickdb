@@ -109,13 +109,13 @@ if __name__ == "__main__":
                          # seriously wrong.
             
  
-  	if len(failed_transfers) != 0:
-   	    out.pout("Error summary:")
-   	    for key in failed_transfers:
-   	        out.pout("\t >> %s -> %s" % (key,failed_transfers[key]) )
+    if len(failed_transfers) != 0:
+        out.pout("Error summary:")
+        for key in failed_transfers:
+            out.pout("\t >> %s -> %s" % (key,failed_transfers[key]) )
         sys.exit(2)
-   	else:
-   		out.pout("No errors reported.")
+    else:
+        out.pout("No errors reported.")
         sys.exit(0)
 
 
