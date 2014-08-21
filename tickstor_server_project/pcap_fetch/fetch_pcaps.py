@@ -89,32 +89,34 @@ if __name__ == "__main__":
             row.append("ERROR: Could not bunzip all files. See log for more errors. ")
             failed_transfers[row[0]] = row
 
-	if len(failed_transfers) != 0:
-	    out.pout("Error summary:")
-	    for key in failed_transfers:
-	        out.pout("\t >> %s -> %s" % (key,failed_transfers[key]) )
-	else:
-		out.pout("No errors reported.")
-
-
-    # So, we managed to bunzip all the pcaps. Now what is left is to move them to the long term storage area.a
-    outpath = os.path.join(raw_pcap_path,row[0],str(ts))
-    out.pout("Output to %s. Creating path if non existant." % outpath)
-    if os.path.exists(outpath) == False: os.makedirs(outpath)
-    rc = os.system("mv -v %s %s" % (savedpath,outpath))
-    if rc == 0: 
-        out.pout("Folder moved successfully.")
-    else:
-        out.perr("Error moving folder. Got return code: %d" % rc)
-        # According to POSIX, return codes are 8 bit. Python and GNU/Linux seems to use 16-bit return codes.
-        # Therefore,  a return code which is modulo 256 will cause overflow,
-        # and a return code of 0 is passed back to OS, even if it was a failure. The below
-        # max() makes sure that any error > 256 is returned as 255. We lose some error info, but better than
-        # returning 0 inadvertantly.
-        rc = max(rc,255) 
-        
-    out.pout("Finished, exiting...")
-    sys.exit(rc - 1)
+        # So, we managed to bunzip all the pcaps. Now what is left is to move them to the long term storage area.a
+        outpath = os.path.join(raw_pcap_path,row[0],str(ts))
+        out.pout("Output to %s. Creating path if non existant." % outpath)
+        if os.path.exists(outpath) == False: os.makedirs(outpath)
+        rc = os.system("mv -v %s %s" % (savedpath,outpath))
+        if rc == 0: 
+            out.pout("Folder moved successfully.")
+            createdPaths.append(outpath)
+        else:
+            out.perr("Error moving folder. Got return code: %d" % rc)
+            # According to POSIX, return codes are 8 bit. Python and GNU/Linux seems to use 16-bit return codes.
+            # Therefore,  a return code which is modulo 256 will cause overflow,
+            # and a return code of 0 is passed back to OS, even if it was a failure. The below
+            # max() makes sure that any error > 256 is returned as 255. We lose some error info, but better than
+            # returning 0 inadvertantly.
+            rc = max(rc,255) 
+            sys.exit(rc) # this failure is a showstopper really. If we can't write to target dir, then something is
+                         # seriously wrong.
+            
+ 
+  	if len(failed_transfers) != 0:
+   	    out.pout("Error summary:")
+   	    for key in failed_transfers:
+   	        out.pout("\t >> %s -> %s" % (key,failed_transfers[key]) )
+        sys.exit(2)
+   	else:
+   		out.pout("No errors reported.")
+        sys.exit(0)
 
 
 

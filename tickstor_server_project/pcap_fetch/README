@@ -23,3 +23,9 @@ then:
 This script will be ran as the pcapdump user. It will connect to the target as the pcapdump user. This user will be in the "pcap" group on both
 ends. The pulls will happen via a passwordless ssh-key which will be stored on the server (and only there).
 
+# Exit codes
+
+* fetch_pcaps.py:
+	* exit code 0 = program completed, no errors
+	* exit code 1 = program completed, with errors, please check logs and see if you care
+	* exit code >1 = We had a serious error, cannot continue. Return code depends on called program
