@@ -19,7 +19,7 @@ class massZip:
         rc = os.system("/usr/bin/bunzip2 %s" % x)
         if rc != 0:
             self.out.perr("Could not unzip file: %s, got return code %s" % (x,rc))
-            self.errorQ.put(x)
+            self.errorQ.put("bunzip ERROR: %s" % x)
 
     def execute(self,directory,ziptype):
         ''' does what it says on the tin. Given a dir it walks it and bunzips it all in parallel '''

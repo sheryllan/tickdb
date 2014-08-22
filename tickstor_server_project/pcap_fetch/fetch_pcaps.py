@@ -1,12 +1,13 @@
 #!/usr/local/bin/python
 # vim: expandtab ts=4 ai
 
-import os
+import os,datetime
 from time import time,sleep
 from config import *
 from ut import *
 
 ts = int(time())
+hrts = datetime.datetime.fromtimestamp(ts).strftime("%d_%m_%Y") #Human readable timestamp, daily
 #ts = 1407332608  #for testing
 
 def pullPCAP(host,path,targetpath, attempts=4):
@@ -24,9 +25,9 @@ def pullPCAP(host,path,targetpath, attempts=4):
 
 if __name__ == "__main__":
 
+    import shutil, signal
     createdPaths=[] #a record of everything we have created on disk, in case we have to roll back
 
-    import shutil, signal
     def cleanup_incomplete(signum, frame):
         ''' If we have a failure of the program, or it is killed, this cleans up target CSV output dirs, etc...
             so that we can attempt it again. Prevents leaving partially complete folders about '''
@@ -59,7 +60,7 @@ if __name__ == "__main__":
     mZ = massZip(out)
 
     for row in intray:
-        targetpath = "%s/%s/%s" % (scratchpath, row[0], ts)
+        targetpath = "%s/%s/%s" % (scratchpath, row[0],  hrts  )
         if os.path.exists(targetpath) == False:
             os.makedirs(targetpath, 0770) #mode 0770 because we need exec for folders to be accessed    
             createdPaths.append(targetpath)
@@ -90,10 +91,10 @@ if __name__ == "__main__":
             failed_transfers[row[0]] = row
 
         # So, we managed to bunzip all the pcaps. Now what is left is to move them to the long term storage area.a
-        outpath = os.path.join(raw_pcap_path,row[0],str(ts))
+        outpath = os.path.join(raw_pcap_path,row[0], hrts )
         out.pout("Output to %s. Creating path if non existant." % outpath)
         if os.path.exists(outpath) == False: os.makedirs(outpath)
-        rc = os.system("mv -v %s %s" % (savedpath,outpath))
+        rc = os.system("mv -v %s/ %s/" % (savedpath,outpath))
         if rc == 0: 
             out.pout("Folder moved successfully.")
             createdPaths.append(outpath)
