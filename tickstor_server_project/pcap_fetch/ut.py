@@ -99,13 +99,20 @@ def fetchPCAPdaySlots(host):
 def call(cmd, *args):
     # Execute command specified, and return stdout
     cmd = [cmd]
-    cmd.extend(args)
+    if type(args) == list or type(args) == tuple:
+        cmd.extend(args)
+    else:
+        cmd.extend([str(args)])
     pipe = sp.Popen(  cmd ,  shell=False, bufsize=65535, stdout=sp.PIPE, close_fds=True)
     return pipe.stdout.readlines()
 
 def system(cmd, *args):
     cmd = [cmd]
-    cmd.extend(args)
+    if type(args) == list or type(args) == tuple:
+        cmd.extend(args)
+    else:
+        cmd.extend([str(args)])
+
     rc = sp.call( cmd, shell=False )
     # According to POSIX, return codes are unsigned 8 bit. Python seems to use 16-bit return codes.
     # Therefore,  a return code which is modulo 256 will cause overflow,

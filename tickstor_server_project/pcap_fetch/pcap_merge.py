@@ -12,10 +12,14 @@ class pcapMerge:
 
     def mergePCAPs(self,outfile,pcaplist):
         ''' Take a list of pcap files to merge (full paths) that we want to merge '''
+        if os.path.exists( os.path.dirname(outfile) ) == False: os.makedirs( os.path.dirname(outfile) )
         if self.multi == False:
             # We are sticking to single process merging
-            arguments = ' '.join(pcaplist)
-            rc = system("%s/mergecap -w %s %s" % (outfile,mergecap_path,arguments))
+            try:
+                rc = system(mergecap_path+"/mergecap","-w",outfile,*pcaplist)
+            except OSError as e:
+                print "Error calling mergecap. We tried the following: \n %s" % "%s/mergecap -w %s %s" % (mergecap_path,outfile,arguments)
+                raise(e)
             if rc != 0:
                 self.out.perr("ERROR merging pcap files. We got exit code %d " % rc)
             else:
@@ -34,18 +38,21 @@ class pcapMerge:
                 mergedslot  = os.path.join(merged_pcap_path,pcaphost,dayslot)
 
                 # See if we have the A/B folders in EMDI/ETI in processed_pcaps. If not, add to processing list
-                if not os.path.exists("%s/EMDI/A.pcap" % mergedslot): uf.append(["%s/EMDI/A/" % currentslot, pcaphost, dayslot])
-                if not os.path.exists("%s/EMDI/B.pcap" % mergedslot): uf.append(["%s/EMDI/B/" % currentslot, pcaphost, dayslot])
-                if not os.path.exists("%s/ETI/A.pcap" % mergedslot): uf.append(["%s/ETI/A/" % currentslot, pcaphost, dayslot])
-                if not os.path.exists("%s/ETI/B.pcap" % mergedslot): uf.append(["%s/ETI/B/" % currentslot, pcaphost, dayslot])
+                if not os.path.exists("%s/EMDI/A.pcap" % mergedslot): uf.append(["%s/EMDI/A/" % currentslot, "%s/EMDI/A.pcap" % mergedslot, pcaphost, dayslot])
+                if not os.path.exists("%s/EMDI/B.pcap" % mergedslot): uf.append(["%s/EMDI/B/" % currentslot, "%s/EMDI/B.pcap" % mergedslot, pcaphost, dayslot])
+                if not os.path.exists("%s/ETI/A.pcap" %  mergedslot): uf.append(["%s/ETI/A/"  % currentslot,  "%s/ETI/A.pcap" % mergedslot, pcaphost, dayslot])
+                if not os.path.exists("%s/ETI/B.pcap" %  mergedslot): uf.append(["%s/ETI/B/"  % currentslot,  "%s/ETI/B.pcap" % mergedslot, pcaphost, dayslot])
 
 
-        
         for item in uf:
             # 1. get list of all pcap files in folder. Following pattern as setup by Kieran ( $filename.pcap([0-9]*) )
             files = os.listdir(item[0])
-            files = filter( lambda x: re.match("(EMDI.*|ETI)\.pcap[0-9]{0,9}", x) != None, files)
-            print files
+            files = filter( lambda x: re.match("(EMDI.*|ETI)\.pcap[0-9]{0,9}$", x) != None, files)
+            files = map(lambda x: os.path.join(item[0], x), files)
+            rc = self.mergePCAPs(item[1],files)
+            if rc != 0:
+                self.out.perr("Failed PCAP merge, exiting.")
+                sys.exit(2) #Exit for now, perhaps in future we just log it, and continue
 
 if __name__ == "__main__":
     pm = pcapMerge(False)
