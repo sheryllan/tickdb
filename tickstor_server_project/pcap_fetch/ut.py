@@ -6,7 +6,7 @@ __version__ = (0,0,2)
 import subprocess as sp
 from time import time,sleep
 import sys, logging, os
-from config import LOGFILE
+from config import LOGFILE,raw_pcap_path
 import multiprocessing as mp
 
 class massZip:
@@ -90,8 +90,11 @@ class output:
         sys.stderr.write(text+"\n")
         logging.error(text)
 
-def fetchrawPCAPhosts:
+def fetchrawPCAPhosts():
     return os.listdir(raw_pcap_path)
+
+def fetchPCAPdaySlots(host):
+    return os.listdir( os.path.join(raw_pcap_path,host) )
 
 def call(cmd, *args):
     # Execute command specified, and return stdout
@@ -103,7 +106,14 @@ def call(cmd, *args):
 def system(cmd, *args):
     cmd = [cmd]
     cmd.extend(args)
-    return sp.call( cmd, shell=False )
+    rc = sp.call( cmd, shell=False )
+    # According to POSIX, return codes are unsigned 8 bit. Python seems to use 16-bit return codes.
+    # Therefore,  a return code which is modulo 256 will cause overflow,
+    # and as such  a non-zero return code will be passed back as a 0. The below
+    # max() makes sure that any error > 256 is returned as 255. We lose some error info, but better than
+    # returning 0 inadvertantly. This may be because of how uint was defined on the 64bit system cPython was built on.
+    return max(rc,255)
+
 
 class flexidict(dict):
     def __init__(self,*args):
