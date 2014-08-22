@@ -573,24 +573,24 @@
                 <detail field="price" id="price" layer="eobi_13100_ord_add" mode="show"/>
         </template>
         <template template_protocol="eobi" id="eobi_13101_order_mod"	>
-			<detail id="ip_id"   layer="ip"   field="id"/>
-			<detail id="ip_src"   layer="ip"   field="src"/>
-			<detail id="ip_dst"   layer="ip"   field="dst"/>
-			<detail id="udp_src"  layer="udp"  field="src"/>
-			<detail id="udp_dst"  layer="udp"  field="dst"/>
-			<detail id="bodylen"		layer="eobi_13101_order_mod"	field="bodylen" />
-			<detail id="templateid"		layer="eobi_13101_order_mod"	field="templateid" />
-			<detail id="msgseqnum"		layer="eobi_13101_order_mod"	field="msgseqnum" />
-			<detail id="trdregtstimein"	layer="eobi_13101_order_mod"	field="trdregtstimein" />
-			<detail id="TrdRegTSPrevTime-Pri"		layer="eobi_13101_order_mod"	field="TrdRegTSPrevTime-Pri" />
-			<detail id="PrevPrice"		layer="eobi_13101_order_mod"	field="PrevPrice" />
-			<detail id="PrevDisplayQty"		layer="eobi_13101_order_mod"	field="PrevDisplayQty" />
-			<detail id="SecID"	layer="eobi_13101_order_mod"	field="SecID" />
-			<detail id="trdregTStimepriority"	layer="eobi_13101_order_mod"	field="trdregTStimepriority" />
-			<detail id="DisplayQty"		layer="eobi_13101_order_mod"	field="DisplayQty" />
-			<detail id="side"		layer="eobi_13101_order_mod"	field="side" />
-			<detail id="price"		layer="eobi_13101_order_mod"	field="price" />
-		</template>
+		<detail id="ip_id"   layer="ip"   field="id"/>
+		<detail id="ip_src"   layer="ip"   field="src"/>
+		<detail id="ip_dst"   layer="ip"   field="dst"/>
+		<detail id="udp_src"  layer="udp"  field="src"/>
+		<detail id="udp_dst"  layer="udp"  field="dst"/>
+		<detail id="bodylen"		layer="eobi_13101_order_mod"	field="bodylen" />
+		<detail id="templateid"		layer="eobi_13101_order_mod"	field="templateid" />
+		<detail id="msgseqnum"		layer="eobi_13101_order_mod"	field="msgseqnum" />
+		<detail id="trdregtstimein"	layer="eobi_13101_order_mod"	field="trdregtstimein" />
+		<detail id="TrdRegTSPrevTime-Pri"		layer="eobi_13101_order_mod"	field="TrdRegTSPrevTime-Pri" />
+		<detail id="PrevPrice"		layer="eobi_13101_order_mod"	field="PrevPrice" />
+		<detail id="PrevDisplayQty"		layer="eobi_13101_order_mod"	field="PrevDisplayQty" />
+		<detail id="secid"	layer="eobi_13101_order_mod"	field="secid" />
+        <detail id="trdregTStimepriority"	layer="eobi_13101_order_mod"	field="trdregTStimepriority" />
+		<detail id="DisplayQty"		layer="eobi_13101_order_mod"	field="DisplayQty" />
+		<detail id="side"		layer="eobi_13101_order_mod"	field="side" />
+		<detail id="price"		layer="eobi_13101_order_mod"	field="price" />
+	</template>
         <template id="eobi_13504_top_of_book" template_protocol="eurex-eobi">
                 <detail field="id" id="ip_id" layer="ip" mode="show"/>
                 <detail field="src" id="ip_src" layer="ip" mode="show"/>
@@ -722,6 +722,156 @@
                 <detail field="qty" id="qty" layer="eobi_13201_trade_report" mode="show"/>
                 <detail field="price" id="price" layer="eobi_13201_trade_report" mode="show"/>
         </template>
+  
+	<template template_protocol="eurex-eobi"	id="eobi_13600_product_summary"	>
+		<detail id="ip_id"	layer="ip"	field="id"	/>
+		<detail id="ip_src"	layer="ip"	field="src"	/>
+		<detail id="ip_dst"	layer="ip"	field="dst"	/>
+		<detail id="udp_src"	layer="udp"	field="src"	/>
+		<detail id="udp_dst"	layer="udp"	field="dst"	/>
+		<detail id="bodylen"	layer="eobi_13600_product_summary"	field="bodylen"	/>
+		<detail id="templateid"	layer="eobi_13600_product_summary"	field="templateid"	/>
+		<detail id="msgseqnum"	layer="eobi_13600_product_summary"	field="msgseqnum"	/>
+		<detail id="lastmegseqnumprocessed"	layer="eobi_13600_product_summary"	field="lastmegseqnumprocessed"	/>
+		<detail id="tradingsessionid"	layer="eobi_13600_product_summary"	field="tradingsessionid"	/>
+		<detail id="tradingsessionsubid"	layer="eobi_13600_product_summary"	field="tradingsessionsubid"	/>
+		<detail id="tradsesstatus"	layer="eobi_13600_product_summary"	field="tradsesstatus"	/>
+		<detail id="fastmktindicator"	layer="eobi_13600_product_summary"	field="fastmktindicator"	/>
+	</template>
+	
+	<template template_protocol="eurex-eobi"	id="eobi_13602_snapshot_order"	>
+		<detail id="ip_id"	layer="ip"	field="id"	/>
+		<detail id="ip_src"	layer="ip"	field="src"	/>
+		<detail id="ip_dst"	layer="ip"	field="dst"	/>
+		<detail id="udp_src"	layer="udp"	field="src"	/>
+		<detail id="udp_dst"	layer="udp"	field="dst"	/>
+		<detail id="bodylen"	layer="eobi_13602_snapshot_order"	field="bodylen"	/>
+		<detail id="templateid"	layer="eobi_13602_snapshot_order"	field="templateid"	/>
+		<detail id="msgseqnum"	layer="eobi_13602_snapshot_order"	field="msgseqnum"	/>
+		<detail id="trdregTStimepriority"	layer="eobi_13602_snapshot_order"	field="trdregTStimepriority"	/>
+		<detail id="displayqty"	layer="eobi_13602_snapshot_order"	field="displayqty"	/>
+		<detail id="side"	layer="eobi_13602_snapshot_order"	field="side"	/>
+		<detail id="price"	layer="eobi_13602_snapshot_order"	field="price"	/>
+		<detail id="tradsesstatus"	layer="eobi_13602_snapshot_order"	field="tradsesstatus"	/>
+	</template>
+	<template template_protocol="eurex-eobi"	id="eobi_13601_instrument_summary_header_body"	>
+		<detail id="ip_id"	layer="ip"	field="id"	/>
+		<detail id="ip_src"	layer="ip"	field="src"	/>
+		<detail id="ip_dst"	layer="ip"	field="dst"	/>
+		<detail id="udp_src"	layer="udp"	field="src"	/>
+		<detail id="udp_dst"	layer="udp"	field="dst"	/>
+		<detail id="bodylen"	layer="eobi_13601_instrument_summary_header_body"	field="bodylen"	/>
+		<detail id="templateid"	layer="eobi_13601_instrument_summary_header_body"	field="templateid"	/>
+		<detail id="msgseqnum"	layer="eobi_13601_instrument_summary_header_body"	field="msgseqnum"	/>
+		<detail id="securityid"	layer="eobi_13601_instrument_summary_header_body"	field="securityid"	/>
+		<detail id="lastupdatetime"	layer="eobi_13601_instrument_summary_header_body"	field="lastupdatetime"	/>
+		<detail id="trdregtsexecutiontime"	layer="eobi_13601_instrument_summary_header_body"	field="trdregtsexecutiontime"	/>
+		<detail id="totnoorders"	layer="eobi_13601_instrument_summary_header_body"	field="totnoorders"	/>
+		<detail id="securitystatus"	layer="eobi_13601_instrument_summary_header_body"	field="securitystatus"	/>
+		<detail id="securitytradingstatus"	layer="eobi_13601_instrument_summary_header_body"	field="securitytradingstatus"	/>
+		<detail id="fastmktindicator"	layer="eobi_13601_instrument_summary_header_body"	field="fastmktindicator"	/>
+		<detail id="nomdentries"	layer="eobi_13601_instrument_summary_header_body"	field="nomdentries"	/>
+		
+		<detail id="E1mdentrytype"	layer="eobi_13601_instrument_summary_header_body"	field="E1mdentrytype"	/>
+		<detail id="E1pad3"	layer="eobi_13601_instrument_summary_header_body"	field="E1pad3"	/>
+		<detail id="E1mdentrypx"	layer="eobi_13601_instrument_summary_header_body"	field="E1mdentrypx"	/>
+		<detail id="E1mdentrysize"	layer="eobi_13601_instrument_summary_header_body"	field="E1mdentrysize"	/>
+		
+		<detail id="E2mdentrytype"	layer="eobi_13601_instrument_summary_header_body"	field="E2mdentrytype"	/>
+		<detail id="E2pad3"	layer="eobi_13601_instrument_summary_header_body"	field="E2pad3"	/>
+		<detail id="E2mdentrypx"	layer="eobi_13601_instrument_summary_header_body"	field="E2mdentrypx"	/>
+		<detail id="E2mdentrysize"	layer="eobi_13601_instrument_summary_header_body"	field="E2mdentrysize"	/>
+		
+		<detail id="E3mdentrytype"	layer="eobi_13601_instrument_summary_header_body"	field="E3mdentrytype"	/>
+		<detail id="E3pad3"	layer="eobi_13601_instrument_summary_header_body"	field="E3pad3"	/>
+		<detail id="E3mdentrypx"	layer="eobi_13601_instrument_summary_header_body"	field="E3mdentrypx"	/>
+		<detail id="E3mdentrysize"	layer="eobi_13601_instrument_summary_header_body"	field="E3mdentrysize"	/>
+		
+		<detail id="E4mdentrytype"	layer="eobi_13601_instrument_summary_header_body"	field="E4mdentrytype"	/>
+		<detail id="E4pad3"	layer="eobi_13601_instrument_summary_header_body"	field="E4pad3"	/>
+		<detail id="E4mdentrypx"	layer="eobi_13601_instrument_summary_header_body"	field="E4mdentrypx"	/>
+		<detail id="E4mdentrysize"	layer="eobi_13601_instrument_summary_header_body"	field="E4mdentrysize"	/>
+		
+		<detail id="E5mdentrytype"	layer="eobi_13601_instrument_summary_header_body"	field="E5mdentrytype"	/>
+		<detail id="E5pad3"	layer="eobi_13601_instrument_summary_header_body"	field="E5pad3"	/>
+		<detail id="E5mdentrypx"	layer="eobi_13601_instrument_summary_header_body"	field="E5mdentrypx"	/>
+		<detail id="E5mdentrysize"	layer="eobi_13601_instrument_summary_header_body"	field="E5mdentrysize"	/>
+		
+		<detail id="E6mdentrytype"	layer="eobi_13601_instrument_summary_header_body"	field="E6mdentrytype"	/>
+		<detail id="E6pad3"	layer="eobi_13601_instrument_summary_header_body"	field="E6pad3"	/>
+		<detail id="E6mdentrypx"	layer="eobi_13601_instrument_summary_header_body"	field="E6mdentrypx"	/>
+		<detail id="E6mdentrysize"	layer="eobi_13601_instrument_summary_header_body"	field="E6mdentrysize"	/>
+		
+		<detail id="E7mdentrytype"	layer="eobi_13601_instrument_summary_header_body"	field="E7mdentrytype"	/>
+		<detail id="E7pad3"	layer="eobi_13601_instrument_summary_header_body"	field="E7pad3"	/>
+		<detail id="E7mdentrypx"	layer="eobi_13601_instrument_summary_header_body"	field="E7mdentrypx"	/>
+		<detail id="E7mdentrysize"	layer="eobi_13601_instrument_summary_header_body"	field="E7mdentrysize"	/>
+		
+		<detail id="E8mdentrytype"	layer="eobi_13601_instrument_summary_header_body"	field="E8mdentrytype"	/>
+		<detail id="E8pad3"	layer="eobi_13601_instrument_summary_header_body"	field="E8pad3"	/>
+		<detail id="E8mdentrypx"	layer="eobi_13601_instrument_summary_header_body"	field="E8mdentrypx"	/>
+		<detail id="E8mdentrysize"	layer="eobi_13601_instrument_summary_header_body"	field="E8mdentrysize"	/>
+		
+		<detail id="E9mdentrytype"	layer="eobi_13601_instrument_summary_header_body"	field="E9mdentrytype"	/>
+		<detail id="E9pad3"	layer="eobi_13601_instrument_summary_header_body"	field="E9pad3"	/>
+		<detail id="E9mdentrypx"	layer="eobi_13601_instrument_summary_header_body"	field="E9mdentrypx"	/>
+		<detail id="E9mdentrysize"	layer="eobi_13601_instrument_summary_header_body"	field="E9mdentrysize"	/>
+		
+		<detail id="E10mdentrytype"	layer="eobi_13601_instrument_summary_header_body"	field="E10mdentrytype"	/>
+		<detail id="E10pad3"	layer="eobi_13601_instrument_summary_header_body"	field="E10pad3"	/>
+		<detail id="E10mdentrypx"	layer="eobi_13601_instrument_summary_header_body"	field="E10mdentrypx"	/>
+		<detail id="E10mdentrysize"	layer="eobi_13601_instrument_summary_header_body"	field="E10mdentrysize"	/>
+		
+		<detail id="E11mdentrytype"	layer="eobi_13601_instrument_summary_header_body"	field="E11mdentrytype"	/>
+		<detail id="E11pad3"	layer="eobi_13601_instrument_summary_header_body"	field="E11pad3"	/>
+		<detail id="E11mdentrypx"	layer="eobi_13601_instrument_summary_header_body"	field="E11mdentrypx"	/>
+		<detail id="E11mdentrysize"	layer="eobi_13601_instrument_summary_header_body"	field="E11mdentrysize"	/>
+		
+		<detail id="E12mdentrytype"	layer="eobi_13601_instrument_summary_header_body"	field="E12mdentrytype"	/>
+		<detail id="E12pad3"	layer="eobi_13601_instrument_summary_header_body"	field="E12pad3"	/>
+		<detail id="E12mdentrypx"	layer="eobi_13601_instrument_summary_header_body"	field="E12mdentrypx"	/>
+		<detail id="E12mdentrysize"	layer="eobi_13601_instrument_summary_header_body"	field="E12mdentrysize"	/>
+		
+		<detail id="E13mdentrytype"	layer="eobi_13601_instrument_summary_header_body"	field="E13mdentrytype"	/>
+		<detail id="E13pad3"	layer="eobi_13601_instrument_summary_header_body"	field="E13pad3"	/>
+		<detail id="E13mdentrypx"	layer="eobi_13601_instrument_summary_header_body"	field="E13mdentrypx"	/>
+		<detail id="E13mdentrysize"	layer="eobi_13601_instrument_summary_header_body"	field="E13mdentrysize"	/>
+		
+		<detail id="E14mdentrytype"	layer="eobi_13601_instrument_summary_header_body"	field="E14mdentrytype"	/>
+		<detail id="E14pad3"	layer="eobi_13601_instrument_summary_header_body"	field="E14pad3"	/>
+		<detail id="E14mdentrypx"	layer="eobi_13601_instrument_summary_header_body"	field="E14mdentrypx"	/>
+		<detail id="E14mdentrysize"	layer="eobi_13601_instrument_summary_header_body"	field="E14mdentrysize"	/>
+		
+		<detail id="E15mdentrytype"	layer="eobi_13601_instrument_summary_header_body"	field="E15mdentrytype"	/>
+		<detail id="E15pad3"	layer="eobi_13601_instrument_summary_header_body"	field="E15pad3"	/>
+		<detail id="E15mdentrypx"	layer="eobi_13601_instrument_summary_header_body"	field="E15mdentrypx"	/>
+		<detail id="E15mdentrysize"	layer="eobi_13601_instrument_summary_header_body"	field="E15mdentrysize"	/>
+		
+		<detail id="E16mdentrytype"	layer="eobi_13601_instrument_summary_header_body"	field="E16mdentrytype"	/>
+		<detail id="E16pad3"	layer="eobi_13601_instrument_summary_header_body"	field="E16pad3"	/>
+		<detail id="E16mdentrypx"	layer="eobi_13601_instrument_summary_header_body"	field="E16mdentrypx"	/>
+		<detail id="E16mdentrysize"	layer="eobi_13601_instrument_summary_header_body"	field="E16mdentrysize"	/>
+		
+		<detail id="E17mdentrytype"	layer="eobi_13601_instrument_summary_header_body"	field="E17mdentrytype"	/>
+		<detail id="E17pad3"	layer="eobi_13601_instrument_summary_header_body"	field="E17pad3"	/>
+		<detail id="E17mdentrypx"	layer="eobi_13601_instrument_summary_header_body"	field="E17mdentrypx"	/>
+		<detail id="E17mdentrysize"	layer="eobi_13601_instrument_summary_header_body"	field="E17mdentrysize"	/>
+		
+		<detail id="E18mdentrytype"	layer="eobi_13601_instrument_summary_header_body"	field="E18mdentrytype"	/>
+		<detail id="E18pad3"	layer="eobi_13601_instrument_summary_header_body"	field="E18pad3"	/>
+		<detail id="E18mdentrypx"	layer="eobi_13601_instrument_summary_header_body"	field="E18mdentrypx"	/>
+		<detail id="E18mdentrysize"	layer="eobi_13601_instrument_summary_header_body"	field="E18mdentrysize"	/>
+		
+		<detail id="E19mdentrytype"	layer="eobi_13601_instrument_summary_header_body"	field="E19mdentrytype"	/>
+		<detail id="E19pad3"	layer="eobi_13601_instrument_summary_header_body"	field="E19pad3"	/>
+		<detail id="E19mdentrypx"	layer="eobi_13601_instrument_summary_header_body"	field="E19mdentrypx"	/>
+		<detail id="E19mdentrysize"	layer="eobi_13601_instrument_summary_header_body"	field="E19mdentrysize"	/>
+		
+		<detail id="E20mdentrytype"	layer="eobi_13601_instrument_summary_header_body"	field="E20mdentrytype"	/>
+		<detail id="E20pad3"	layer="eobi_13601_instrument_summary_header_body"	field="E20pad3"	/>
+		<detail id="E20mdentrypx"	layer="eobi_13601_instrument_summary_header_body"	field="E20mdentrypx"	/>
+		<detail id="E20mdentrysize"	layer="eobi_13601_instrument_summary_header_body"	field="E20mdentrysize"	/>
+	</template>
         <template id="Eurex-EMDI" template_protocol="eurex-emdi">
                 <detail field="vid" id="vid" layer="eth" mode="show"/>
                 <detail field="id" id="ip_id" layer="ip" mode="show"/>

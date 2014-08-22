@@ -49,17 +49,17 @@
                         <dataflow decode="eobi_13503_quote_request" filter="eobi_13503_quote_request" id="41"  />
                         <dataflow decode="eobi_13502_cross_request" filter="eobi_13502_cross_request" id="42"  />
                         <dataflow decode="eobi_13201_trade_report" filter="eobi_13201_trade_report" id="43"  />
-                        <dataflow decode="eobi_13201_trade_report" filter="eobi_13201_trade_report" id="43"  />
-                        <dataflow decode="eobi_13201_trade_report" filter="eobi_13201_trade_report" id="43"  />
-                        <dataflow decode="eobi_13201_trade_report" filter="eobi_13201_trade_report" id="43"  />
+                        <dataflow decode="eobi_13600_product_summary" filter="eobi_13600_product_summary" id="44"/>
+                        <dataflow decode="eobi_13602_snapshot_order" filter="eobi_13602_snapshot_order" id="45"/>
+                        <dataflow decode="eobi_13601_instrument_summary_header_body" filter="eobi_13601_instrument_summary_header_body" id="46"/>
                 </dataflows>
         </interface>
 
         <interface device="/opt/p2d/pcap/capture.pcap" from="start" id="3" to="end" type="pcap" output="emdi_csv_only">
                 <dataflows>
-                        <dataflow decode="Eurex-EMDI" filter="Eurex-EMDI_packet" id="44"   />
-                        <dataflow decode="Eurex-EMDI" filter="Eurex-EMDI_message" id="45"  />
-                        <dataflow decode="Eurex-EMDI" filter="Eurex-EMDI_beacon" id="46"  />
+                        <dataflow decode="Eurex-EMDI" filter="Eurex-EMDI_packet" id="47"   />
+                        <dataflow decode="Eurex-EMDI" filter="Eurex-EMDI_message" id="48"  />
+                        <dataflow decode="Eurex-EMDI" filter="Eurex-EMDI_beacon" id="49"  />
                 </dataflows>
         </interface>
 

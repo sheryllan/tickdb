@@ -24,7 +24,7 @@ class ByOrderBookData(MessageSequenceTracker):
         self.obooks = {}  # contains books
         self.__results = {}   #map of uid and columns of results
         self.__levels=levels
-        self.__date=date_string
+        self.date=date_string
     
     def init_book(self,uid,msgseqnum):
         self.obooks[uid] = ({}, {}) # l[1]: symbol id. tuple of 2 dicts (bid, ask)
@@ -89,11 +89,11 @@ class ByOrderBookData(MessageSequenceTracker):
     def output_to_HDF5(self):
         for uid in self.__results:
             dataframe=pd.DataFrame(self.__results[uid],index=range(len(self.__results[uid]['recv'])))
-            dataframe.to_hdf("{0}_{1}.h5".format(self.__date, uid),'table',append=False)
+            dataframe.to_hdf("{0}_{1}.h5".format(self.date, uid),'table',append=False)
         
 class IncrementalBookData(MessageSequenceTracker):
     def __init__(self,date_string):
         MessageSequenceTracker.__init__(self)
         self.__results = {}   #map of uid and columns of results
-        self.__date=date_string
+        self.date=date_string
     
