@@ -90,6 +90,9 @@ class output:
         sys.stderr.write(text+"\n")
         logging.error(text)
 
+def fetchrawPCAPhosts:
+    return os.listdir(raw_pcap_path)
+
 def call(cmd, *args):
     # Execute command specified, and return stdout
     cmd = [cmd]
