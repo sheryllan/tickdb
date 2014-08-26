@@ -48,7 +48,7 @@ class pcapMerge:
                         break
                     else:
                         workfile = "%s.pcap" % os.path.join(TMPFOL,md5(partA+partB).hexdigest())
-                        print "%30s + %-30s -> %30s" % (os.path.basename(partA), os.path.basename(partB), os.path.basename(workfile) )
+                        print "%40s + %-40s -> %30s" % (os.path.basename(partA), os.path.basename(partB), os.path.basename(workfile) )
                         p = mp.Process(target=system, args=(mergecap_path+"/mergecap","-w",workfile, partA, partB ))
                         p.start()
                         running_procs.append([p, workfile])
@@ -58,6 +58,9 @@ class pcapMerge:
                         if item[0].is_alive() == False: inQ.put(workfile)
                 running_procs = filter(lambda x: x[0].is_alive() == True, running_procs) 
                 sleep(0.5)
+        while len(running_procs) != 0:
+            running_procs = filter(lambda x: x[0].is_alive() == True, running_procs)
+            sleep(0.5)
 
 
         if rc != 0:
