@@ -12,8 +12,10 @@ target_pcap_folders = ["EMDI","ETI"]
 
 LOGFILE="/home/pcapdump/pcap_dump.log"
 
-try: TMPFOL=os.environ['MPCAPTMP']
-except KeyError:TMPFOL="/storage/scratchdisk/pcapmerge_tmp"
+
+#This deals with the tmp folder
+try: TMPFOL=os.environ['PCAPTMP']
+except KeyError:TMPFOL="/storage/scratchdisk/pcap_tmp"
 #Deliberatly set to fail if we are creating recursive paths (in case of misset variable/config
 if not os.path.exists(TMPFOL): os.mkdir(TMPFOL) 
 

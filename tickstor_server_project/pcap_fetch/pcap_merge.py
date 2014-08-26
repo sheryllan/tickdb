@@ -4,7 +4,7 @@ import shutil, sys, re
 import multiprocessing as mp
 from config import *
 from ut import *
-from time import time
+from time import time, sleep
 from hashlib import md5
 from Queue import Empty as Qerr
 
@@ -40,13 +40,15 @@ class pcapMerge:
                     except Qempty: 
                         # If we get here, then there was only one element done in the Queue. So we write the final pcap
                         #Wait for any still running processes to finish
-                        for proc in running_procs: 
-                            if proc[0].is_alive() == True: proc[0].join()
+                        while len(running_procs) != 0:  
+                            running_procs = filter(lambda x: x[0].is_alive() == True, running_procs)
+                            sleep(0.5)
+
                         rc = system(mergecap_path+"/mergecap","-w",outfile, workfile, partA )
                         break
                     else:
-                        workfile = "%s.pcap" % md5(partA+partB).hexdigest()
-                        print "Merging %s and %s to %s" % (partA, partB, workfile)
+                        workfile = "%s.pcap" % os.path.join(TMPFOL,md5(partA+partB).hexdigest())
+                        print "%30s + %-30s -> %30s" % (os.path.basename(partA), os.path.basename(partB), os.path.basename(workfile) )
                         p = mp.Process(target=system, args=(mergecap_path+"/mergecap","-w",workfile, partA, partB ))
                         p.start()
                         running_procs.append([p, workfile])
@@ -55,7 +57,7 @@ class pcapMerge:
                         # Only push the workfile to Queue if proc is finished (prevent race conditions)
                         if item[0].is_alive() == False: inQ.put(workfile)
                 running_procs = filter(lambda x: x[0].is_alive() == True, running_procs) 
-                time.sleep(0.5)
+                sleep(0.5)
 
 
         if rc != 0:
