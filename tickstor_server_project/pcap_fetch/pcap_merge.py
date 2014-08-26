@@ -16,6 +16,7 @@ class pcapMerge:
     def mergePCAPs(self,outfile,pcaplist):
         ''' Take a list of pcap files to merge (full paths) that we want to merge '''
         #If we are processing PCAPs again, we need to delete the old target (if it exists), and recreate
+        rc = -1
         if os.path.exists( os.path.dirname(outfile) ) == True:  shutil.rmtree( os.path.dirname(outfile) )
         os.makedirs( os.path.dirname(outfile) )
         pcaplist = map( lambda x: x.strip(), pcaplist)
@@ -39,11 +40,13 @@ class pcapMerge:
                     except Qempty: 
                         # If we get here, then there was only one element done in the Queue. So we write the final pcap
                         #Wait for any still running processes to finish
-                        for proc in running_procs: proc[0].join()
+                        for proc in running_procs: 
+                            if proc[0].is_alive() == True: proc[0].join()
                         rc = system(mergecap_path+"/mergecap","-w",outfile, workfile, partA )
                         break
                     else:
                         workfile = "%s.pcap" % md5(partA+partB).hexdigest()
+                        print "Merging %s and %s to %s" % (partA, partB, workfile)
                         p = mp.Process(target=system, args=(mergecap_path+"/mergecap","-w",workfile, partA, partB ))
                         p.start()
                         running_procs.append([p, workfile])
@@ -51,10 +54,10 @@ class pcapMerge:
                     for item in running_procs:       
                         # Only push the workfile to Queue if proc is finished (prevent race conditions)
                         if item[0].is_alive() == False: inQ.put(workfile)
-                running_procs = filter(lambda x: x[0].is_alive() == True, running_procs)                    
+                running_procs = filter(lambda x: x[0].is_alive() == True, running_procs) 
+                time.sleep(0.5)
 
 
-        for proc in running_procs: proc[0].join()
         if rc != 0:
             self.out.perr("ERROR merging pcap files. We got exit code %d " % rc)
         else:
