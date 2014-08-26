@@ -60,6 +60,7 @@ class pcapMerge:
                 sleep(0.5)
         while len(running_procs) != 0:
             running_procs = filter(lambda x: x[0].is_alive() == True, running_procs)
+            print running_procs
             sleep(0.5)
 
 
