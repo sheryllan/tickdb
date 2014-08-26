@@ -114,6 +114,9 @@ def system(cmd, *args):
         cmd.extend([str(args)])
 
     rc = sp.call( cmd, shell=False )
+    if rc != 0:
+        print "Error, got return code %d" % rc
+        print "Ran the following command:\n%s" % cmd
     # According to POSIX, return codes are unsigned 8 bit. Python seems to use 16-bit return codes.
     # Therefore,  a return code which is modulo 256 will cause overflow,
     # and as such  a non-zero return code will be passed back as a 0. The below

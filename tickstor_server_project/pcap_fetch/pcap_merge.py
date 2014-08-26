@@ -4,15 +4,21 @@ import shutil, sys, re
 import multiprocessing as mp
 from config import *
 from ut import *
+from time import time
+from hashlib import md5
+from Queue import Empty as Qerr
 
 class pcapMerge:
     def __init__(self,parallel=False):
         self.out = output(LOGFILE)
-        self.multi = parallel
+        self.multi = bool(parallel) #Make sure they passed a bool, not string
 
     def mergePCAPs(self,outfile,pcaplist):
         ''' Take a list of pcap files to merge (full paths) that we want to merge '''
-        if os.path.exists( os.path.dirname(outfile) ) == False: os.makedirs( os.path.dirname(outfile) )
+        #If we are processing PCAPs again, we need to delete the old target (if it exists), and recreate
+        if os.path.exists( os.path.dirname(outfile) ) == True:  shutil.rmtree( os.path.dirname(outfile) )
+        os.makedirs( os.path.dirname(outfile) )
+        pcaplist = map( lambda x: x.strip(), pcaplist)
         if self.multi == False:
             # We are sticking to single process merging
             try:
@@ -20,12 +26,42 @@ class pcapMerge:
             except OSError as e:
                 print "Error calling mergecap. We tried the following: \n %s" % "%s/mergecap -w %s %s" % (mergecap_path,outfile,arguments)
                 raise(e)
-            if rc != 0:
-                self.out.perr("ERROR merging pcap files. We got exit code %d " % rc)
-            else:
-                self.out.pout("PCAP merged")
+        else:
+            inQ = mp.Queue()
+            map(lambda x: inQ.put(x), pcaplist)
+            # Because the end result is a single file, this is an all or nothing action. So no failure handling.
+            running_procs = []
+            while inQ.empty() == False:
+                while (len(running_procs ) < mp.cpu_count() ):
+                    try: partA = inQ.get() #If we have empty Queue here, we are done (should not hit this in normal operation)
+                    except Qempty: break # So break out of loop, and the inQ.empty loop should break on next evaluation
+                    try: partB = inQ.get()
+                    except Qempty: 
+                        # If we get here, then there was only one element done in the Queue. So we write the final pcap
+                        #Wait for any still running processes to finish
+                        for proc in running_procs: proc[0].join()
+                        rc = system(mergecap_path+"/mergecap","-w",outfile, workfile, partA )
+                        break
+                    else:
+                        workfile = "%s.pcap" % md5(partA+partB).hexdigest()
+                        p = mp.Process(target=system, args=(mergecap_path+"/mergecap","-w",workfile, partA, partB ))
+                        p.start()
+                        running_procs.append([p, workfile])
 
-            return rc
+                    for item in running_procs:       
+                        # Only push the workfile to Queue if proc is finished (prevent race conditions)
+                        if item[0].is_alive() == False: inQ.put(workfile)
+                running_procs = filter(lambda x: x[0].is_alive() == True, running_procs)                    
+
+
+        for proc in running_procs: proc[0].join()
+        if rc != 0:
+            self.out.perr("ERROR merging pcap files. We got exit code %d " % rc)
+        else:
+            self.out.pout("PCAP merged")
+
+        return rc
+
 
     def merge_unprocessed_pcaps(self):
         # 1. Get a list of all the folders, and see if there is already an equivalent
@@ -49,11 +85,17 @@ class pcapMerge:
             files = os.listdir(item[0])
             files = filter( lambda x: re.match("(EMDI.*|ETI)\.pcap[0-9]{0,9}$", x) != None, files)
             files = map(lambda x: os.path.join(item[0], x), files)
+            if len(files) == 0:
+                self.out.pwarn("We have no PCAP files in %s" % item[0])
+                continue
             rc = self.mergePCAPs(item[1],files)
             if rc != 0:
                 self.out.perr("Failed PCAP merge, exiting.")
-                sys.exit(2) #Exit for now, perhaps in future we just log it, and continue
+                self.out.perr("Could not merge %s" % item[1])
 
 if __name__ == "__main__":
-    pm = pcapMerge(False)
+    clock = time()
+    pm = pcapMerge(True)
     pm.merge_unprocessed_pcaps()
+    print "Done. Execution took %.2f seconds" % ( time() - clock )
+    sys.exit(0)
