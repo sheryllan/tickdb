@@ -58,11 +58,11 @@ class pcapMerge:
                         if item[0].is_alive() == False: inQ.put(workfile)
                 running_procs = filter(lambda x: x[0].is_alive() == True, running_procs) 
                 sleep(0.5)
-        while len(running_procs) != 0:
-            running_procs = filter(lambda x: x[0].is_alive() == True, running_procs)
-            print running_procs
-            sleep(0.5)
-
+#        while len(running_procs) != 0:
+#            running_procs = filter(lambda x: x[0].is_alive() == True, running_procs)
+#            print running_procs
+ #           sleep(0.5)
+        os.wait()
 
         if rc != 0:
             self.out.perr("ERROR merging pcap files. We got exit code %d " % rc)
