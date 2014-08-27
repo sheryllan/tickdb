@@ -32,37 +32,49 @@ class pcapMerge:
             map(lambda x: inQ.put(x), pcaplist)
             # Because the end result is a single file, this is an all or nothing action. So no failure handling.
             running_procs = []
+            workfile = None #Tell python that this var is one level up, scope wise.
             while inQ.empty() == False:
                 while (len(running_procs ) < mp.cpu_count() ):
                     try: partA = inQ.get() #If we have empty Queue here, we are done (should not hit this in normal operation)
                     except Qempty: break # So break out of loop, and the inQ.empty loop should break on next evaluation
                     try: partB = inQ.get()
-                    except Qempty: 
-                        # If we get here, then there was only one element done in the Queue. So we write the final pcap
-                        #Wait for any still running processes to finish
-                        while len(running_procs) != 0:  
-                            running_procs = filter(lambda x: x[0].is_alive() == True, running_procs)
-                            sleep(0.5)
-
-                        rc = system(mergecap_path+"/mergecap","-w",outfile, workfile, partA )
+                    except Qempty:
+                        finalfile = partA#
                         break
-                    else:
-                        workfile = "%s.pcap" % os.path.join(TMPFOL,md5(partA+partB).hexdigest())
-                        print "%40s + %-40s -> %30s" % (os.path.basename(partA), os.path.basename(partB), os.path.basename(workfile) )
-                        p = mp.Process(target=system, args=(mergecap_path+"/mergecap","-w",workfile, partA, partB ))
-                        p.start()
-                        running_procs.append([p, workfile])
+                        # If we get here, then there was only one element done in the Queue. So we write the final pcap
+                        #Wait for any still running processes to finisha
+#                        for item in running_procs:
+#                            print "Waiting for process: %s to finish." % dir(item[0].ident)
+#                            item[0].join()
+
+#                        rc = system(mergecap_path+"/mergecap","-w",outfile, workfile, partA )
+#                        break
+#                    else:
+                     
+                    workfile = "%s.pcap" % os.path.join(TMPFOL,md5(partA+partB).hexdigest())
+                    print "%40s + %-40s -> %30s" % (os.path.basename(partA), os.path.basename(partB), os.path.basename(workfile) )
+                    p = mp.Process(target=system, args=(mergecap_path+"/mergecap","-w",workfile, partA, partB ))
+                    p.start()
+                    running_procs.append([p, workfile])
 
                     for item in running_procs:       
                         # Only push the workfile to Queue if proc is finished (prevent race conditions)
-                        if item[0].is_alive() == False: inQ.put(workfile)
+                        if item[0].is_alive() == False:
+                            inQ.put(workfile)
+                            running_procs.pop(running_procs.index(item))
                 running_procs = filter(lambda x: x[0].is_alive() == True, running_procs) 
                 sleep(0.5)
 #        while len(running_procs) != 0:
 #            running_procs = filter(lambda x: x[0].is_alive() == True, running_procs)
 #            print running_procs
  #           sleep(0.5)
-        os.wait()
+            for item in running_procs: 
+                print "Waiting for process: %s to finish." % dir(item[0].ident)
+                item[0].join() # wait for processes
+#            os.wait()
+            #Now that we are all done, the final workfile should be moved to the right spot
+            rc =  system(mergecap_path+"/mergecap","-w",outfile, workfile, finalfile)
+
 
         if rc != 0:
             self.out.perr("ERROR merging pcap files. We got exit code %d " % rc)
