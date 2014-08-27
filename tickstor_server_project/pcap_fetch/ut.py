@@ -5,7 +5,7 @@ __version__ = (0,0,2)
 
 import subprocess as sp
 from time import time,sleep
-import sys, logging, os
+import sys, logging, os, ctypes
 from config import LOGFILE,raw_pcap_path
 import multiprocessing as mp
 
@@ -89,6 +89,10 @@ class output:
         text = self.mt % (time(),text)
         sys.stderr.write(text+"\n")
         logging.error(text)
+
+def sync():
+    libc = ctypes.CDLL("libc.so.6")
+    return libc.sync()
 
 def fetchrawPCAPhosts():
     return os.listdir(raw_pcap_path)

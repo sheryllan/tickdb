@@ -22,11 +22,24 @@ class pcapMerge:
         pcaplist = map( lambda x: x.strip(), pcaplist)
         if self.multi == False:
             # We are sticking to single process merging
-            try:
-                rc = system(mergecap_path+"/mergecap","-w",outfile,*pcaplist)
-            except OSError as e:
-                print "Error calling mergecap. We tried the following: \n %s" % "%s/mergecap -w %s %s" % (mergecap_path,outfile,arguments)
-                raise(e)
+            workfile = None
+            while len(pcaplist) > 1:
+                partA = pcaplist.pop(0) #pop from top of list (so we don't pop workfile immediately
+                partB = pcaplist.pop(0)
+                workfile = "%s.pcap" % os.path.join(TMPFOL,md5(partA+partB).hexdigest())
+                print "%40s + %-40s -> %30s" % (os.path.basename(partA), os.path.basename(partB), os.path.basename(workfile) )
+
+                try:
+                    rc = system(mergecap_path+"/mergecap","-w",workfile,partA,partB)
+                    pcaplist.append(workfile)
+                except OSError as e:
+                    print "Error calling mergecap. We tried the following: \n %s" % "%s/mergecap -w %s %s" % (mergecap_path,outfile,arguments)
+                    raise(e)
+                
+            #For the last entry, merge it into outfile
+            rc = system(mergecap_path+"/mergecap","-w",outfile, workfile, pcaplist.pop())
+
+
         else:
             inQ = mp.Queue()
             map(lambda x: inQ.put(x), pcaplist)
@@ -39,7 +52,7 @@ class pcapMerge:
                     except Qempty: break # So break out of loop, and the inQ.empty loop should break on next evaluation
                     try: partB = inQ.get()
                     except Qempty:
-                        finalfile = partA#
+                        finalfile = partA
                         break
                         # If we get here, then there was only one element done in the Queue. So we write the final pcap
                         #Wait for any still running processes to finisha
@@ -58,11 +71,13 @@ class pcapMerge:
                     running_procs.append([p, workfile])
 
                     for item in running_procs:       
+                        if len(running_procs) == 0: break
                         # Only push the workfile to Queue if proc is finished (prevent race conditions)
                         if item[0].is_alive() == False:
                             inQ.put(workfile)
                             running_procs.pop(running_procs.index(item))
                 running_procs = filter(lambda x: x[0].is_alive() == True, running_procs) 
+                if len(running_procs) == 0: break
                 sleep(0.5)
 #        while len(running_procs) != 0:
 #            running_procs = filter(lambda x: x[0].is_alive() == True, running_procs)
@@ -73,6 +88,7 @@ class pcapMerge:
                 item[0].join() # wait for processes
 #            os.wait()
             #Now that we are all done, the final workfile should be moved to the right spot
+            sync()
             rc =  system(mergecap_path+"/mergecap","-w",outfile, workfile, finalfile)
 
 
@@ -116,7 +132,7 @@ class pcapMerge:
 
 if __name__ == "__main__":
     clock = time()
-    pm = pcapMerge(True)
+    pm = pcapMerge(False)
     pm.merge_unprocessed_pcaps()
     print "Done. Execution took %.2f seconds" % ( time() - clock )
     sys.exit(0)
