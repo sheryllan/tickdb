@@ -115,7 +115,7 @@ def system(cmd, *args):
     if type(args) == list or type(args) == tuple:
         cmd.extend(args)
     else:
-        cmd.extend([str(args)])
+        cmd.extend([ ' '.join(args)])
 
     rc = sp.call( cmd, shell=False )
     if rc != 0:

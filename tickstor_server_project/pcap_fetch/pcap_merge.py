@@ -64,15 +64,13 @@ class pcapMerge:
                 running_procs = filter(lambda x: x[0].is_alive() == True, running_procs) 
             
             for item in running_procs: 
-                print "Waiting for process: %s to finish." % dir(item[0].ident)
+                print "Waiting for %s to finish." % item[0].name
                 item[0].join() # wait for processes
-            sync()
-
-
+            print "All processes finished, doing final merge to %s" % outfile
             rc =  system(mergecap_path+"/mergecap","-w",outfile, workfile, pcaplist.pop())
             if len(pcaplist) != 0: raise(IndexError("Error, non-empty pcap list after processing. Incomplete output. Please raise bugreport"))  #We should have an empty list by now. If not, something has gone wrong.
 
-        if len(tmpfile) != 0: map(lambda x: os.unlink(x),tmpfile)
+        if len(tmplist) != 0: map(lambda x: os.unlink(x),tmplist)
 
         if rc != 0:
             self.out.perr("ERROR merging pcap files. We got exit code %d " % rc)
@@ -114,7 +112,7 @@ class pcapMerge:
 
 if __name__ == "__main__":
     clock = time()
-    pm = pcapMerge(False)
+    pm = pcapMerge(True)
     pm.merge_unprocessed_pcaps()
     print "Done. Execution took %.2f seconds" % ( time() - clock )
     sys.exit(0)
