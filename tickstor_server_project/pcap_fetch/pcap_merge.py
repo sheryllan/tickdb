@@ -75,17 +75,18 @@ class pcapMerge:
             print "All processes finished, doing final merge to %s" % outfile
             #import pdb
             #pdb.set_trace()
-            rc =  system(mergecap_path+"/mergecap","-w",outfile, workfile, pcaplist.pop())
+            lastfile = pcaplist.pop() #For debugging
+            rc =  system(mergecap_path+"/mergecap","-w",outfile, workfile, lastfile)
             if rc != 0:
                 self.out.perr("ERROR merging pcap files. We got exit code %d " % rc)
-                self.out.perr("Could not merge files: %s and %s" % (outfile, workfile) )
+                self.out.perr("Could not merge files to %s: %s and %s" % (outfile, workfile, lastfile) )
             else:
                 self.out.pout("PCAP merged")
 
             if len(pcaplist) != 0: raise(IndexError("Error, non-empty pcap list after processing. Incomplete output. Please raise bugreport"))  #We should have an empty list by now. If not, something has gone wrong.
             print "Done"
 
-        if len(tmplist) != 0: map(lambda x: os.unlink(x),tmplist)
+#        if len(tmplist) != 0: map(lambda x: os.unlink(x),tmplist)
 
         return rc
 
