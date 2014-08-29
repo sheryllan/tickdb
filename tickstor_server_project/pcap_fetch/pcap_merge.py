@@ -7,6 +7,7 @@ from ut import *
 from time import time, sleep
 from hashlib import md5
 from Queue import Empty as Qerr
+import shutil
 
 class pcapMerge:
     def __init__(self,parallel=False):
@@ -16,6 +17,11 @@ class pcapMerge:
     def mergePCAPs(self,outfile,pcaplist):
         ''' Take a list of pcap files to merge (full paths) that we want to merge '''
         #If we are processing PCAPs again, we need to delete the old target (if it exists), and recreate
+        if len(pcaplist) < 3: self.multi = False
+        if len(pcaplist) == 1 : 
+            shutil.copyfile(pcaplist.pop(), outfile) #We only have one file, no need to merge
+            return 0
+
         rc = -1
         if os.path.exists( os.path.dirname(outfile) ) == True:  shutil.rmtree( os.path.dirname(outfile) )
         os.makedirs( os.path.dirname(outfile) )
@@ -50,7 +56,7 @@ class pcapMerge:
             workfile = None #Tell python that this var is one level up, scope wise.
             while len(pcaplist) > 1:
                 sleep(0.5)
-                while (len(running_procs ) < mp.cpu_count() ):
+                while (len(running_procs ) < mp.cpu_count() ) and len(pcaplist) > 1:
                     partA = pcaplist.pop() #If we have empty Queue here, we are done (should not hit this in normal operation)
                     partB = pcaplist.pop()
                      
@@ -67,15 +73,19 @@ class pcapMerge:
                 print "Waiting for %s to finish." % item[0].name
                 item[0].join() # wait for processes
             print "All processes finished, doing final merge to %s" % outfile
+            #import pdb
+            #pdb.set_trace()
             rc =  system(mergecap_path+"/mergecap","-w",outfile, workfile, pcaplist.pop())
+            if rc != 0:
+                self.out.perr("ERROR merging pcap files. We got exit code %d " % rc)
+                self.out.perr("Could not merge files: %s and %s" % (outfile, workfile) )
+            else:
+                self.out.pout("PCAP merged")
+
             if len(pcaplist) != 0: raise(IndexError("Error, non-empty pcap list after processing. Incomplete output. Please raise bugreport"))  #We should have an empty list by now. If not, something has gone wrong.
+            print "Done"
 
         if len(tmplist) != 0: map(lambda x: os.unlink(x),tmplist)
-
-        if rc != 0:
-            self.out.perr("ERROR merging pcap files. We got exit code %d " % rc)
-        else:
-            self.out.pout("PCAP merged")
 
         return rc
 
@@ -114,5 +124,5 @@ if __name__ == "__main__":
     clock = time()
     pm = pcapMerge(True)
     pm.merge_unprocessed_pcaps()
-    print "Done. Execution took %.2f seconds" % ( time() - clock )
+    print "Done. Execution took %2f seconds" % ( time() - clock )
     sys.exit(0)
