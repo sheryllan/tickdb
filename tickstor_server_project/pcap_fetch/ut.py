@@ -8,6 +8,7 @@ from time import time,sleep
 import sys, logging, os, ctypes
 from config import LOGFILE,raw_pcap_path
 import multiprocessing as mp
+from math import floor
 
 class massZip:
     def __init__(self,logginginstance):
@@ -124,9 +125,10 @@ def system(cmd, *args):
     # According to POSIX, return codes are unsigned 8 bit. Python seems to use 16-bit return codes.
     # Therefore,  a return code which is modulo 256 will cause overflow,
     # and as such  a non-zero return code will be passed back as a 0. The below
-    # max() makes sure that any error > 256 is returned as 255. We lose some error info, but better than
+    # floor() makes sure that any error > 256 is returned as 255. We lose some error info, but better than
     # returning 0 inadvertantly. This may be because of how uint was defined on the 64bit system cPython was built on.
-    return max(rc,255)
+    if rc > 255: rc=255
+    return rc
 
 
 class flexidict(dict):

@@ -24,4 +24,5 @@ raw_pcap_path="/storage/P2D/raw_pcaps/"
 merged_pcap_path="/storage/P2D/merged_pcaps/"
 datamolepath="/storage/P2D_datamole"
 
-mergecap_path="/usr/local/bin/"
+#mergecap_path="/usr/local/bin/"
+mergecap_path="/usr/local/sbin/"

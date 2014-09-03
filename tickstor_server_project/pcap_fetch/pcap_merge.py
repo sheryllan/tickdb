@@ -37,15 +37,15 @@ class pcapMerge:
                 print "%40s + %-40s -> %30s" % (os.path.basename(partA), os.path.basename(partB), os.path.basename(workfile) )
 
                 try:
-                    rc = system(mergecap_path+"/mergecap","-w",workfile,partA,partB)
+                    rc = system(mergecap_path+"/tcpslice","-w",workfile,partA,partB)
                     pcaplist.append(workfile)
                     tmplist.append(workfile)
                 except OSError as e:
-                    print "Error calling mergecap. We tried the following: \n %s" % "%s/mergecap -w %s %s" % (mergecap_path,outfile,arguments)
+                    print "Error calling mergecap. We tried the following: \n %s" % "%s/tcpslice -w %s %s" % (mergecap_path,outfile,arguments)
                     raise(e)
                 
             #For the last entry, merge it into outfile
-            rc = system(mergecap_path+"/mergecap","-w",outfile, workfile, pcaplist.pop())
+            rc = system(mergecap_path+"/tcpslice","-w",outfile, workfile, pcaplist.pop())
             if len(pcaplist) != 0: raise(IndexError("Error, non-empty pcap list after processing. Incomplete output. Please raise bugreport"))  #We should have an empty list by now. If not, something has gone wrong.
 
 
@@ -63,7 +63,7 @@ class pcapMerge:
                     workfile = "%s.pcap" % os.path.join(TMPFOL,md5(partA+partB).hexdigest())
                     tmplist.append(workfile)
                     print "%40s + %-40s -> %30s" % (os.path.basename(partA), os.path.basename(partB), os.path.basename(workfile) )
-                    p = mp.Process(target=system, args=(mergecap_path+"/mergecap","-w",workfile, partA, partB ))
+                    p = mp.Process(target=system, args=(mergecap_path+"/tcpslice","-w",workfile, partA, partB ))
                     p.start()
                     running_procs.append([p, workfile])
 
@@ -76,7 +76,7 @@ class pcapMerge:
             #import pdb
             #pdb.set_trace()
             lastfile = pcaplist.pop() #For debugging
-            rc =  system(mergecap_path+"/mergecap","-w",outfile, workfile, lastfile)
+            rc =  system(mergecap_path+"/tcpslice","-w",outfile, workfile, lastfile)
             if rc != 0:
                 self.out.perr("ERROR merging pcap files. We got exit code %d " % rc)
                 self.out.perr("Could not merge files to %s: %s and %s" % (outfile, workfile, lastfile) )

@@ -4,3 +4,4 @@ Multi  Process - SAN storage, SAN tmpfolder, single SSD cache	: Execution took 7
 Multi  Process - SAN storage, SAN tmpfolder, dual SSD cache		: Execution took 659.43 seconds, 631.375616 seconds
 
 
+Done. Execution took  6812.286456
