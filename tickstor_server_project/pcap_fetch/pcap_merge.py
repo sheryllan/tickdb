@@ -31,8 +31,8 @@ class pcapMerge:
             # We are sticking to single process merging
             workfile = None
             while len(pcaplist) > 1:
-                partA = pcaplist.pop(0) #pop from top of list (so we don't pop workfile immediately
-                partB = pcaplist.pop(0)
+                partA = pcaplist.pop() #pop from top of list (so we don't pop workfile immediately
+                partB = pcaplist.pop()
                 workfile = "%s.pcap" % os.path.join(TMPFOL,md5(partA+partB).hexdigest())
                 print "%40s + %-40s -> %30s" % (os.path.basename(partA), os.path.basename(partB), os.path.basename(workfile) )
 
@@ -57,8 +57,8 @@ class pcapMerge:
             while len(pcaplist) > 1:
                 sleep(0.5)
                 while (len(running_procs ) < mp.cpu_count() ) and len(pcaplist) > 1:
-                    partA = pcaplist.pop() #If we have empty Queue here, we are done (should not hit this in normal operation)
-                    partB = pcaplist.pop()
+                    partA = pcaplist.pop(0) #If we have empty Queue here, we are done (should not hit this in normal operation)
+                    partB = pcaplist.pop(0)
                      
                     workfile = "%s.pcap" % os.path.join(TMPFOL,md5(partA+partB).hexdigest())
                     tmplist.append(workfile)
@@ -67,6 +67,9 @@ class pcapMerge:
                     p.start()
                     running_procs.append([p, workfile])
 
+                for x in running_procs:
+                    if x[0].is_alive() == False:
+                        pcaplist.append(x[1]) #add workfile if process is done
                 running_procs = filter(lambda x: x[0].is_alive() == True, running_procs) 
             
             for item in running_procs: 
