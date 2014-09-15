@@ -29,25 +29,6 @@ class pcapMerge:
         tmplist = []
         if self.multi == False:
             # We are sticking to single process merging
-#'            workfile = None
- #           while len(pcaplist) > 1:
- #               partA = pcaplist.pop() #pop from top of list (so we don't pop workfile immediately
- #               partB = pcaplist.pop()
- #               workfile = "%s.pcap" % os.path.join(TMPFOL,md5(partA+partB).hexdigest())
- #               print "%40s + %-40s -> %30s" % (os.path.basename(partA), os.path.basename(partB), os.path.basename(workfile) )
-#
-#                try:
-#                    rc = system(mergecap_path+"/tcpslice","-w",workfile,partA,partB)
-#                    pcaplist.append(workfile)
-#                    tmplist.append(workfile)
-#                except OSError as e:
-#                    print "Error calling mergecap. We tried the following: \n %s" % "%s/tcpslice -w %s %s" % (mergecap_path,outfile,arguments)
-#                    raise(e)
-#                
-            #For the last entry, merge it into outfile
-#            rc = system(mergecap_path+"/tcpslice","-w",outfile, workfile, pcaplist.pop())
-#            if len(pcaplist) != 0: raise(IndexError("Error, non-empty pcap list after processing. Incomplete output. Please raise bugreport"))  #We should have an empty list by now. If not, something has gone wrong.
-
             # tcpslice can handle large pcap files, so we don't need to split it and do it one by one like before. 
             rc = system(mergecap_path+"/tcpslice","-w",outfile,*pcaplist)
             if (rc != 0):
@@ -55,70 +36,10 @@ class pcapMerge:
                 map(lambda x: os.unlink(x), pcaplist)
                 out.perr("Error writing pcap file. Aborting. Outfile and temp files cleared")
                 sys.exit(rc)
-
-        else:
-
-            # Because the end result is a single file, this is an all or nothing action. So no failure handling.
-            running_procs = []
-            workfile = None #Tell python that this var is one level up, scope wise.
-            pI = 0 # pcap index. Swithced over from the list.pop() concept, due to failures in proper merging
-            while ( len(pcaplist) - mp.cpu_count() ) > pI:
-                print "Pcap length: %d" % len(pcaplist)
-                sleep(0.5)
-                while (len(running_procs ) < mp.cpu_count() ):
-                    partA = pcaplist[pI] #If we have empty Queue here, we are done (should not hit this in normal operation)
-                    pI += 1  # No C-style pI++ here, or mini-scope within the index array :-(
-                    try:
-                        partB = pcaplist[pI]
-                    except IndexError as e:
-                        pI -= 1
-                        break #We are at  the end
-                     
-                    pI += 1
-
-                    workfile = "%s.pcap" % os.path.join(TMPFOL,"tmpfile_"+md5(partA+partB).hexdigest())
-                    tmplist.append(workfile)
-                    print "%40s + %-40s -> %30s" % (os.path.basename(partA), os.path.basename(partB), os.path.basename(workfile) )
-                    p = mp.Process(target=system, args=(mergecap_path+"/tcpslice","-w",workfile, partA, partB ))
-                    p.start()
-                    running_procs.append([p, workfile])
-
-                for x in running_procs:
-                    if x[0].is_alive() == False:
-                        pcaplist.append(x[1]) #add workfile if process is done
-                running_procs = filter(lambda x: x[0].is_alive() == True, running_procs) 
-
-
-            #Merge all the final processes together
-            for x in running_procs:
-                print "Waiting for %s" % x[0].name
-                x[0].join() #wait for all processes to finish, otherwise we try to move the final file before it is created
-                #Once we know the process has finished, merge it into the final one
-
-            print "Done, mergining final %d files into %s" % (len(pcaplist[pI-1:]), outfile) 
-            rc = system(mergecap_path+"/tcpslice","-w",outfile,  *pcaplist[pI-1:])
-            if rc != 0:
-               print "Error, could not merge %s to %s!" % (' '.join(finalbatch), outfile)
-               return None
-
-#            shutil.move( pcaplist[pI - 1], outfile) #We step one idx back to the last file
-#            if rc != 0:
-#                print "Error Merging PCAP file. Re-attempting with single-process mode."
-#                return None
-#                self.multi = False
-#                self.mergePCAPs(outfile,pcaplist)
-#                self.multi = True #Reset back to original
-#            else:
-#                print "Success with pcap merge. Deleting temporary files"
-#                for item in pcaplist:
-#                    if (item.startswith("tmpfile_") == True)  and ( item.endswith(".pcap") == True ):
-#                        print "Unlinking -> %s" % item
-#                         os.unlink(item)
-
-        
-#        if len(tmplist) != 0: map(lambda x: os.unlink(x),tmplist)
-
-        return rc
+         else:
+            out.perr("Sorry, parrallel pcap processing is not implemented as of yet")
+            sys.exit(2)
+       return rc
 
 
     def merge_unprocessed_pcaps(self):
@@ -153,7 +74,7 @@ class pcapMerge:
 
 if __name__ == "__main__":
     clock = time()
-    pm = pcapMerge(False)
+    pm = pcapMerge(True)
     pm.merge_unprocessed_pcaps()
     print "Done. Execution took %2f seconds" % ( time() - clock )
     sys.exit(0)
