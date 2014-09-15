@@ -34,12 +34,12 @@ class pcapMerge:
             if (rc != 0):
                 os.unlink(outfile)
                 map(lambda x: os.unlink(x), pcaplist)
-                out.perr("Error writing pcap file. Aborting. Outfile and temp files cleared")
+                self.out.perr("Error writing pcap file. Aborting. Outfile and temp files cleared")
                 sys.exit(rc)
-         else:
-            out.perr("Sorry, parrallel pcap processing is not implemented as of yet")
+        else:
+            self.out.perr("Sorry, parrallel pcap processing is not implemented as of yet")
             sys.exit(2)
-       return rc
+        return rc
 
 
     def merge_unprocessed_pcaps(self):
@@ -74,7 +74,7 @@ class pcapMerge:
 
 if __name__ == "__main__":
     clock = time()
-    pm = pcapMerge(True)
+    pm = pcapMerge(False)
     pm.merge_unprocessed_pcaps()
     print "Done. Execution took %2f seconds" % ( time() - clock )
     sys.exit(0)
