@@ -36,10 +36,68 @@ class pcapMerge:
                 map(lambda x: os.unlink(x), pcaplist)
                 self.out.perr("Error writing pcap file. Aborting. Outfile and temp files cleared")
                 sys.exit(rc)
+            return rc    
         else:
-            self.out.perr("Sorry, parrallel pcap processing is not implemented as of yet")
-            sys.exit(2)
-        return rc
+            def execbot(workfile,infiles):
+                tries = 5
+                while (0 != system(mergecap_path+"/tcpslice","-w",workfile, *infiles ) ):
+                    sleep(30) #wait 30 seconds to see if the file is ready yet. a
+                    print "Retrying %s. %d attempts left." % (workfile, tries)
+                    tries -= 1
+                    if tries == 0: break
+            
+            # Because the end result is a single file, this is an all or nothing action. So no failure handling.
+            running_procs = []
+            workfile = None #Tell python that this var is one level up, scope wise.
+            
+            cpus = mp.cpu_count()
+            idx = 0 # Index pointing to the start of the window
+            while len(pcaplist) != 0:
+                sleep(0.5)
+                if (len(pcaplist) <= cpus) or (idx == -1):
+                    print "Final set being done in Series. Waiting for all procs to finish"
+                    for proc in running_procs: 
+                        proc[0].join() #Wait for all processes to finish
+                        if os.path.exists(outfile) == True:
+                            shutil.move(outfile,outfile+".previous")
+                        else:
+                            shutil.copy(proc[1], outfile+".previous")
+                        print "Merging..."    
+                        rc = system(mergecap_path+"/tcpslice","-w",outfile,outfile+".previous",proc[1])
+                        if rc == 0:
+                            os.unlink(outfile+".previous")
+                        else:
+                            self.out.perr("Error merging! Could not merge: %s and %s to %s" % (outfile+".previous",proc[1],outfile))
+                            sys.exit(rc)
+
+                    #We have less files then CPU's, so finish off in series
+#                    print "Final merge to outfile commencing"
+                    #The last $cups have not been merged, as we are waiting for them to finish. Merge them all here.
+ #                   rc = system(mergecap_path+"/tcpslice","-w",outfile,*pcaplist[(idx-cpus):])
+                    print "Done!"
+                    return rc
+               
+                for proc,workfile in running_procs:
+                    if proc.is_alive() == False:
+                        pcaplist.append(workfile) #only append workfile if the processes has finished successfully and written out file.
+
+                running_procs = filter(lambda x: x[0].is_alive() == True, running_procs)
+
+                while (len(running_procs ) < (cpus) ):
+                    print "%d -> %d" % ( len(pcaplist) , idx )
+                    partA = pcaplist[idx]
+                    idx += 1
+                    try:
+                        partB = pcaplist[idx]
+                    except IndexError as e:
+                        idx = -1
+                        break #We're at the end
+                    idx += 1
+                    workfile = "%s.pcap" % os.path.join(TMPFOL,"tmpfile_"+md5(''.join(partA+partB)).hexdigest())
+                    print "%40s + %-40s -> %30s" % (os.path.basename(partA), os.path.basename(partB), os.path.basename(workfile) )
+                    p = mp.Process(target=execbot, args=(workfile, [partA, partB]) )
+                    p.start()
+                    running_procs.append([p,workfile])
 
 
     def merge_unprocessed_pcaps(self):
@@ -73,8 +131,10 @@ class pcapMerge:
                 self.out.perr("Could not merge %s" % item[1])
 
 if __name__ == "__main__":
-    clock = time()
-    pm = pcapMerge(False)
+    print "Starting auto-testing system"
+    sclock = time()
+    pm = pcapMerge(True)
     pm.merge_unprocessed_pcaps()
-    print "Done. Execution took %2f seconds" % ( time() - clock )
+    print "Done. Execution took %2f seconds" % ( time() - sclock )
+
     sys.exit(0)
