@@ -54,7 +54,7 @@ class pcapMerge:
             idx = 0 # Index pointing to the start of the window
             while len(pcaplist) != 0:
                 sleep(0.5)
-                if (len(pcaplist) <= cpus) or (idx == -1):
+                if (len(pcaplist) <= 2 ) or (idx == -1):
                     print "Final set being done in Series. Waiting for all procs to finish"
                     for proc in running_procs: 
                         proc[0].join() #Wait for all processes to finish
@@ -133,7 +133,7 @@ class pcapMerge:
 if __name__ == "__main__":
     print "Starting auto-testing system"
     sclock = time()
-    pm = pcapMerge(True)
+    pm = pcapMerge(False)
     pm.merge_unprocessed_pcaps()
     print "Done. Execution took %2f seconds" % ( time() - sclock )
 
