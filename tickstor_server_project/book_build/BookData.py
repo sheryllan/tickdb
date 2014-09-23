@@ -26,6 +26,12 @@ class ByOrderBookData(MessageSequenceTracker):
         self.__levels=levels
         self.date=date_string
     
+    def delete_book(self,uid):
+        if uid in self.__results: self.__results.pop(uid)
+        if uid in self.product_sequence_numbers: self.product_sequence_numbers.pop(uid)
+        if uid in self.product_stored_data: self.product_stored_data.pop(uid)
+        if uid in self.obooks: self.obooks.pop(uid)
+        
     def init_book(self,uid,msgseqnum):
         self.obooks[uid] = ({}, {}) # l[1]: symbol id. tuple of 2 dicts (bid, ask)
         self.product_sequence_numbers[uid]=msgseqnum
