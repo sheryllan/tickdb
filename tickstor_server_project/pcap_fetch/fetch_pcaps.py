@@ -94,10 +94,12 @@ if __name__ == "__main__":
         outpath = os.path.join(raw_pcap_path,row[0], hrts )
         out.pout("Output to %s. Creating path if non existant." % outpath)
         if os.path.exists(outpath) == False: os.makedirs(outpath)
-        rc = os.system("mv -v %s/ %s/" % (savedpath,outpath))
+        rc = os.system("rsync -rvc %s/ %s/" % (savedpath,outpath))
         if rc == 0: 
-            out.pout("Folder moved successfully.")
             createdPaths.append(outpath)
+            system("rm","-r","-f",savedpath) #We no longer need the savedpath, as we've copied the files off OK (zero rc)
+            out.pout("Folder moved successfully.")
+
         else:
             out.perr("Error moving folder. Got return code: %d" % rc)
             # According to POSIX, return codes are 8 bit. Python and GNU/Linux seems to use 16-bit return codes.
