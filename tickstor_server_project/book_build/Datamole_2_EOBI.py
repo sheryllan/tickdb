@@ -17,10 +17,19 @@ class EOBI:
         self.__previous_tick=None #this is the last tick... we use the to check for the end of the cycle
         self.__last_seqnum=0  # The last sequence number that the snapshot cycle is looking at.
         self.__uid=None #this is the current uid in the snapshot cycle
-        self.snapshot_products={} #we use this to make sure we only snapshot each product once.
-        
+        self.snapshot_products={} #we use this to make sure we only snapshot each product once.        
         self.__missing_seqnum={}
         self.__last_seqnum={}
+    
+    def __getstate__(self):
+        d = dict(self.__dict__)
+        print d.keys()
+        del d['_EOBI__log']#TODO: need to drop the logger because it won't pickle, but need to handle loading it better.
+        del d['_EOBI__snapshot_queue']
+        del d['_EOBI__last_header']
+        del d['_EOBI__previous_tick']
+        del d['_EOBI__uid']
+        return d
         
     def findFirstMsgseqnum(self,date,ticks):  #ticks is a list of DataMole ticks
         if date==self.bookData.date:
@@ -33,12 +42,11 @@ class EOBI:
                 # and hence when we subscribed to the multicast channel.
                 if uid not in self.bookData.product_sequence_numbers:
                     self.bookData.init_book(uid,msgseqnum)
-                    self.__log.info("Found first product:  {0} {1} {2}".format(uid,tick.name,msgseqnum))
+                    self.__log.debug("Found first product:  {0} {1} {2}".format(uid,tick.name,msgseqnum))
         else:
             self.__log.fatal("Tried to parse on the wrong date: {0} {1}".format(self.booData.date,date))
             
     def parseForMissingSeqnum(self,date,ticks):
-        #TODO:  I think these are here because we are not parsing all of the messages, but we need to verify this.
         if date==self.bookData.date:
             for tick in ticks: # read file line by line
                 if tick.name=='eobi_header' or tick.name=="eobi_13600_product_summary" or tick.name=="eobi_13601_instrument_summary_header_body" or tick.name=="eobi_13602_snapshot_order":
@@ -112,7 +120,7 @@ class EOBI:
             elif self.__snapshot_cycle==-1 and msgseqnum==0 and tick.name=="eobi_13600_product_summary":
                 self.__last_seqnum=int(tick.values['lastmegseqnumprocessed'])
                 self.__snapshot_cycle=0
-                self.__log.info("Product Summary: " + str(self.__last_seqnum) + " " + str(len(self.__snapshot_queue)))
+                self.__log.debug("Product Summary: " + str(self.__last_seqnum) + " " + str(len(self.__snapshot_queue)))
             #  If we are in a snapshot cycle we can get Instrument Summary messages and then Order Messages to build the book
             elif self.__snapshot_cycle>=0 and msgseqnum==self.__snapshot_cycle+1 and (tick.name=="eobi_13601_instrument_summary_header_body" or tick.name=="eobi_13602_snapshot_order"):
                 self.__snapshot_cycle=msgseqnum    
@@ -128,7 +136,7 @@ class EOBI:
                         self.__uid=uid
                         self.snapshot_products[self.__uid]=self.__last_seqnum
                         self.bookData.product_sequence_numbers[self.__uid]=self.__last_seqnum
-                        self.__log.info("New Product: " + str(self.__uid) + " " + str(len(self.__snapshot_queue)))
+                        self.__log.debug("New Product: " + str(self.__uid) + " " + str(len(self.__snapshot_queue)))
                 if (tick.name=="eobi_13602_snapshot_order"):
                     self.__log.debug("OrdMsg: " + str(msgseqnum) + " " + str(len(self.__snapshot_queue)))
                     # self.__uid is set by the Instrument Summary message
@@ -138,7 +146,7 @@ class EOBI:
                         qty= int(tick.values['displayqty'])
                         price=float(tick.values["price"])/100000000.0 #TODO: I am not sure if this is right to divide by 100000000
                         self.__new_order(self.__uid,oid,side,price,qty,tick.timestamp)
-                        self.__log.info("Order " + str(msgseqnum) + " " + str(oid)+ " " + str(side) + " " +str(price) + " " + str(qty ))
+                        self.__log.debug("Order " + str(msgseqnum) + " " + str(oid)+ " " + str(side) + " " +str(price) + " " + str(qty ))
             # If we are in a snapshot cycle but the sequence nubmers do not add up, then we have an out of sequence packet that we need to reorder
             elif self.__snapshot_cycle>=0 and msgseqnum!=self.__snapshot_cycle+1 and (tick.name=="eobi_13601_instrument_summary_header_body" or tick.name=="eobi_13602_snapshot_order"):
                 # TODO: There is some funny stuff going on with this where I am up to packet 5000 and then I get packet 1200 and move up to and past 5000.  WTF IS THAT?
@@ -151,8 +159,16 @@ class EOBI:
                 #snapshot cycle has not started we jumped onto the multicast in the middle.... throw these away
                 pass
                     
-    def calcEOBI(self,date,ticks):  #ticks is a list of DataMole ticks
+    def calcEOBI(self,date,ticks,uid_to_run,logger):  #ticks is a list of DataMole ticks
+        self.__log=logger
         if date==self.bookData.date:
+            # Remove other data because we are mulitprocessing and I only care about me
+            for uid in self.snapshot_products.keys():
+                if uid!=uid_to_run:
+                    self.snapshot_products.pop(uid)
+                    self.__missing_seqnum.pop(uid)
+                    self.bookData.delete_book(uid)
+            # Now parse the data
             for tick in ticks: # read file line by line
                 if tick.name=='eobi_header' or tick.name=="eobi_13600_product_summary" or tick.name=="eobi_13601_instrument_summary_header_body" or tick.name=="eobi_13602_snapshot_order":
                     continue
@@ -160,7 +176,7 @@ class EOBI:
                 msgseqnum=int(tick.values['msgseqnum'])
                 #cycle through the missing sequence numbers
                 if len(self.__missing_seqnum[uid])>0:
-                    while msgseqnum>self.__missing_seqnum[uid][0]:
+                    while len(self.__missing_seqnum[uid])>0 and msgseqnum>self.__missing_seqnum[uid][0]:
                         seq=self.__missing_seqnum[uid].pop(0)
                         self.bookData.product_sequence_numbers[uid]=seq
                 # Go through stored data first to see if we are ready to 
@@ -190,7 +206,7 @@ class EOBI:
                     if uid not in self.bookData.product_stored_data:
                         self.bookData.product_stored_data[uid]=[]
                     self.bookData.product_stored_data[uid].append(tick)
-                    self.__log.info("OutOfSeq: {0} LastSeq: {1} CurrSeq: {2} Len: {3}".format(uid,self.bookData.product_sequence_numbers[uid],msgseqnum,len(self.bookData.product_stored_data[uid])))
+                    self.__log.debug("OutOfSeq: {0} LastSeq: {1} CurrSeq: {2} Len: {3}".format(uid,self.bookData.product_sequence_numbers[uid],msgseqnum,len(self.bookData.product_stored_data[uid])))
                     #TODO:  We need to check that we had a clean parse... once we are completely done we need to check what is in self.bookData.product_sequence_numbers
         else:
             self.__log.fatal("Tried to parse on the wrong date: {0} {1}".format(self.booData.date,date))
@@ -207,7 +223,7 @@ class EOBI:
         if uid not in self.bookData.obooks:
             self.bookData.init_book(uid,msgseqnum)
         if tick.name=='eobi_13103_order_mass_del':
-            obooks[uid] = ({}, {})
+            self.bookData.obooks[uid] = ({}, {})
             # TODO: Should I output the clear?
             #self.bookData.printBook("C",uid,int(tick.timestamp),int(tick.timestamp))
         elif tick.name== 'eobi_13201_trade_report':
@@ -219,45 +235,48 @@ class EOBI:
         elif tick.name=='eobi_13503_quote_request':
             pass  # Need to output this for signals...
         else:
-            recv= int(tick.timestamp)
-            side= int(tick.values["side"])-1
-            oid = int(tick.values["trdregTStimepriority"])
-            price=float(tick.values["price"])/100000000.0 #TODO: I am not sure if this is right to divide by 100000000
-            
-            if tick.name=='eobi_13100_ord_add':
-                exch= int(tick.values["trdregtstimein"])
-                qty = int(tick.values["qty"])
-                self.__new_order(uid,oid,side,price,qty,exch)
-                self.bookData.printBook("A",uid,exch,recv)               
-            elif tick.name=='eobi_13101_order_mod':
-                exch= int(tick.values["trdregtstimein"])
-                qty = int(tick.values["DisplayQty"])
-                prev = int(tick.values["PrevPrice"])
-                old_oid = int(tick.values["TrdRegTSPrevTime-Pri"])
-                if oid==old_oid:
-                    # Queue priority not lost, qty reduced
-                    self.__modify_order(uid, oid, side, price, qty, exch)
-                    self.bookData.printBook("M",uid,exch,recv)
+            try:
+                recv= int(tick.timestamp)
+                side= int(tick.values["side"])-1
+                oid = int(tick.values["trdregTStimepriority"])
+                price=float(tick.values["price"])/100000000.0 #TODO: I am not sure if this is right to divide by 100000000
+                if tick.name=='eobi_13100_ord_add':
+                    exch= int(tick.values["trdregtstimein"])
+                    qty = int(tick.values["qty"])
+                    self.__new_order(uid,oid,side,price,qty,exch)
+                    self.bookData.printBook("A",uid,exch,recv)               
+                elif tick.name=='eobi_13101_order_mod':
+                    exch= int(tick.values["trdregtstimein"])
+                    qty = int(tick.values["DisplayQty"])
+                    prev = int(tick.values["PrevPrice"])
+                    old_oid = int(tick.values["TrdRegTSPrevTime-Pri"])
+                    if oid==old_oid:
+                        # Queue priority not lost, qty reduced
+                        self.__modify_order(uid, oid, side, price, qty, exch)
+                        self.bookData.printBook("M",uid,exch,recv)
+                    else:
+                        # Queue priority lost, qty increased or price changed
+                        self.__delete_order(uid, old_oid, side, prev)
+                        self.__new_order(uid,oid,side,price,qty,exch) 
+                        self.bookData.printBook("R",uid,exch,recv)               
+                elif tick.name=='eobi_13102_order_del':
+                    exch= int(tick.values["trdregtstimein"])
+                    self.__delete_order(uid, oid, side, 0)
+                    self.bookData.printBook("D",uid, exch,recv)                   
+                elif tick.name=='eobi_13104_13105_order_exec':
+                    qty = int(tick.values["qty"])
+                    #TODO: this is not right... I need the TransactTime
+                    self.bookData.printTrade(uid,recv,recv,price,qty)            
+                elif tick.name=='eobi_13106_order_mod_same_priority':
+                    exch= int(tick.values["trdregtstimein"])
+                    qty = int(tick.values["qty"])
+                    self.__modify_order(uid,oid,side,price,-qty,exch)
+                    self.bookData.printBook("M",uid,exch,recv)               
                 else:
-                    # Queue priority lost, qty increased or price changed
-                    self.__delete_order(uid, old_oid, side, prev)
-                    self.__new_order(uid,oid,side,price,qty,exch) 
-                    self.bookData.printBook("R",uid,exch,recv)               
-            elif tick.name=='eobi_13102_order_del':
-                exch= int(tick.values["trdregtstimein"])
-                self.__delete_order(uid, oid, side, 0)
-                self.bookData.printBook("D",uid, exch,recv)                   
-            elif tick.name=='eobi_13104_13105_order_exec':
-                qty = int(tick.values["qty"])
-                #TODO: this is not right... I need the TransactTime
-                self.bookData.printTrade(uid,recv,recv,price,qty)            
-            elif tick.name=='eobi_13106_order_mod_same_priority':
-                exch= int(tick.values["trdregtstimein"])
-                qty = int(tick.values["qty"])
-                self.__modify_order(uid,oid,side,price,-qty,exch)
-                self.bookData.printBook("M",uid,exch,recv)               
-            else:
-                pass    
+                    pass
+            except:
+                print tick.name,tick.values.keys()
+                            
 
     ############################################################
     #
