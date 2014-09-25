@@ -1,0 +1,624 @@
+<mappings>
+        <mapping id="eti-msg" table="Eurex-ETI" template="eti-msg">
+                <binding column="templateid" detail="templateid"/>
+        </mapping>
+        <mapping id="eti_10100_new_ord" table="Eurex-ETI" template="eti_10100_new_ord">
+                <binding column="ip_src" detail="ip_src"/>
+                <binding column="ip_dst" detail="ip_dst"/>
+                <binding column="src_port" detail="tcp_src"/>
+                <binding column="dst_port" detail="tcp_dst"/>
+                <binding column="templateid" detail="templateid"/>
+                <binding column="msgseqnum" detail="msgseqnum"/>
+                <binding column="sendersubid" detail="sendersubid"/>
+                <binding column="price" detail="price"/>
+                <binding column="clordid" detail="clordid"/>
+                <binding column="orderqty" detail="orderqty"/>
+                <binding column="mktsegid" detail="mktsegid"/>
+                <binding column="simplesecid" detail="simplesecid"/>
+        </mapping>
+        <mapping id="eti_10101_new_ord_resp" table="Eurex-ETI" template="eti_10101_new_ord_resp">
+                <binding column="ip_src" detail="ip_src"/>
+                <binding column="ip_dst" detail="ip_dst"/>
+                <binding column="src_port" detail="tcp_src"/>
+                <binding column="dst_port" detail="tcp_dst"/>
+                <binding column="templateid" detail="templateid"/>
+                <binding column="requesttime" detail="requesttime"/>
+                <binding column="trdregtstimein" detail="trdregtstimein"/>
+                <binding column="trdregtstimeout" detail="trdregtstimeout"/>
+                <binding column="sendingtime" detail="sendingtime"/>
+                <binding column="msgseqnum" detail="msgseqnum"/>
+                <binding column="ordid" detail="ordid"/>
+                <binding column="clordid" detail="clordid"/>
+                <binding column="secid" detail="secid"/>
+                <binding column="execid" detail="execid"/>
+                <binding column="trdregTSentry" detail="trdregTSentry"/>
+                <binding column="trdregTStimepriority" detail="trdregTStimepriority"/>
+                <binding column="ordstatus" detail="ordstatus"/>
+                <binding column="exectype" detail="exectype"/>
+        </mapping>
+        <mapping id="eti_10125_new_ord_s" table="Eurex-ETI" template="eti_10125_new_ord_s">
+                <binding column="ip_src" detail="ip_src"/>
+                <binding column="ip_dst" detail="ip_dst"/>
+                <binding column="src_port" detail="tcp_src"/>
+                <binding column="dst_port" detail="tcp_dst"/>
+                <binding column="templateid" detail="templateid"/>
+                <binding column="msgseqnum" detail="msgseqnum"/>
+                <binding column="sendersubid" detail="sendersubid"/>
+                <binding column="price" detail="price"/>
+                <binding column="clordid" detail="clordid"/>
+                <binding column="orderqty" detail="orderqty"/>
+                <binding column="simplesecid" detail="simplesecid"/>
+        </mapping>
+        <mapping id="eti_10102_new_ord_s_resp" table="Eurex-ETI" template="eti_10102_new_ord_s_resp">
+                <binding column="ip_src" detail="ip_src"/>
+                <binding column="ip_dst" detail="ip_dst"/>
+                <binding column="src_port" detail="tcp_src"/>
+                <binding column="dst_port" detail="tcp_dst"/>
+                <binding column="templateid" detail="templateid"/>
+                <binding column="requesttime" detail="requesttime"/>
+                <binding column="trdregtstimein" detail="trdregtstimein"/>
+                <binding column="trdregtstimeout" detail="trdregtstimeout"/>
+                <binding column="sendingtime" detail="sendingtime"/>
+                <binding column="msgseqnum" detail="msgseqnum"/>
+                <binding column="ordid" detail="ordid"/>
+                <binding column="clordid" detail="clordid"/>
+                <binding column="secid" detail="secid"/>
+                <binding column="execid" detail="execid"/>
+                <binding column="ordstatus" detail="ordstatus"/>
+                <binding column="exectype" detail="exectype"/>
+        </mapping>
+        <mapping id="eti_10113_new_ord_m" table="Eurex-ETI" template="eti_10113_new_ord_m">
+                <binding column="ip_src" detail="ip_src"/>
+                <binding column="ip_dst" detail="ip_dst"/>
+                <binding column="src_port" detail="tcp_src"/>
+                <binding column="dst_port" detail="tcp_dst"/>
+                <binding column="templateid" detail="templateid"/>
+                <binding column="msgseqnum" detail="msgseqnum"/>
+                <binding column="sendersubid" detail="sendersubid"/>
+                <binding column="price" detail="price"/>
+                <binding column="clordid" detail="clordid"/>
+                <binding column="orderqty" detail="orderqty"/>
+                <binding column="mktsegid" detail="mktsegid"/>
+                <binding column="secid" detail="secid"/>
+        </mapping>
+        <mapping id="eti_10103_imm_exec_resp" table="Eurex-ETI" template="eti_10103_imm_exec_resp">
+                <binding column="ip_src" detail="ip_src"/>
+                <binding column="ip_dst" detail="ip_dst"/>
+                <binding column="src_port" detail="tcp_src"/>
+                <binding column="dst_port" detail="tcp_dst"/>
+                <binding column="templateid" detail="templateid"/>
+                <binding column="requesttime" detail="requesttime"/>
+                <binding column="trdregtstimein" detail="trdregtstimein"/>
+                <binding column="trdregtstimeout" detail="trdregtstimeout"/>
+                <binding column="sendingtime" detail="sendingtime"/>
+                <binding column="msgseqnum" detail="msgseqnum"/>
+                <binding column="ordid" detail="ordid"/>
+                <binding column="clordid" detail="clordid"/>
+                <binding column="origclordid" detail="origclordid"/>
+                <binding column="secid" detail="secid"/>
+                <binding column="execid" detail="execid"/>
+                <binding column="trdregTSentry" detail="trdregTSentry"/>
+                <binding column="trdregTStimepriority" detail="trdregTStimepriority"/>
+                <binding column="mktsegid" detail="mktsegid"/>
+                <binding column="ordstatus" detail="ordstatus"/>
+                <binding column="exectype" detail="exectype"/>
+        </mapping>
+        <mapping id="eti_10104_book_order_exec" table="Eurex-ETI" template="eti_10104_book_order_exec">
+                <binding column="ip_src" detail="ip_src"/>
+                <binding column="ip_dst" detail="ip_dst"/>
+                <binding column="src_port" detail="tcp_src"/>
+                <binding column="dst_port" detail="tcp_dst"/>
+                <binding column="templateid" detail="templateid"/>
+                <binding column="trdregtstimeout" detail="trdregtstimeout"/>
+                <binding column="sendingtime" detail="sendingtime"/>
+                <binding column="ordid" detail="ordid"/>
+                <binding column="clordid" detail="clordid"/>
+                <binding column="origclordid" detail="origclordid"/>
+                <binding column="secid" detail="secid"/>
+                <binding column="execid" detail="execid"/>
+                <binding column="mktsegid" detail="mktsegid"/>
+                <binding column="ordstatus" detail="ordstatus"/>
+                <binding column="exectype" detail="exectype"/>
+        </mapping>
+        <mapping id="eti_10106_rep_ord" table="Eurex-ETI" template="eti_10106_rep_ord">
+                <binding column="ip_src" detail="ip_src"/>
+                <binding column="ip_dst" detail="ip_dst"/>
+                <binding column="src_port" detail="tcp_src"/>
+                <binding column="dst_port" detail="tcp_dst"/>
+                <binding column="templateid" detail="templateid"/>
+                <binding column="msgseqnum" detail="msgseqnum"/>
+                <binding column="sendersubid" detail="sendersubid"/>
+                <binding column="ordid" detail="ordid"/>
+                <binding column="clordid" detail="clordid"/>
+                <binding column="origclordid" detail="origclordid"/>
+                <binding column="price" detail="price"/>
+                <binding column="orderqty" detail="orderqty"/>
+                <binding column="mktsegid" detail="mktsegid"/>
+                <binding column="simplesecid" detail="simplesecid"/>
+        </mapping>
+        <mapping id="eti_10107_rep_ord_resp" table="Eurex-ETI" template="eti_10107_rep_ord_resp">
+                <binding column="ip_src" detail="ip_src"/>
+                <binding column="ip_dst" detail="ip_dst"/>
+                <binding column="src_port" detail="tcp_src"/>
+                <binding column="dst_port" detail="tcp_dst"/>
+                <binding column="templateid" detail="templateid"/>
+                <binding column="requesttime" detail="requesttime"/>
+                <binding column="trdregtstimein" detail="trdregtstimein"/>
+                <binding column="trdregtstimeout" detail="trdregtstimeout"/>
+                <binding column="sendingtime" detail="sendingtime"/>
+                <binding column="msgseqnum" detail="msgseqnum"/>
+                <binding column="ordid" detail="ordid"/>
+                <binding column="clordid" detail="clordid"/>
+                <binding column="origclordid" detail="origclordid"/>
+                <binding column="secid" detail="secid"/>
+                <binding column="execid" detail="execid"/>
+                <binding column="trdregTStimepriority" detail="trdregTStimepriority"/>
+                <binding column="ordstatus" detail="ordstatus"/>
+                <binding column="exectype" detail="exectype"/>
+        </mapping>
+        <mapping id="eti_10126_rep_ord_s" table="Eurex-ETI" template="eti_10126_rep_ord_s">
+                <binding column="ip_src" detail="ip_src"/>
+                <binding column="ip_dst" detail="ip_dst"/>
+                <binding column="src_port" detail="tcp_src"/>
+                <binding column="dst_port" detail="tcp_dst"/>
+                <binding column="templateid" detail="templateid"/>
+                <binding column="msgseqnum" detail="msgseqnum"/>
+                <binding column="sendersubid" detail="sendersubid"/>
+                <binding column="clordid" detail="clordid"/>
+                <binding column="origclordid" detail="origclordid"/>
+                <binding column="price" detail="price"/>
+                <binding column="orderqty" detail="orderqty"/>
+                <binding column="simplesecid" detail="simplesecid"/>
+        </mapping>
+        <mapping id="eti_10108_rep_ord_resp_s" table="Eurex-ETI" template="eti_10108_rep_ord_resp_s">
+                <binding column="ip_src" detail="ip_src"/>
+                <binding column="ip_dst" detail="ip_dst"/>
+                <binding column="src_port" detail="tcp_src"/>
+                <binding column="dst_port" detail="tcp_dst"/>
+                <binding column="templateid" detail="templateid"/>
+                <binding column="requesttime" detail="requesttime"/>
+                <binding column="trdregtstimein" detail="trdregtstimein"/>
+                <binding column="trdregtstimeout" detail="trdregtstimeout"/>
+                <binding column="sendingtime" detail="sendingtime"/>
+                <binding column="msgseqnum" detail="msgseqnum"/>
+                <binding column="ordid" detail="ordid"/>
+                <binding column="clordid" detail="clordid"/>
+                <binding column="origclordid" detail="origclordid"/>
+                <binding column="secid" detail="secid"/>
+                <binding column="execid" detail="execid"/>
+                <binding column="ordstatus" detail="ordstatus"/>
+                <binding column="exectype" detail="exectype"/>
+        </mapping>
+        <mapping id="eti_10114_rep_ord_m" table="Eurex-ETI" template="eti_10114_rep_ord_m">
+                <binding column="ip_src" detail="ip_src"/>
+                <binding column="ip_dst" detail="ip_dst"/>
+                <binding column="src_port" detail="tcp_src"/>
+                <binding column="dst_port" detail="tcp_dst"/>
+                <binding column="templateid" detail="templateid"/>
+                <binding column="msgseqnum" detail="msgseqnum"/>
+                <binding column="sendersubid" detail="sendersubid"/>
+                <binding column="ordid" detail="ordid"/>
+                <binding column="clordid" detail="clordid"/>
+                <binding column="origclordid" detail="origclordid"/>
+                <binding column="secid" detail="secid"/>
+                <binding column="price" detail="price"/>
+                <binding column="orderqty" detail="orderqty"/>
+                <binding column="mktsegid" detail="mktsegid"/>
+        </mapping>
+        <mapping id="eti_10109_can_ord" table="Eurex-ETI" template="eti_10109_can_ord">
+                <binding column="ip_src" detail="ip_src"/>
+                <binding column="ip_dst" detail="ip_dst"/>
+                <binding column="src_port" detail="tcp_src"/>
+                <binding column="dst_port" detail="tcp_dst"/>
+                <binding column="templateid" detail="templateid"/>
+                <binding column="msgseqnum" detail="msgseqnum"/>
+                <binding column="sendersubid" detail="sendersubid"/>
+                <binding column="ordid" detail="ordid"/>
+                <binding column="clordid" detail="clordid"/>
+                <binding column="origclordid" detail="origclordid"/>
+                <binding column="mktsegid" detail="mktsegid"/>
+                <binding column="simplesecid" detail="simplesecid"/>
+        </mapping>
+        <mapping id="eti_10107_can_ord_resp" table="Eurex-ETI" template="eti_10107_can_ord_resp">
+                <binding column="ip_src" detail="ip_src"/>
+                <binding column="ip_dst" detail="ip_dst"/>
+                <binding column="src_port" detail="tcp_src"/>
+                <binding column="dst_port" detail="tcp_dst"/>
+                <binding column="templateid" detail="templateid"/>
+                <binding column="requesttime" detail="requesttime"/>
+                <binding column="trdregtstimein" detail="trdregtstimein"/>
+                <binding column="trdregtstimeout" detail="trdregtstimeout"/>
+                <binding column="sendingtime" detail="sendingtime"/>
+                <binding column="msgseqnum" detail="msgseqnum"/>
+                <binding column="ordid" detail="ordid"/>
+                <binding column="clordid" detail="clordid"/>
+                <binding column="origclordid" detail="origclordid"/>
+                <binding column="secid" detail="secid"/>
+                <binding column="execid" detail="execid"/>
+                <binding column="ordstatus" detail="ordstatus"/>
+                <binding column="exectype" detail="exectype"/>
+        </mapping>
+        <mapping id="eti_10111_can_ord_resp_s" table="Eurex-ETI" template="eti_10111_can_ord_resp_s">
+                <binding column="ip_src" detail="ip_src"/>
+                <binding column="ip_dst" detail="ip_dst"/>
+                <binding column="src_port" detail="tcp_src"/>
+                <binding column="dst_port" detail="tcp_dst"/>
+                <binding column="templateid" detail="templateid"/>
+                <binding column="requesttime" detail="requesttime"/>
+                <binding column="trdregtstimein" detail="trdregtstimein"/>
+                <binding column="trdregtstimeout" detail="trdregtstimeout"/>
+                <binding column="sendingtime" detail="sendingtime"/>
+                <binding column="msgseqnum" detail="msgseqnum"/>
+                <binding column="ordid" detail="ordid"/>
+                <binding column="clordid" detail="clordid"/>
+                <binding column="origclordid" detail="origclordid"/>
+                <binding column="secid" detail="secid"/>
+                <binding column="execid" detail="execid"/>
+                <binding column="ordstatus" detail="ordstatus"/>
+                <binding column="exectype" detail="exectype"/>
+        </mapping>
+        <mapping id="eti_10123_can_ord_m" table="Eurex-ETI" template="eti_10123_can_ord_m">
+                <binding column="ip_src" detail="ip_src"/>
+                <binding column="ip_dst" detail="ip_dst"/>
+                <binding column="src_port" detail="tcp_src"/>
+                <binding column="dst_port" detail="tcp_dst"/>
+                <binding column="templateid" detail="templateid"/>
+                <binding column="msgseqnum" detail="msgseqnum"/>
+                <binding column="sendersubid" detail="sendersubid"/>
+                <binding column="ordid" detail="ordid"/>
+                <binding column="clordid" detail="clordid"/>
+                <binding column="origclordid" detail="origclordid"/>
+                <binding column="secid" detail="secid"/>
+                <binding column="mktsegid" detail="mktsegid"/>
+        </mapping>
+        <mapping id="eti_10112_can_ord_not" table="Eurex-ETI" template="eti_10112_can_ord_not">
+                <binding column="ip_src" detail="ip_src"/>
+                <binding column="ip_dst" detail="ip_dst"/>
+                <binding column="src_port" detail="tcp_src"/>
+                <binding column="dst_port" detail="tcp_dst"/>
+                <binding column="templateid" detail="templateid"/>
+                <binding column="trdregtstimeout" detail="trdregtstimeout"/>
+                <binding column="ordid" detail="ordid"/>
+                <binding column="clordid" detail="clordid"/>
+                <binding column="origclordid" detail="origclordid"/>
+                <binding column="secid" detail="secid"/>
+                <binding column="execid" detail="execid"/>
+                <binding column="ordstatus" detail="ordstatus"/>
+                <binding column="exectype" detail="exectype"/>
+        </mapping>
+        <mapping id="eti_10120_mass_can_ord" table="Eurex-ETI" template="eti_10120_mass_can_ord">
+                <binding column="ip_src" detail="ip_src"/>
+                <binding column="ip_dst" detail="ip_dst"/>
+                <binding column="src_port" detail="tcp_src"/>
+                <binding column="dst_port" detail="tcp_dst"/>
+                <binding column="templateid" detail="templateid"/>
+                <binding column="msgseqnum" detail="msgseqnum"/>
+                <binding column="sendersubid" detail="sendersubid"/>
+                <binding column="secid" detail="secid"/>
+                <binding column="mktsegid" detail="mktsegid"/>
+        </mapping>
+        <mapping id="eti_10121_10124_mass_can_resp" table="Eurex-ETI" template="eti_10121_10124_mass_can_resp">
+                <binding column="ip_src" detail="ip_src"/>
+                <binding column="ip_dst" detail="ip_dst"/>
+                <binding column="src_port" detail="tcp_src"/>
+                <binding column="dst_port" detail="tcp_dst"/>
+                <binding column="templateid" detail="templateid"/>
+                <binding column="requesttime" detail="requesttime"/>
+                <binding column="trdregtstimein" detail="trdregtstimein"/>
+                <binding column="trdregtstimeout" detail="trdregtstimeout"/>
+                <binding column="sendingtime" detail="sendingtime"/>
+                <binding column="msgseqnum" detail="msgseqnum"/>
+        </mapping>
+        <mapping id="eti_10122_mass_can_not" table="Eurex-ETI" template="eti_10122_mass_can_not">
+                <binding column="ip_src" detail="ip_src"/>
+                <binding column="ip_dst" detail="ip_dst"/>
+                <binding column="src_port" detail="tcp_src"/>
+                <binding column="dst_port" detail="tcp_dst"/>
+                <binding column="templateid" detail="templateid"/>
+                <binding column="trdregtstimeout" detail="trdregtstimeout"/>
+                <binding column="sendingtime" detail="sendingtime"/>
+                <binding column="secid" detail="secid"/>
+                <binding column="mktsegid" detail="mktsegid"/>
+        </mapping>
+        <mapping id="eti_10401_10118_quote_cross_req" table="Eurex-ETI" template="eti_10401_10118_quote_cross_req">
+                <binding column="ip_src" detail="ip_src"/>
+                <binding column="ip_dst" detail="ip_dst"/>
+                <binding column="src_port" detail="tcp_src"/>
+                <binding column="dst_port" detail="tcp_dst"/>
+                <binding column="templateid" detail="templateid"/>
+                <binding column="msgseqnum" detail="msgseqnum"/>
+                <binding column="sendersubid" detail="sendersubid"/>
+                <binding column="secid" detail="secid"/>
+                <binding column="mktsegid" detail="mktsegid"/>
+                <binding column="orderqty" detail="orderqty"/>
+        </mapping>
+        <mapping id="eti_10402_10119_quote_cross_req_resp" table="Eurex-ETI" template="eti_10402_10119_quote_cross_req_resp">
+                <binding column="ip_src" detail="ip_src"/>
+                <binding column="ip_dst" detail="ip_dst"/>
+                <binding column="src_port" detail="tcp_src"/>
+                <binding column="dst_port" detail="tcp_dst"/>
+                <binding column="templateid" detail="templateid"/>
+                <binding column="requesttime" detail="requesttime"/>
+                <binding column="trdregtstimein" detail="trdregtstimein"/>
+                <binding column="trdregtstimeout" detail="trdregtstimeout"/>
+                <binding column="sendingtime" detail="sendingtime"/>
+                <binding column="msgseqnum" detail="msgseqnum"/>
+                <binding column="execid" detail="execid"/>
+        </mapping>
+        <mapping id="eti_10405_mass_quote" table="Eurex-ETI" template="eti_10405_mass_quote">
+                <binding column="ip_src" detail="ip_src"/>
+                <binding column="ip_dst" detail="ip_dst"/>
+                <binding column="src_port" detail="tcp_src"/>
+                <binding column="dst_port" detail="tcp_dst"/>
+                <binding column="templateid" detail="templateid"/>
+                <binding column="msgseqnum" detail="msgseqnum"/>
+                <binding column="sendersubid" detail="sendersubid"/>
+                <binding column="quoteid" detail="quoteid"/>
+                <binding column="mktsegid" detail="mktsegid"/>
+        </mapping>
+        <mapping id="eti_10406_mass_quote_resp" table="Eurex-ETI" template="eti_10406_mass_quote_resp">
+                <binding column="ip_src" detail="ip_src"/>
+                <binding column="ip_dst" detail="ip_dst"/>
+                <binding column="src_port" detail="tcp_src"/>
+                <binding column="dst_port" detail="tcp_dst"/>
+                <binding column="templateid" detail="templateid"/>
+                <binding column="requesttime" detail="requesttime"/>
+                <binding column="trdregtstimein" detail="trdregtstimein"/>
+                <binding column="trdregtstimeout" detail="trdregtstimeout"/>
+                <binding column="sendingtime" detail="sendingtime"/>
+                <binding column="msgseqnum" detail="msgseqnum"/>
+                <binding column="quoteid" detail="quoteid"/>
+                <binding column="quoterespid" detail="quoterespid"/>
+                <binding column="mktsegid" detail="mktsegid"/>
+        </mapping>
+        <mapping id="eti_10407_quote_exec" table="Eurex-ETI" template="eti_10407_quote_exec">
+                <binding column="ip_src" detail="ip_src"/>
+                <binding column="ip_dst" detail="ip_dst"/>
+                <binding column="src_port" detail="tcp_src"/>
+                <binding column="dst_port" detail="tcp_dst"/>
+                <binding column="templateid" detail="templateid"/>
+                <binding column="trdregtstimeout" detail="trdregtstimeout"/>
+                <binding column="sendingtime" detail="sendingtime"/>
+                <binding column="execid" detail="execid"/>
+                <binding column="mktsegid" detail="mktsegid"/>
+        </mapping>
+        <mapping id="eti_10408_quote_mass_cancel_req" table="Eurex-ETI" template="eti_10408_quote_mass_cancel_req">
+                <binding column="ip_src" detail="ip_src"/>
+                <binding column="ip_dst" detail="ip_dst"/>
+                <binding column="src_port" detail="tcp_src"/>
+                <binding column="dst_port" detail="tcp_dst"/>
+                <binding column="templateid" detail="templateid"/>
+                <binding column="msgseqnum" detail="msgseqnum"/>
+                <binding column="sendersubid" detail="sendersubid"/>
+                <binding column="mktsegid" detail="mktsegid"/>
+        </mapping>
+        <mapping id="eti_10409_quote_mass_canc_resp" table="Eurex-ETI" template="eti_10409_quote_mass_canc_resp">
+                <binding column="ip_src" detail="ip_src"/>
+                <binding column="ip_dst" detail="ip_dst"/>
+                <binding column="src_port" detail="tcp_src"/>
+                <binding column="dst_port" detail="tcp_dst"/>
+                <binding column="templateid" detail="templateid"/>
+                <binding column="requesttime" detail="requesttime"/>
+                <binding column="trdregtstimein" detail="trdregtstimein"/>
+                <binding column="trdregtstimeout" detail="trdregtstimeout"/>
+                <binding column="sendingtime" detail="sendingtime"/>
+                <binding column="msgseqnum" detail="msgseqnum"/>
+        </mapping>
+        <mapping id="eti_10410_quote_mass_canc_not" table="Eurex-ETI" template="eti_10410_quote_mass_canc_not">
+                <binding column="ip_src" detail="ip_src"/>
+                <binding column="ip_dst" detail="ip_dst"/>
+                <binding column="src_port" detail="tcp_src"/>
+                <binding column="dst_port" detail="tcp_dst"/>
+                <binding column="templateid" detail="templateid"/>
+                <binding column="trdregtstimeout" detail="trdregtstimeout"/>
+                <binding column="sendingtime" detail="sendingtime"/>
+                <binding column="secid" detail="secid"/>
+                <binding column="mktsegid" detail="mktsegid"/>
+        </mapping>
+        <mapping id="eti_10403_quote_activ_req" table="Eurex-ETI" template="eti_10403_quote_activ_req">
+                <binding column="ip_src" detail="ip_src"/>
+                <binding column="ip_dst" detail="ip_dst"/>
+                <binding column="src_port" detail="tcp_src"/>
+                <binding column="dst_port" detail="tcp_dst"/>
+                <binding column="templateid" detail="templateid"/>
+                <binding column="msgseqnum" detail="msgseqnum"/>
+                <binding column="sendersubid" detail="sendersubid"/>
+                <binding column="mktsegid" detail="mktsegid"/>
+        </mapping>
+        <mapping id="eti_10404_quote_activ_resp" table="Eurex-ETI" template="eti_10404_quote_activ_resp">
+                <binding column="ip_src" detail="ip_src"/>
+                <binding column="ip_dst" detail="ip_dst"/>
+                <binding column="src_port" detail="tcp_src"/>
+                <binding column="dst_port" detail="tcp_dst"/>
+                <binding column="templateid" detail="templateid"/>
+                <binding column="requesttime" detail="requesttime"/>
+                <binding column="trdregtstimein" detail="trdregtstimein"/>
+                <binding column="trdregtstimeout" detail="trdregtstimeout"/>
+                <binding column="sendingtime" detail="sendingtime"/>
+                <binding column="msgseqnum" detail="msgseqnum"/>
+        </mapping>
+        <mapping id="eti_10411_quote_activ_not" table="Eurex-ETI" template="eti_10411_quote_activ_not">
+                <binding column="ip_src" detail="ip_src"/>
+                <binding column="ip_dst" detail="ip_dst"/>
+                <binding column="src_port" detail="tcp_src"/>
+                <binding column="dst_port" detail="tcp_dst"/>
+                <binding column="templateid" detail="templateid"/>
+                <binding column="trdregtstimeout" detail="trdregtstimeout"/>
+                <binding column="sendingtime" detail="sendingtime"/>
+                <binding column="mktsegid" detail="mktsegid"/>
+        </mapping>
+        <mapping id="eobi_header" table="eobi_header" template="eobi_header">
+                <binding column="ip_src" detail="ip_src"/>
+                <binding column="ip_dst" detail="ip_dst"/>
+                <binding column="udp_src" detail="udp_src"/>
+                <binding column="udp_dst" detail="udp_dst"/>
+                <binding column="bodylen" detail="bodylen"/>
+                <binding column="templateid" detail="templateid"/>
+                <binding column="applseqnum" detail="applseqnum"/>
+                <binding column="MarketSegmentID" detail="MarketSegmentID"/>
+                <binding column="PartitionID" detail="PartitionID"/>
+                <binding column="CompletionIndicator" detail="CompletionIndicator"/>
+                <binding column="ApplSeqResetIndicator" detail="ApplSeqResetIndicator"/>
+                <binding column="transacttime" detail="transacttime"/>
+        </mapping>
+        <mapping id="eobi_13100_ord_add" table="eobi_msg_md" template="eobi_13100_ord_add">
+                <binding column="ip_src" detail="ip_src"/>
+                <binding column="ip_dst" detail="ip_dst"/>
+                <binding column="udp_src" detail="udp_src"/>
+                <binding column="udp_dst" detail="udp_dst"/>
+                <binding column="templateid" detail="templateid"/>
+                <binding column="msgseqnum" detail="msgseqnum"/>
+                <binding column="trdregtstimein" detail="trdregtstimein"/>
+                <binding column="secid" detail="secid"/>
+                <binding column="trdregTStimepriority" detail="trdregTStimepriority"/>
+                <binding column="side" detail="side"/>
+                <binding column="price" detail="price"/>
+                <binding column="qty" detail="qty"/>
+        </mapping>
+        <mapping id="eobi_13504_top_of_book" table="eobi_msg_md" template="eobi_13504_top_of_book">
+                <binding column="ip_src" detail="ip_src"/>
+                <binding column="ip_dst" detail="ip_dst"/>
+                <binding column="udp_src" detail="udp_src"/>
+                <binding column="udp_dst" detail="udp_dst"/>
+                <binding column="templateid" detail="templateid"/>
+                <binding column="msgseqnum" detail="msgseqnum"/>
+                <binding column="transacttime" detail="transacttime"/>
+                <binding column="secid" detail="secid"/>
+                <binding column="bidprice" detail="bidprice"/>
+                <binding column="offerprice" detail="offerprice"/>
+        </mapping>
+        <mapping id="eobi_13101_order_mod" table="eobi_msg_md" template="eobi_13101_order_mod">
+                <binding column="ip_src" detail="ip_src"/>
+                <binding column="ip_dst" detail="ip_dst"/>
+                <binding column="udp_src" detail="udp_src"/>
+                <binding column="udp_dst" detail="udp_dst"/>
+                <binding column="templateid" detail="templateid"/>
+                <binding column="msgseqnum" detail="msgseqnum"/>
+                <binding column="trdregtstimein" detail="trdregtstimein"/>
+                <binding column="secid" detail="secid"/>
+                <binding column="trdregTStimepriority" detail="trdregTStimepriority"/>
+                <binding column="qty" detail="qty"/>
+                <binding column="side" detail="side"/>
+                <binding column="price" detail="price"/>
+        </mapping>
+        <mapping id="eobi_13102_order_del" table="eobi_msg_md" template="eobi_13102_order_del">
+                <binding column="ip_src" detail="ip_src"/>
+                <binding column="ip_dst" detail="ip_dst"/>
+                <binding column="udp_src" detail="udp_src"/>
+                <binding column="udp_dst" detail="udp_dst"/>
+                <binding column="templateid" detail="templateid"/>
+                <binding column="msgseqnum" detail="msgseqnum"/>
+                <binding column="trdregtstimein" detail="trdregtstimein"/>
+                <binding column="secid" detail="secid"/>
+                <binding column="trdregTStimepriority" detail="trdregTStimepriority"/>
+                <binding column="qty" detail="qty"/>
+                <binding column="side" detail="side"/>
+                <binding column="price" detail="price"/>
+        </mapping>
+        <mapping id="eobi_13103_order_mass_del" table="eobi_msg_md" template="eobi_13103_order_mass_del">
+                <binding column="ip_src" detail="ip_src"/>
+                <binding column="ip_dst" detail="ip_dst"/>
+                <binding column="udp_src" detail="udp_src"/>
+                <binding column="udp_dst" detail="udp_dst"/>
+                <binding column="templateid" detail="templateid"/>
+                <binding column="msgseqnum" detail="msgseqnum"/>
+                <binding column="secid" detail="secid"/>
+        </mapping>
+        <mapping id="eobi_13106_order_mod_same_priority" table="eobi_msg_md" template="eobi_13106_order_mod_same_priority">
+                <binding column="ip_src" detail="ip_src"/>
+                <binding column="ip_dst" detail="ip_dst"/>
+                <binding column="udp_src" detail="udp_src"/>
+                <binding column="udp_dst" detail="udp_dst"/>
+                <binding column="templateid" detail="templateid"/>
+                <binding column="msgseqnum" detail="msgseqnum"/>
+                <binding column="trdregtstimein" detail="trdregtstimein"/>
+                <binding column="secid" detail="secid"/>
+                <binding column="trdregTStimepriority" detail="trdregTStimepriority"/>
+                <binding column="qty" detail="qty"/>
+                <binding column="side" detail="side"/>
+                <binding column="price" detail="price"/>
+        </mapping>
+        <mapping id="eobi_13104_13105_order_exec" table="eobi_msg_md" template="eobi_13104_13105_order_exec">
+                <binding column="ip_src" detail="ip_src"/>
+                <binding column="ip_dst" detail="ip_dst"/>
+                <binding column="udp_src" detail="udp_src"/>
+                <binding column="udp_dst" detail="udp_dst"/>
+                <binding column="templateid" detail="templateid"/>
+                <binding column="msgseqnum" detail="msgseqnum"/>
+                <binding column="side" detail="side"/>
+                <binding column="price" detail="price"/>
+                <binding column="qty" detail="qty"/>
+                <binding column="trdregTStimepriority" detail="trdregTStimepriority"/>
+                <binding column="secid" detail="secid"/>
+                <binding column="tradematch" detail="tradematch"/>
+        </mapping>
+        <mapping id="eobi_13202_exec_summary" table="eobi_msg_md" template="eobi_13202_exec_summary">
+                <binding column="ip_src" detail="ip_src"/>
+                <binding column="ip_dst" detail="ip_dst"/>
+                <binding column="udp_src" detail="udp_src"/>
+                <binding column="udp_dst" detail="udp_dst"/>
+                <binding column="templateid" detail="templateid"/>
+                <binding column="msgseqnum" detail="msgseqnum"/>
+                <binding column="secid" detail="secid"/>
+                <binding column="aggressortime" detail="aggressortime"/>
+                <binding column="execid" detail="execid"/>
+                <binding column="qty" detail="qty"/>
+                <binding column="side" detail="side"/>
+                <binding column="price" detail="price"/>
+        </mapping>
+        <mapping id="eobi_13503_quote_request" table="eobi_msg_md" template="eobi_13503_quote_request">
+                <binding column="ip_src" detail="ip_src"/>
+                <binding column="ip_dst" detail="ip_dst"/>
+                <binding column="udp_src" detail="udp_src"/>
+                <binding column="udp_dst" detail="udp_dst"/>
+                <binding column="templateid" detail="templateid"/>
+                <binding column="msgseqnum" detail="msgseqnum"/>
+                <binding column="secid" detail="secid"/>
+                <binding column="qty" detail="qty"/>
+                <binding column="side" detail="side"/>
+                <binding column="transacttime" detail="transacttime"/>
+        </mapping>
+        <mapping id="eobi_13502_cross_request" table="eobi_msg_md" template="eobi_13502_cross_request">
+                <binding column="ip_src" detail="ip_src"/>
+                <binding column="ip_dst" detail="ip_dst"/>
+                <binding column="udp_src" detail="udp_src"/>
+                <binding column="udp_dst" detail="udp_dst"/>
+                <binding column="templateid" detail="templateid"/>
+                <binding column="msgseqnum" detail="msgseqnum"/>
+                <binding column="secid" detail="secid"/>
+                <binding column="qty" detail="qty"/>
+                <binding column="transacttime" detail="transacttime"/>
+        </mapping>
+        <mapping id="eobi_13201_trade_report" table="eobi_msg_md" template="eobi_13201_trade_report">
+                <binding column="ip_src" detail="ip_src"/>
+                <binding column="ip_dst" detail="ip_dst"/>
+                <binding column="udp_src" detail="udp_src"/>
+                <binding column="udp_dst" detail="udp_dst"/>
+                <binding column="templateid" detail="templateid"/>
+                <binding column="msgseqnum" detail="msgseqnum"/>
+                <binding column="secid" detail="secid"/>
+                <binding column="transacttime" detail="transacttime"/>
+                <binding column="tradematch" detail="tradematch"/>
+                <binding column="qty" detail="qty"/>
+                <binding column="price" detail="price"/>
+        </mapping>
+        <mapping id="Eurex-EMDI" table="Eurex-EMDI" template="Eurex-EMDI">
+                <binding column="vid" detail="vid"/>
+                <binding column="ip_src" detail="ip_src"/>
+                <binding column="ip_dst" detail="ip_dst"/>
+                <binding column="udp_src" detail="udp_src"/>
+                <binding column="udp_dst" detail="udp_dst"/>
+                <binding column="template" detail="template"/>
+                <binding column="PartitionID" detail="PartitionID"/>
+                <binding column="pktseq_num" detail="pktseq_num"/>
+                <binding column="SenderCompID" detail="SenderCompID"/>
+                <binding column="sending_time" detail="sending_time"/>
+                <binding column="PerformanceIndicator" detail="PerformanceIndicator"/>
+                <binding column="msgseq_num" detail="msgseq_num"/>
+                <binding column="mkt_seg_id" detail="mkt_seg_id"/>
+                <binding column="sec_id" detail="sec_id"/>
+                <binding column="ord_qty" detail="ord_qty"/>
+                <binding column="sender_sub_id" detail="sender_sub_id"/>
+                <binding column="last_msg_seq_num" detail="last_msg_seq_num"/>
+        </mapping>
+</mappings>

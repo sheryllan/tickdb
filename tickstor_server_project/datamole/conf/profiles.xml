@@ -1,0 +1,5 @@
+<profiles>
+        <profile database="jdbc_database" host="127.0.0.1" id="standard_database" name="Standard Database (127.0.0.1)" port="5454" protocol="udp"/>
+        <profile database="socket_database" host="127.0.0.1" id="socket_database" name="Socket Database (127.0.0.1)" port="5454" protocol="udp"/>
+        <profile id="tcp_connection" name="TCP Socket Connection" port="6000" protocol="tcp"/>
+</profiles>
