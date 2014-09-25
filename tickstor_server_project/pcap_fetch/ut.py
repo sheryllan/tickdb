@@ -15,14 +15,23 @@ class massZip:
         self.errorQ = mp.Queue()
         self.out = logginginstance
     
-    def bz(self,x,cmd):
+    def bz(self,x,cmd,overwrite=False):
         self.out.pout("Proc Spawn >>> " + x)
+        bzf = x+".bz2"
+        if os.path.exists(bzf):
+            if overwrite == False:
+                self.infoQ.put("File exists and overwrite set to False, skipping file %s") % x
+                return 1
+            else:
+                self.infoQ.put("File exists and overwrite set to True, deleting %s and continuing" % bzf)
+                os.unlink(bzf) #unlink old bzip file, continuing
+                
         rc = os.system("/usr/bin/bunzip2 %s" % x)
         if rc != 0:
             self.out.perr("Could not unzip file: %s, got return code %s" % (x,rc))
             self.errorQ.put("bunzip ERROR: %s" % x)
 
-    def execute(self,directory,ziptype):
+    def execute(self,directory,ziptype,overwrite=False):
         ''' does what it says on the tin. Given a dir it walks it and bunzips it all in parallel '''
         if ziptype == "bunzip":
             files = os.popen("find %s -type f -name \"*.bz2\"" % directory).readlines()
@@ -41,17 +50,17 @@ class massZip:
         failures = []
         running_procs = []
 
-        while True:
-            if len(files) == 0: break
+        while len(files) != 0:
             while (len(running_procs ) < mp.cpu_count() ):
-                try: p = mp.Process(target=self.bz, args=(files.pop(),cmd))
+                try: p = mp.Process(target=self.bz, args=(files.pop(),cmd,overwrite))
                 except IndexError: break
                 p.start()
                 running_procs.append(p)
 
             sleep(0.5)
             running_procs = filter(lambda x: x.is_alive() == True, running_procs) #cleanup
-            if len(running_procs) == 0: break
+        for p in running_procs:
+            p.join() #Wait for all to finish
 
         while self.errorQ.empty() == False:
             failures.append(self.errorQ.get())
