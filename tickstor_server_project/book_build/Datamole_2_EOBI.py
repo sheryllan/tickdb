@@ -144,9 +144,9 @@ class EOBI:
                         oid=tick.values['trdregTStimepriority'] 
                         side = int(tick.values['side'])-1
                         qty= int(tick.values['displayqty'])
-                        price=float(tick.values["price"])/100000000.0 #TODO: I am not sure if this is right to divide by 100000000
-                        self.__new_order(self.__uid,oid,side,price,qty,tick.timestamp)
-                        self.__log.debug("Order " + str(msgseqnum) + " " + str(oid)+ " " + str(side) + " " +str(price) + " " + str(qty ))
+                        price=float(tick.values["price"])#/100000000.0
+                        #self.__new_order(self.__uid,oid,side,price,qty,tick.timestamp)
+                        self.__log.debug("Order " + str(self.__uid) + " " + str(msgseqnum) + " " + str(oid)+ " " + str(side) + " " +str(price) + " " + str(qty ))
             # If we are in a snapshot cycle but the sequence nubmers do not add up, then we have an out of sequence packet that we need to reorder
             elif self.__snapshot_cycle>=0 and msgseqnum!=self.__snapshot_cycle+1 and (tick.name=="eobi_13601_instrument_summary_header_body" or tick.name=="eobi_13602_snapshot_order"):
                 # TODO: There is some funny stuff going on with this where I am up to packet 5000 and then I get packet 1200 and move up to and past 5000.  WTF IS THAT?
@@ -225,7 +225,7 @@ class EOBI:
         if tick.name=='eobi_13103_order_mass_del':
             self.bookData.obooks[uid] = ({}, {})
             # TODO: Should I output the clear?
-            #self.bookData.printBook("C",uid,int(tick.timestamp),int(tick.timestamp))
+            self.bookData.printBook("C",uid,int(tick.timestamp),int(tick.timestamp))
         elif tick.name== 'eobi_13201_trade_report':
             pass  # Need to handle this to report the trades faster....
         elif tick.name=='eobi_13202_exec_summary':
@@ -239,7 +239,7 @@ class EOBI:
                 recv= int(tick.timestamp)
                 side= int(tick.values["side"])-1
                 oid = int(tick.values["trdregTStimepriority"])
-                price=float(tick.values["price"])/100000000.0 #TODO: I am not sure if this is right to divide by 100000000
+                price=float(tick.values["price"])/100000000.0
                 if tick.name=='eobi_13100_ord_add':
                     exch= int(tick.values["trdregtstimein"])
                     qty = int(tick.values["qty"])
