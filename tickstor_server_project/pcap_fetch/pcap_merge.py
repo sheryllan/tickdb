@@ -24,7 +24,12 @@ class pcapMerge:
 
         rc = -1
         if os.path.exists( os.path.dirname(outfile) ) == True:  shutil.rmtree( os.path.dirname(outfile) )
-        os.makedirs( os.path.dirname(outfile) )
+        try:
+            os.makedirs( os.path.dirname(outfile) )
+        except OSError as e:
+            out.perr("Could not make dir '%s'! Aborting and cleaning up." % os.path.dirname(outfile) )
+            exit(-1)
+
         pcaplist = map( lambda x: x.strip(), pcaplist)
         tmplist = []
         if self.multi == False:
@@ -133,10 +138,25 @@ class pcapMerge:
 
         for p in rp: p[0].join() #wait for processes to finish
 if __name__ == "__main__":
-    print "Starting auto-testing system"
+    def cleanup:
+        os.unlink("/tmp/pcapmerge.pid")
+
+    if os.path.exists("/tmp/pcapmerge.pid") == True:
+        fd = open("/tmp/pcapmerge.pid","r")
+        pid = fd.readline()
+        fd.close()
+        print "ERROR! Lockfile present. Apparently we are already running as PID %d. If this is an error please delete /tmp/pcapmerge.pid and rerun" % int(pid)
+        sys.exit(2)
+    else:
+        fd = open("/tmp/pcapmerge.pid","w")
+        fd.write(str(os.getpid()) + "\n")
+        fd.close()
+
+    print "Beginning PCAP Merge"
     sclock = time()
     pm = pcapMerge(False)
     pm.merge_unprocessed_pcaps()
     print "Done. Execution took %2f seconds" % ( time() - sclock )
 
+    cleanup()
     sys.exit(0)

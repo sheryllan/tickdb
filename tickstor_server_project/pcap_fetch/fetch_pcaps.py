@@ -25,6 +25,17 @@ def pullPCAP(host,path,targetpath, attempts=4):
 
 if __name__ == "__main__":
 
+    if os.path.exists("/tmp/fetchpcaps.pid") == True:
+        fd = open("/tmp/fetchpcaps.pid","r")
+        pid = fd.readline()
+        fd.close()
+        print "ERROR!  Lockfile present. Apparently we are already running as PID %d. If this is an error please delete /tmp/fetchpcaps.pid and rerun" % int(pid)
+        sys.exit(2)
+    else:
+        fd = open("/tmp/fetchpcaps.pid","w")
+        fd.write(str(os.getpid()) + "\n")
+        fd.close()
+
     import shutil, signal
     createdPaths=[] #a record of everything we have created on disk, in case we have to roll back
 
@@ -40,11 +51,12 @@ if __name__ == "__main__":
         
 
     def cleanup():
-        ''' cleans up the tmpdir etc... after finish/abort '''
+        ''' cleaNs up the tmpdir etc... after finish/abort '''
         out.pout("Commencing cleanup.")
         #remove temporary saved path
         if os.path.exists(savedpath) == True:  shutil.rmtree(savedpath)
-        
+        os.unlink("/tmp/fetchpcaps.pid")
+ 
         return False
 
     # Signal me, baby
@@ -116,9 +128,11 @@ if __name__ == "__main__":
         out.pout("Error summary:")
         for key in failed_transfers:
             out.pout("\t >> %s -> %s" % (key,failed_transfers[key]) )
+        cleanup()
         sys.exit(2)
     else:
         out.pout("No errors reported.")
+        cleanup()
         sys.exit(0)
 
 
