@@ -17,14 +17,13 @@ class massZip:
     
     def bz(self,x,cmd,overwrite=False):
         self.out.pout("Proc Spawn >>> " + x)
-        bzf = x+".bz2"
-        if os.path.exists(bzf):
+        if os.path.exists(x):
             if overwrite == False:
-                self.infoQ.put("File exists and overwrite set to False, skipping file %s") % x
+                self.out.pwarn("File exists and overwrite set to False, skipping file %s") % x
                 return 1
             else:
-                self.infoQ.put("File exists and overwrite set to True, deleting %s and continuing" % bzf)
-                os.unlink(bzf) #unlink old bzip file, continuing
+                self.out.pwarn("File exists and overwrite set to True, deleting %s and continuing" % x)
+                os.unlink(x) #unlink old bzip file, continuing
                 
         rc = os.system("/usr/bin/bunzip2 %s" % x)
         if rc != 0:
