@@ -18,10 +18,6 @@ class pcapMerge:
         ''' Take a list of pcap files to merge (full paths) that we want to merge '''
         #If we are processing PCAPs again, we need to delete the old target (if it exists), and recreate
         if len(pcaplist) < 3: self.multi = False
-        if len(pcaplist) == 1 : 
-            shutil.copyfile(pcaplist.pop(), outfile) #We only have one file, no need to merge
-            return 0
-
         rc = -1
         if os.path.exists( os.path.dirname(outfile) ) == True:  shutil.rmtree( os.path.dirname(outfile) )
         try:
@@ -29,6 +25,11 @@ class pcapMerge:
         except OSError as e:
             out.perr("Could not make dir '%s'! Aborting and cleaning up." % os.path.dirname(outfile) )
             exit(-1)
+
+        if len(pcaplist) == 1 : 
+            shutil.copyfile(pcaplist.pop(), outfile) #We only have one file, no need to merge
+            return 0
+
 
         pcaplist = map( lambda x: x.strip(), pcaplist)
         tmplist = []
@@ -138,7 +139,7 @@ class pcapMerge:
 
         for p in rp: p[0].join() #wait for processes to finish
 if __name__ == "__main__":
-    def cleanup:
+    def cleanup():
         os.unlink("/tmp/pcapmerge.pid")
 
     if os.path.exists("/tmp/pcapmerge.pid") == True:

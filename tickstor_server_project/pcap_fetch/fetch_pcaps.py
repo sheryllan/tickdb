@@ -95,7 +95,7 @@ if __name__ == "__main__":
             continue
 
         #3. All folders are there. bunzip them all!
-        failures = mZ.bunzipdir(savedpath)
+        failures = mZ.bunzipdir(savedpath,overwrite=True)
         if len(failures) > 0:
             map(lambda x: out.perr(x), failures)
             out.perr("ERROR: Could not bunzip all files. See log for more errors. ")
