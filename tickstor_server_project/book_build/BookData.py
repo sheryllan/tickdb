@@ -4,27 +4,26 @@ import pandas as pd
 
 class MessageSequenceTracker:
     def __init__(self):
-        self.product_sequence_numbers={}  # map of uid and the integer sequence number
-        self.product_stored_data={} #map of uid and a list of sequence numbers not processed yet.
+        self.product_sequence_numbers={} # map of uid and the integer sequence number
+        self.product_stored_data={} # map of uid and a list of sequence numbers not processed yet.
         
 ############################################################
 #
 #   KEY:
 #    A:  Order Add
-#    C:    Book Cleared
-#    D:    Order Delete
-#    M:    Order Modify no priority change
+#    C:  Book Cleared
+#    D:  Order Delete
+#    M:  Order Modify no priority change
 #    R:  Order Modify priority change
-#    T:    Trade
+#    T:  Trade
 #
 ############################################################
 class ByOrderBookData(MessageSequenceTracker):
-    def __init__(self,levels,date_string):
+    def __init__(self,levels):
         MessageSequenceTracker.__init__(self)
-        self.obooks = {}  # contains books
-        self.__results = {}   #map of uid and columns of results
+        self.obooks = {} # contains books
+        self.__results = {} # map of uid and columns of results
         self.__levels=levels
-        self.date=date_string
     
     def delete_book(self,uid):
         if uid in self.__results: self.__results.pop(uid)
@@ -35,9 +34,13 @@ class ByOrderBookData(MessageSequenceTracker):
     def init_book(self,uid,msgseqnum):
         self.obooks[uid] = ({}, {}) # l[1]: symbol id. tuple of 2 dicts (bid, ask)
         self.product_sequence_numbers[uid]=msgseqnum
-        if uid not in self.__results: self.__results[uid]={}
+        if uid not in self.__results:
+	    self.__results[uid]={}
+
+	# 3 lists for each data type for each uid
         for item in ['otype','exch','recv']:
             self.__results[uid][item]=[]
+	# and 4N lists, for each level of the book
         for i in range(1,int(self.__levels)+1):
             self.__results[uid]["bid{0}".format(i)]=[]
             self.__results[uid]["bidv{0}".format(i)]=[]
@@ -98,8 +101,6 @@ class ByOrderBookData(MessageSequenceTracker):
             dataframe.to_hdf("{0}_{1}.h5".format(self.date, uid),'table',append=False)
         
 class IncrementalBookData(MessageSequenceTracker):
-    def __init__(self,date_string):
+    def __init__(self):
         MessageSequenceTracker.__init__(self)
         self.__results = {}   #map of uid and columns of results
-        self.date=date_string
-    

@@ -1,194 +1,182 @@
+#!/usr/bin/env python
+
 # -*- coding: utf-8 -*-
-import string
-import datetime
-import os
-import sys
-import argparse
-import logging
+import string, datetime, os, sys, argparse, logging, multiprocessing
 import xml.etree.ElementTree as ET
 import Datamole_2_EOBI as EOBI
 import Datamole_2_ETI as ETI
 import cPickle as pickle
-import multiprocessing
+import mimetypes as mim
+
 
 def setlog(log_level):
-    log = logging.getLogger()
-    log.setLevel(log_level)
-    ch = logging.StreamHandler(sys.stdout)
-    ch.setLevel(log_level)
-    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-    ch.setFormatter(formatter)
-    log.addHandler(ch)
-    return log
-    
+	log = logging.getLogger()
+	log.setLevel(log_level)
+	ch = logging.StreamHandler(sys.stdout)
+	ch.setLevel(log_level)
+	formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+	ch.setFormatter(formatter)
+	log.addHandler(ch)
+	return log
+
+# Read template parameters to help decoding lines
+# interfaces.xml has id to templates values
+# example, field 1 (from 0) has value 33, the <dataflow> tag tells us it's an EOBI 13100 order add message
+# templates.xml gives signification of fields depending on their id
+# example <template id="eobi_13100_ord_add"> has each field in a <detail> tag in the right order
+# This function returns id_to_template which does the first transformation (using interfaces.xml) and template_to_columns, which does the 2nd transformation (using templates.xml)
 def parseTemplates(path):
-    id_to_template={}
-    template_to_columns={}
-    interfaces = ET.parse(os.path.join(path,'interfaces.xml'))
-    templates = ET.parse(os.path.join(path,'templates.xml'))
-    #Get all of the teplate ids
-    for child in interfaces.getroot().iter('dataflow'):
-        id_to_template[child.attrib['id']]= child.attrib['decode']
-     
-    #get all of the elements of the template 
-    for child in templates.getroot().iter('template'):
-        if child.attrib['id'] not in template_to_columns:
-            template_to_columns[child.attrib['id']]=[]
-        for detail in child.findall("detail"):
-            template_to_columns[child.attrib['id']].append(detail.attrib['field'])
-    return id_to_template,template_to_columns
+	id_to_template={}
+	template_to_columns={}
+	interfaces = ET.parse(os.path.join(path,'interfaces.xml'))
+	templates = ET.parse(os.path.join(path,'templates.xml'))
+	# Get all of the template ids
+	for child in interfaces.getroot().iter('dataflow'):
+		id_to_template[child.attrib['id']]= child.attrib['decode']
+	 
+	# get all of the elements of the template 
+	for child in templates.getroot().iter('template'):
+	# XXX next line should always be true if the XML file is good and
+	# XXX the template id should never appear twice in the XML file. Strange!
+		if child.attrib['id'] not in template_to_columns:
+			template_to_columns[child.attrib['id']]=[]
+		for detail in child.findall("detail"):
+			template_to_columns[child.attrib['id']].append(detail.attrib['field'])
+	return id_to_template,template_to_columns
 
+# ====================
+#	Line decode
+# ====================
 class Datamole:
-    def __init__(self,line,id_to_template,template_to_columns,log=None):
-        if log is None:
-            log=setlog()
-        self.__log=log
-        self.name=""
-        self.timestamp=""
-        self.interface=-1
-        self.id=-1
-        self.values={}
-        self.id_to_template=id_to_template
-        self.template_to_columns=template_to_columns
-        self.__makeTick(line)
-        
-    def __makeTick(self,line):
-        try:
-            sl=line.strip('\n').split(',')
-            self.interface=sl[0]
-            self.id=sl[1]
-            #tick.seqnum=sl[2]
-            self.timestamp=sl[3].replace('.','') #arista timestamp
-            self.name=self.id_to_template[self.id]
-            for i,key in enumerate( self.template_to_columns[self.name]):
-                self.values[key]=sl[4+i]
-        except:
-            self.__log.fatal(line)
-                   
-def run_product(files,path, eobi_path, uid_to_run,log_level):
-    log=setlog(log_level)
-    id_to_template,template_to_columns=parseTemplates(path)
-    eobi=pickle.load(open(os.path.join(eobi_path,'eobi.pickle'),'r'))
-    for file in files:
-        with open(os.path.join(eobi_path,file)) as o:
-            EOBI_ticks=[]
-            for line in o:
-                tick=Datamole(line,id_to_template,template_to_columns,log)
-                if tick.values.has_key('secid'):
-                    uid=tick.values['secid']
-                    if uid==uid_to_run:
-                        EOBI_ticks.append(tick)
-            date_string=datetime.datetime.fromtimestamp(float(file.split('-')[0])).date().strftime("%Y%m%d")
-            log.info("{0} {1}: {2}, {3}".format("Parse files for book build for product", uid_to_run,datetime.datetime.fromtimestamp(float(file.split('-')[0])), file))
-            eobi.calcEOBI(date_string,EOBI_ticks,uid_to_run,log)    
-    eobi.bookData.output_to_HDF5()        
+	def __init__(self,line,id_to_template,template_to_columns,log=None):
+		if log is None:
+			log=setlog()
+		self.__log=log
+		self.name=""
+		self.timestamp=""
+		self.interface=-1
+		self.id=-1
+		self.values={}
+		self.id_to_template=id_to_template
+		self.template_to_columns=template_to_columns
+		self.__makeTick(line)
+		
+	def __makeTick(self,line):
+		try:
+			sl=line.strip('\n').split(',')
+			self.interface=sl[0]
+			self.id=sl[1]
+			#tick.seqnum=sl[2]
+			self.timestamp=sl[3].replace('.','') #arista timestamp
+			self.name=self.id_to_template[self.id]
+		# Values are supposed to appear in the CSV file in the same
+		# order as the <detail> tags in the XML file
+			for i,key in enumerate( self.template_to_columns[self.name]):
+				self.values[key]=sl[4+i]
+		except:
+			self.__log.fatal(line)
+				   
+def runEOBIdata(path,eobi_path,eobi_snap_path,log_level,levels):		
+	# Set up logging
+	log=setlog(log_level)		
+	#Parse XML Templates		
+	id_to_template,template_to_columns=parseTemplates(path)
+		
+	# Get EOBI files list
+	files=os.listdir(eobi_path)
+	snap_files=os.listdir(eobi_snap_path)
+	# we only want .csv files
+	files = [x for x in sorted(files) if mim.guess_type(x)[0]=='text/csv']
+	snap_files = [x for x in sorted(snap_files) if mim.guess_type(x)[0]=='text/csv']
+	dir_date=os.path.split(os.path.split(eobi_path)[0])[1] # date we want to process
+	log.info("Reading {0} files and {1} snap files".format(len(files),len(snap_files)))
 
-def runEOBIdata(path,eobi_path,eobi_snap_path,log_level):        
-    # Set up logging
-    log=setlog(log_level)        
-    #Parse XML Templates        
-    id_to_template,template_to_columns=parseTemplates(path)
-            
-        
-    #for each file on a given date   # or is there only 1 file?  This keeps changing.
-    #Also this was coded because the file contained EMDI/EOBI/ETI... this may have changed as well.
-    # What about A and B?  Do I need to merge 2 files?
-    ##############################
-    # EOBI Files
-    ##############################
-    files=os.listdir(eobi_path)
-    snap_files=os.listdir(eobi_snap_path)
-    files.sort()
-    snap_files.sort()
-    #we only want .csv files
-    for file in files:
-        if file[-4:]!=".csv":
-            files.remove(file)
-    for file in snap_files:
-        if file[-4:]!=".csv":
-            snap_files.remove(file)
+	# Read all the files in one pass
+	EOBI_ticks=[] # ticks after "Datamole" parsing
+	lines=[] # ticks as strings from their respective files
+	for file in files:
+		# check the file date is the same as the dir date
+		file_date=datetime.datetime.fromtimestamp(
+				float(file.split('-')[0])).date().strftime("%Y%m%d")
+		# read and store all the file
+		if file_date==dir_date:
+			with open(os.path.join(eobi_path,file)) as o:
+				lines.extend(o.readlines())
+	log.info("Day has {0} ticks to process".format(len(lines)))
 
-    ########################################################################
-    #    HOW TO PARSE.....
-    #    1) Cycle through and find the first msgseq num for each product in the incremental
-    #    2) Run through the data and find all of the sequence gaps
-    #    3) Cycle through the snapshots and find the snapshot that is >= first msgseq num for each product and generate an initial book for each product  if we start a 0, then there is no need for a snapshot
-    #    4) Cycle through the incrementals and generate the rest of the book.
-    #######################################################################
+	# Parse string ticks into Datamole ticks
+	i=0
+	for line in lines:
+		EOBI_ticks.append(Datamole(line,id_to_template,template_to_columns,log))
+		i+=1
+		if i%100000==0:
+			log.info("processed {0} lines".format(i))
+	del lines # free up memory
+	log.info("Datamole decoded {0} lines into ticks".format(len(EOBI_ticks)))
+	
+	# Create EOBI object
+	eobi = EOBI.EOBI(levels,log)
 
-        
-    eobi=None
-    # Step 1
-    for file in files:
-        with open(os.path.join(eobi_path,file)) as o:
-            EOBI_ticks=[]
-            for line in o:
-                tick=Datamole(line,id_to_template,template_to_columns,log)
-                EOBI_ticks.append(tick)
-            date_string=datetime.datetime.fromtimestamp(float(file.split('-')[0])).date().strftime("%Y%m%d")
-            log.info("{0}: {1}, {2}".format("Parse files for incremental starts",datetime.datetime.fromtimestamp(float(file.split('-')[0])), file))
-            if eobi==None:
-                eobi=EOBI.EOBI(5,date_string,log)
-            eobi.findFirstMsgseqnum(date_string,EOBI_ticks)
-            
-    #print eobi.bookData.product_sequence_numbers       
-    #pickle.dump(eobi,open(os.path.join(eobi_path,'eobi.pickle'),'w'))
-        
-    # Step 2
-    for file in files:
-        with open(os.path.join(eobi_path,file)) as o:
-            EOBI_ticks=[]
-            for line in o:
-                tick=Datamole(line,id_to_template,template_to_columns,log)
-                EOBI_ticks.append(tick)
-            date_string=datetime.datetime.fromtimestamp(float(file.split('-')[0])).date().strftime("%Y%m%d")
-            log.info("{0}: {1}, {2}".format("Parse files for sequence gaps",datetime.datetime.fromtimestamp(float(file.split('-')[0])), file))
-            if eobi==None:
-                eobi=EOBI.EOBI(5,date_string,log)
-            eobi.parseForMissingSeqnum(date_string,EOBI_ticks)
-            
-    #pickle.dump(eobi,open(os.path.join(eobi_path,'eobi.pickle'),'w'))        
-    # Step 3... this could run in parallel with Step 2       
-    for file in snap_files:
-        with open(os.path.join(eobi_snap_path,file)) as o:
-            EOBI_ticks=[]
-            for line in o:
-                tick=Datamole(line,id_to_template,template_to_columns,log)
-                EOBI_ticks.append(tick)
-            date_string=datetime.datetime.fromtimestamp(float(file.split('-')[0])).date().strftime("%Y%m%d")
-            log.info("{0}: {1}, {2}".format("Parse files for building snapshots",datetime.datetime.fromtimestamp(float(file.split('-')[0])), file))
-            eobi.computeSnapshotData(date_string,EOBI_ticks)  
+	# step 1: find first message sequence number for all symbols
+	eobi.findFirstMsgseqnum(EOBI_ticks)
+	log.info("Done with first msg seq num")
 
-    #print eobi.bookData.product_sequence_numbers
-    #print eobi.snapshot_products 
-           
-    #Step 4  Run in parallel
-    pickle.dump(eobi,open(os.path.join(eobi_path,'eobi.pickle'),'w'))
-        
-    procs=[]
-    for uid in eobi.snapshot_products.keys():
-        p = multiprocessing.Process(target=run_product, args=(files,path,eobi_path,uid,log_level))
-        p.start()
-        procs.append(p)
-        
-    while len(procs)>0:
-        if procs[0].is_alive():
-            procs[0].join()
-        procs.pop(0)
-        
-    os.remove(os.path.join(eobi_path,'eobi.pickle')) 
+	# step 2: find missing message sequence number
+	eobi.parseForMissingSeqnum(EOBI_ticks)
+	log.info("Done with missing seq num")
 
-if __name__=="__main__":
-    parser = argparse.ArgumentParser(description='Parse a Datamole csv file.')
-    parser.add_argument('workingDirectory', help='The directory of csvs to parse')
-    args = parser.parse_args()
+	# step 3: find first snapshot with msgseq >= first msgseq
+	snap_lines=[]
+	snap_EOBI_ticks=[]
+	for file in snap_files:
+		snap_date=datetime.datetime.fromtimestamp(
+				float(file.split('-')[0])).date().strftime("%Y%m%d")
+		if snap_date==dir_date:
+			with open(os.path.join(eobi_snap_path,file)) as o:
+				snap_lines.extend(o.readlines())
+	log.info("Snap day has {0} ticks to process".format(len(snap_lines)))
 
-    os.chdir(args.workingDirectory)
-    path=os.path.realpath(os.path.curdir)
-    eobi_path=os.path.join(path,'eobi')
-    eobi_snap_path=os.path.join(path,'eobi')
-    #log_level=logging.DEBUG
-    log_level=logging.INFO
-    #log_level=logging.WARN
-    runEOBIdata(path,eobi_path,eobi_snap_path,log_level) 
+	i=0
+	for line in snap_lines:
+		snap_EOBI_ticks.append(Datamole(line,id_to_template,template_to_columns,log))
+		i+=1
+		if i%100000==0:
+			log.info("processed {0} lines from snap file".format(i))
+	del snap_lines
+	eobi.computeSnapshotData(EOBI_ticks)
+	sys.exit("Bye")
+
+	# step 4:generate books for each product
+	for tick in EOBI_ticks:
+		if 'secid' in tick.values:
+			uid = tick.values['secid']
+			eobi.calcEOBI(EOBI_ticks,uid,log)
+
+	# Finally, write outputs to HDF5 files
+	eobi.bookData.output_to_HDF5()
+
+
+# ====================
+#	 Main program 
+# ====================
+def main():
+	parser = argparse.ArgumentParser(description="Parse a Datamole csv file.")
+	parser.add_argument("--levels","-l",help="max Order Book levels",type=int,default=5)
+#	parser.add_argument("--odir","-o",help="output directory",type=str,default=".")
+	parser.add_argument("workingDirectory",help="The directory of csvs to parse",type=str)
+	args = parser.parse_args()
+
+	# Logs
+	#log_level=logging.DEBUG
+	log_level=logging.INFO
+	#log_level=logging.WARN
+
+	# Run decoding
+	path=os.path.realpath(args.workingDirectory)
+	eobi_path=os.path.join(path,'eobi')
+	eobi_snap_path=os.path.join(path,'eobi')
+	runEOBIdata(path,eobi_path,eobi_snap_path,log_level,args.levels) 
  
+if __name__=="__main__":
+	print(sys.version)
+	main()
