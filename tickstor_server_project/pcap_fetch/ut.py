@@ -72,10 +72,10 @@ class massZip:
         return failures
 
     def bunzipdir(self,x,overwrite=False):
-        return self.execute(x,"bunzip")
+        return self.execute(x,"bunzip",overwrite)
 
     def bzipdir(self,directory,overwrite=False):
-        return self.execute(x,"bzip")
+        return self.execute(x,"bzip",overwrite)
 
 
 class output:
