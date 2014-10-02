@@ -16,17 +16,18 @@ class massZip:
         self.out = logginginstance
     
     def bz(self,x,cmd,overwrite=False):
+        self.out.pout("Proc Spawn >>> " + x)
+        unzipped_file = x.rstrip(".bz2")
         if x == None: 
             self.pwarn("WARNING: Got Nonetype value when calling b(un)zip function. Command: %s" % cmd)
             return 1
-        self.out.pout("Proc Spawn >>> " + x)
-        if os.path.exists(x):
+        if os.path.exists(unzipped_file):
             if overwrite == False:
                 self.out.pwarn("File exists and overwrite set to False, skipping file %s"  % x)
                 return 1
             else:
-                self.out.pwarn("File exists and overwrite set to True, deleting %s and continuing" % x)
-                os.unlink(x) #unlink old bzip file, continuing
+                self.out.pwarn("File exists and overwrite set to True, deleting %s and continuing" % unzipped_file)
+                os.unlink(unzipped_file) #unlink old pcap file, continuing
                 
         rc = os.system("/usr/bin/bunzip2 %s" % x)
         if rc != 0:
