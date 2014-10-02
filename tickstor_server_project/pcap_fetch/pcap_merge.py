@@ -124,7 +124,6 @@ class pcapMerge:
         rp = []
         while len(uf) != 0:
             sleep(0.5)
-            print uf
             while (len(rp) < (mp.cpu_count()) ):
                 try:
                     item = uf.pop()
