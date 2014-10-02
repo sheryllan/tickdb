@@ -42,19 +42,23 @@ if __name__ == "__main__":
     def cleanup_incomplete(signum, frame):
         ''' If we have a failure of the program, or it is killed, this cleans up target CSV output dirs, etc...
             so that we can attempt it again. Prevents leaving partially complete folders about '''
-        out.pwarn("Signal %d caught. Processing incomplete. Cleaning up")
+        out.pwarn("Signal %d caught. Processing incomplete. Cleaning up" % signum) 
         cleanup() #We do what the standard cleanup does
 
         #Plus we cleanout the P2P output folder, because whatever in there will
         # not be completely valid, due to us not finishing processing
-        if os.path.exists(outpath) == True:  shutil.rmtree(outpath)
+        if os.path.exists(outpath) == True:  
+            print "Removing incomplete outpath"
+            shutil.rmtree(outpath)
         
 
     def cleanup():
         ''' cleaNs up the tmpdir etc... after finish/abort '''
         out.pout("Commencing cleanup.")
         #remove temporary saved path
-        if os.path.exists(savedpath) == True:  shutil.rmtree(savedpath)
+        if os.path.exists(savedpath) == True:   
+            print "Recursively removing path %s" % savedpath
+            shutil.rmtree(savedpath)
         os.unlink("/tmp/fetchpcaps.pid")
  
         return False
