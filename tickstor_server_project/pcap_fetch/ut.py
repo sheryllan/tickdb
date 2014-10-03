@@ -5,7 +5,7 @@ __version__ = (0,0,2)
 
 import subprocess as sp
 from time import time,sleep
-import sys, logging, os, ctypes
+import sys, logging, os, ctypes, signal
 from config import LOGFILE,raw_pcap_path
 import multiprocessing as mp
 from math import floor
@@ -14,7 +14,21 @@ class massZip:
     def __init__(self,logginginstance):
         self.errorQ = mp.Queue()
         self.out = logginginstance
-    
+        self.running_procs = []
+        signal.signal(signal.SIGTERM, self.cleanup_unfinished)
+        signal.signal(signal.SIGINT, self.cleanup_unfinished)
+   
+    def cleanup_unfinished(self,signalnum,frame):
+        # Here, we kill any zip processes still running. Due to the atomic nature of bzip/bunzip, the
+        # output files will not be created, so we don't have to manually delete
+        for proc in self.running_procs:
+            os.killpg(proc.pid, signal.SIGTERM) # Send proper SIGTERM, hopefully so they all abort cleanly
+            sleep(20) # give 20 secs grace
+            if proc.is_alive() == True:
+                # The tosser won't take the hint, kill!
+                os.killpg(proc.pid, signal.SIGKILL)
+                proc.kill()
+
     def bz(self,x,cmd,overwrite=False):
         self.out.pout("Proc Spawn >>> " + x)
         unzipped_file = x.rstrip(".bz2")
@@ -51,18 +65,17 @@ class massZip:
         files = map( lambda x: x.strip(), files)
 
         failures = []
-        running_procs = []
 
         while len(files) != 0:
-            while (len(running_procs ) < mp.cpu_count() ):
+            while (len(self.running_procs ) < mp.cpu_count() ):
                 try: p = mp.Process(target=self.bz, args=(files.pop(),cmd,overwrite))
                 except IndexError: break
                 p.start()
-                running_procs.append(p)
+                self.running_procs.append(p)
 
             sleep(0.5)
-            running_procs = filter(lambda x: x.is_alive() == True, running_procs) #cleanup
-        for p in running_procs:
+            self.running_procs = filter(lambda x: x.is_alive() == True, self.running_procs) #cleanup
+        for p in self.running_procs:
             p.join() #Wait for all to finish
 
         while self.errorQ.empty() == False:
