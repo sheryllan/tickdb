@@ -8,20 +8,36 @@ from ut import *
 
 ts = int(time())
 hrts = datetime.datetime.fromtimestamp(ts).strftime("%d_%m_%Y") #Human readable timestamp, daily
+
 #ts = 1407332608  #for testing
 
-def pullPCAP(host,path,targetpath, attempts=4):
-    while (attempts >= 0):
-        rc = system("rsync","-z","--skip-compress=bz2","-u","-r","--progress","-t", "pcapdump@%s:%s/" % (host,path), targetpath)
-        if rc != 0:
-            out.pout("Error with rsync, retrying (%d attempts left)" % attempts)
-            attempts -= 1
-        else:
-            out.pout("rsync success! Continuing...")
-            return (True, targetpath)
+class pcaps:
+    def __init__(self,logoutput):
+        self.pcap_retry = 4
+        self.logoutput = logoutput
+        signal.signal(signal.SIGTERM, self.cleanup_incomplete)
+        signal.signal(signal.SIGINT, self.cleanup_incomplete)
 
-    out.perr("ERROR: Failed rsync! from %s:%s to %s" % (host,path,targetpath))
-    return (False, None) #we failed to do the rsync
+    def cleanup_incomplete(self,signum,frame):
+        self.logoutput.pwarn("PCAP Fetch interrupted by signal %d, Aborting!" % signum) 
+        self.pcap_retry=-1
+
+    def pull(self,host,path,targetpath):
+        if self.pcap_retry == -1: return (False, "ABORTED")
+        else: attempts = self.pcap_retry
+    
+        while (attempts >= 0):
+            if self.pcap_retry == -1: break #We've been aborted
+            rc = system("rsync","-z","--skip-compress=bz2","-u","-r","--progress","-t", "pcapdump@%s:%s/" % (host,path), targetpath)
+            if rc != 0:
+                self.logoutput.pout("Error with rsync, retrying (%d attempts left)" % attempts)
+                attempts -= 1
+            else:
+                self.logoutput.pout("rsync success! Continuing...")
+                return (True, targetpath)
+
+        self.logoutput.perr("ERROR: Failed rsync! from %s:%s to %s" % (host,path,targetpath))
+        return (False, None) #we failed to do the rsync
 
 if __name__ == "__main__":
 
@@ -48,7 +64,7 @@ if __name__ == "__main__":
         #Plus we cleanout the P2P output folder, because whatever in there will
         # not be completely valid, due to us not finishing processing
         if os.path.exists(outpath) == True:  
-            print "Removing incomplete outpath"
+            print "Removing incomplete outpath '%s'" % outpath
             shutil.rmtree(outpath)
         
 
@@ -60,8 +76,6 @@ if __name__ == "__main__":
             print "Recursively removing path %s" % savedpath
             shutil.rmtree(savedpath)
         os.unlink("/tmp/fetchpcaps.pid")
- 
-        return False
 
     # Signal me, baby
     signal.signal(signal.SIGTERM, cleanup_incomplete)
@@ -74,6 +88,7 @@ if __name__ == "__main__":
 
     out = output(LOGFILE)
     mZ = massZip(out)
+    pcap = pcaps(out)
 
     for row in intray:
         targetpath = "%s/%s/%s" % (scratchpath, row[0],  hrts  )
@@ -83,7 +98,7 @@ if __name__ == "__main__":
 
 
         # 1. Get the data from the remote host
-        result, savedpath = pullPCAP(row[0],row[1],targetpath)
+        result, savedpath = pcap.pull(row[0],row[1],targetpath)
 
         if result == False: 
             out.perr("ERROR: We failed rsync transfer! >> %s:%s" % (row[0],row[1]) )
