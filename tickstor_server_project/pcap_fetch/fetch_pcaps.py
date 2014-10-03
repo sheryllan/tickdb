@@ -5,6 +5,7 @@ import os,datetime
 from time import time,sleep
 from config import *
 from ut import *
+import subprocess as sp
 
 ts = int(time())
 hrts = datetime.datetime.fromtimestamp(ts).strftime("%d_%m_%Y") #Human readable timestamp, daily
@@ -15,20 +16,26 @@ class pcaps:
     def __init__(self,logoutput):
         self.pcap_retry = 4
         self.logoutput = logoutput
+        self.rsyncChild = -1
         signal.signal(signal.SIGTERM, self.cleanup_incomplete)
         signal.signal(signal.SIGINT, self.cleanup_incomplete)
 
     def cleanup_incomplete(self,signum,frame):
         self.logoutput.pwarn("PCAP Fetch interrupted by signal %d, Aborting!" % signum) 
         self.pcap_retry=-1
+        if self.rsyncChild != -1:
+            self.rsyncChild.send_signal(signal.SIGTERM)
 
     def pull(self,host,path,targetpath):
         if self.pcap_retry == -1: return (False, "ABORTED")
         else: attempts = self.pcap_retry
     
         while (attempts >= 0):
+            sleep(0.5) #Wait for system signal to propagate before checking.  Otherwise you get a race condition
             if self.pcap_retry == -1: break #We've been aborted
-            rc = system("rsync","-z","--skip-compress=bz2","-u","-r","--progress","-t", "pcapdump@%s:%s/" % (host,path), targetpath)
+            proc = sp.Popen(["rsync","-z","--skip-compress=bz2","-u","-r","--progress","-t", "pcapdump@%s:%s/" % (host,path), targetpath ] )
+            self.rsyncChild = proc
+            rc = proc.wait()  #wait returns the return code, while waiting until completion
             if rc != 0:
                 self.logoutput.pout("Error with rsync, retrying (%d attempts left)" % attempts)
                 attempts -= 1
@@ -41,57 +48,62 @@ class pcaps:
 
 if __name__ == "__main__":
 
+    import shutil, signal
+    createdPaths=[] #a record of everything we have created on disk, in case we have to roll back
+    failed_transfers = pflexidict()
+    intray = sources 
+    out = output(LOGFILE)
+    mZ = massZip(out)
+    pcap = pcaps(out)
+
+    out.pout("Begin fetch pcaps: %s" % time())
     if os.path.exists("/tmp/fetchpcaps.pid") == True:
         fd = open("/tmp/fetchpcaps.pid","r")
         pid = fd.readline()
         fd.close()
-        print "ERROR!  Lockfile present. Apparently we are already running as PID %d. If this is an error please delete /tmp/fetchpcaps.pid and rerun" % int(pid)
+        out.err("ERROR!  Lockfile present. Apparently we are already running as PID %d. If this is an error please delete /tmp/fetchpcaps.pid and rerun" % int(pid))
         sys.exit(2)
     else:
         fd = open("/tmp/fetchpcaps.pid","w")
         fd.write(str(os.getpid()) + "\n")
         fd.close()
 
-    import shutil, signal
-    createdPaths=[] #a record of everything we have created on disk, in case we have to roll back
+    def cleanup(rc):
+        #remove temporary saved path
+        try:
+            os.unlink("/tmp/fetchpcaps.pid")
+        except OSError as e:
+            out.perr("Could not delete /tmp/fetchpcaps.pid. got error: %s" % e)
+        else:
+            out.pout("Lockfile removed. Goodbye!")
+        sys.exit(rc)
 
     def cleanup_incomplete(signum, frame):
-        ''' If we have a failure of the program, or it is killed, this cleans up target CSV output dirs, etc...
+        ''' If we have a failure of the program, or it is killed, this cleans up children, target CSV output dirs, etc...
             so that we can attempt it again. Prevents leaving partially complete folders about '''
         out.pwarn("Signal %d caught. Processing incomplete. Cleaning up" % signum) 
-        cleanup() #We do what the standard cleanup does
+        # Because this is an abort, we go to the other libraries, and call their abort/clenup functions as well
+        pcap.cleanup_incomplete(signum,frame)
+        mZ.cleanup_unfinished(signum,frame)
 
-        #Plus we cleanout the P2P output folder, because whatever in there will
-        # not be completely valid, due to us not finishing processing
-        if os.path.exists(outpath) == True:  
-            print "Removing incomplete outpath '%s'" % outpath
-            shutil.rmtree(outpath)
+        #And then we delete the leftovers
+        for path in createdPaths:
+            out.pout("Removing self-created path: %s" % path)
+            try:
+                shutil.rmtree(path)
+            except OSError as e:
+                out.perr("Could not delete path '%s', got error: '%s'" % (path, e))
         
+        cleanup(signum) #We do what the standard cleanup does
 
-    def cleanup():
-        ''' cleaNs up the tmpdir etc... after finish/abort '''
-        out.pout("Commencing cleanup.")
-        #remove temporary saved path
-        if os.path.exists(savedpath) == True:   
-            print "Recursively removing path %s" % savedpath
-            shutil.rmtree(savedpath)
-        os.unlink("/tmp/fetchpcaps.pid")
 
     # Signal me, baby
     signal.signal(signal.SIGTERM, cleanup_incomplete)
     signal.signal(signal.SIGINT, cleanup_incomplete)
 
-
-
-    failed_transfers = pflexidict()
-    intray = sources 
-
-    out = output(LOGFILE)
-    mZ = massZip(out)
-    pcap = pcaps(out)
-
     for row in intray:
         targetpath = "%s/%s/%s" % (scratchpath, row[0],  hrts  )
+        createdPaths.append(targetpath)
         if os.path.exists(targetpath) == False:
             os.makedirs(targetpath, 0770) #mode 0770 because we need exec for folders to be accessed    
             createdPaths.append(targetpath)
@@ -99,6 +111,7 @@ if __name__ == "__main__":
 
         # 1. Get the data from the remote host
         result, savedpath = pcap.pull(row[0],row[1],targetpath)
+        createdPaths.append(savedpath)
 
         if result == False: 
             out.perr("ERROR: We failed rsync transfer! >> %s:%s" % (row[0],row[1]) )
@@ -125,12 +138,13 @@ if __name__ == "__main__":
         outpath = os.path.join(raw_pcap_path,row[0], hrts )
         out.pout("Output to %s. Creating path if non existant." % outpath)
         if os.path.exists(outpath) == False: os.makedirs(outpath)
+        createdPaths.append(outpath)
         rc = os.system("rsync -rvc %s/ %s/" % (savedpath,outpath))
+        
         if rc == 0: 
             createdPaths.append(outpath)
             system("rm","-r","-f",savedpath) #We no longer need the savedpath, as we've copied the files off OK (zero rc)
             out.pout("Folder moved successfully.")
-
         else:
             out.perr("Error moving folder. Got return code: %d" % rc)
             # According to POSIX, return codes are 8 bit. Python and GNU/Linux seems to use 16-bit return codes.
@@ -151,8 +165,7 @@ if __name__ == "__main__":
         sys.exit(2)
     else:
         out.pout("No errors reported.")
-        cleanup()
-        sys.exit(0)
+        cleanup(0)
 
 
 
