@@ -161,8 +161,7 @@ if __name__ == "__main__":
         out.pout("Error summary:")
         for key in failed_transfers:
             out.pout("\t >> %s -> %s" % (key,failed_transfers[key]) )
-        cleanup()
-        sys.exit(2)
+        cleanup(2)
     else:
         out.pout("No errors reported.")
         cleanup(0)
