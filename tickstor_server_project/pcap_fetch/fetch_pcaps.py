@@ -61,7 +61,7 @@ if __name__ == "__main__":
         fd = open("/tmp/fetchpcaps.pid","r")
         pid = fd.readline()
         fd.close()
-        out.err("ERROR!  Lockfile present. Apparently we are already running as PID %d. If this is an error please delete /tmp/fetchpcaps.pid and rerun" % int(pid))
+        out.perr("ERROR!  Lockfile present. Apparently we are already running as PID %d. If this is an error please delete /tmp/fetchpcaps.pid and rerun" % int(pid))
         sys.exit(2)
     else:
         fd = open("/tmp/fetchpcaps.pid","w")
