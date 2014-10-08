@@ -23,7 +23,7 @@ class pcapMerge:
         try:
             os.makedirs( os.path.dirname(outfile) )
         except OSError as e:
-            out.perr("Could not make dir '%s'! Aborting and cleaning up." % os.path.dirname(outfile) )
+            self.out.perr("Could not make dir '%s'! Aborting and cleaning up." % os.path.dirname(outfile) )
             exit(-1)
 
         if len(pcaplist) == 1 : 

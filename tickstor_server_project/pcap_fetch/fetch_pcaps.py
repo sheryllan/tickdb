@@ -33,9 +33,10 @@ class pcaps:
         while (attempts >= 0):
             sleep(0.5) #Wait for system signal to propagate before checking.  Otherwise you get a race condition
             if self.pcap_retry == -1: break #We've been aborted
-            proc = sp.Popen(["rsync","-z","--skip-compress=bz2","-u","-r","--progress","-t", "pcapdump@%s:%s/" % (host,path), targetpath ] )
+            proc = sp.Popen(["rsync","-z","--skip-compress=bz2","-u","-r","--exclude=\"moved\"","--exclude=\"not_moved\"","--progress","-t", "pcapdump@%s:%s/" % (host,path), targetpath ] )
             self.rsyncChild = proc
             rc = proc.wait()  #wait returns the return code, while waiting until completion
+            
             if rc != 0:
                 self.logoutput.pout("Error with rsync, retrying (%d attempts left)" % attempts)
                 attempts -= 1

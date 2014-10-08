@@ -11,10 +11,11 @@ import multiprocessing as mp
 from math import floor
 
 class massZip:
-    def __init__(self,logginginstance):
+    def __init__(self,logginginstance,attempts=4):
         self.errorQ = mp.Queue()
         self.out = logginginstance
         self.running_procs = []
+        self.attempts = attempts
         signal.signal(signal.SIGTERM, self.cleanup_unfinished)
         signal.signal(signal.SIGINT, self.cleanup_unfinished)
    
@@ -30,6 +31,7 @@ class massZip:
                 proc.kill()
 
     def bz(self,x,cmd,overwrite=False):
+        count = self.attempts
         self.out.pout("Proc Spawn >>> " + x)
         unzipped_file = x.rstrip(".bz2")
         if x == None: 
@@ -43,10 +45,12 @@ class massZip:
                 self.out.pwarn("File exists and overwrite set to True, deleting %s and continuing" % unzipped_file)
                 os.unlink(unzipped_file) #unlink old pcap file, continuing
                 
-        rc = os.system("/usr/bin/bunzip2 %s" % x)
-        if rc != 0:
-            self.out.perr("Could not unzip file: %s, got return code %s" % (x,rc))
-            self.errorQ.put("bunzip ERROR: %s" % x)
+        while ( os.system("/usr/bin/bunzip2 %s" % x) != 0 ):
+            count -= 1
+            self.out.perr("Could not unzip file: %s, got return code %s ( %d attempts left )" % (x,rc,count))
+            if count <= 0:
+                self.errorQ.put("bunzip ERROR: %s" % x)
+                break
 
     def execute(self,directory,ziptype,overwrite=False):
         ''' does what it says on the tin. Given a dir it walks it and bunzips it all in parallel '''
