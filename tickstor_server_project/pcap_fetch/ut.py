@@ -8,7 +8,6 @@ from time import time,sleep
 import sys, logging, os, ctypes, signal
 from config import LOGFILE,raw_pcap_path
 import multiprocessing as mp
-from math import floor
 
 class massZip:
     def __init__(self,logginginstance,attempts=4):
@@ -33,6 +32,7 @@ class massZip:
     def bz(self,x,cmd,overwrite=False):
         count = self.attempts
         self.out.pout("Proc Spawn >>> " + x)
+        
         unzipped_file = x.rstrip(".bz2")
         if x == None: 
             self.pwarn("WARNING: Got Nonetype value when calling b(un)zip function. Command: %s" % cmd)
@@ -44,10 +44,11 @@ class massZip:
             else:
                 self.out.pwarn("File exists and overwrite set to True, deleting %s and continuing" % unzipped_file)
                 os.unlink(unzipped_file) #unlink old pcap file, continuing
+                sleep(2) #Sometimes we spawn bunzip faster than the Filesystem has reacted to the "Unlnk" command, causing confusion and abort.
                 
         while ( os.system("/usr/bin/bunzip2 %s" % x) != 0 ):
             count -= 1
-            self.out.perr("Could not unzip file: %s, got return code %s ( %d attempts left )" % (x,rc,count))
+            self.out.perr("Could not unzip file: %s ( %d attempts left )" % (x,count))
             if count <= 0:
                 self.errorQ.put("bunzip ERROR: %s" % x)
                 break
@@ -89,11 +90,12 @@ class massZip:
             map(lambda x: self.out.perr(x), failures)
         return failures
 
-    def bunzipdir(self,x,overwrite=False):
-        return self.execute(x,"bunzip",overwrite)
+    def bunzipdir(self,dirpath,overwrite=False):
+        return self.execute(dirpath,"bunzip",overwrite)
 
-    def bzipdir(self,directory,overwrite=False):
-        return self.execute(x,"bzip",overwrite)
+    def bzipdir(self, dirpath,overwrite=False):
+        raise Exception("NOT IMPLEMENTED YET, sorry :-( ")
+        return self.execute(dirpath,"bzip",overwrite)
 
 
 class output:
@@ -154,7 +156,7 @@ def system(cmd, *args):
     # According to POSIX, return codes are unsigned 8 bit. Python seems to use 16-bit return codes.
     # Therefore,  a return code which is modulo 256 will cause overflow,
     # and as such  a non-zero return code will be passed back as a 0. The below
-    # floor() makes sure that any error > 256 is returned as 255. We lose some error info, but better than
+    # makes sure that any error > 256 is returned as 255. We lose some error info, but better than
     # returning 0 inadvertantly. This may be because of how uint was defined on the 64bit system cPython was built on.
     if rc > 255: rc=255
     return rc

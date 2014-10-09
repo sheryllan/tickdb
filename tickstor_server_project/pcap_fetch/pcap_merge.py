@@ -16,6 +16,10 @@ class pcapMerge:
 
     def mergePCAPs(self,outfile,pcaplist):
         ''' Take a list of pcap files to merge (full paths) that we want to merge '''
+    
+        if not outfile.endswith(".pcap"):
+            outfile = outfile.strip() + ".pcap" #We always want the pcap extension for files, so add if not there
+
         #If we are processing PCAPs again, we need to delete the old target (if it exists), and recreate
         if len(pcaplist) < 3: self.multi = False
         rc = -1
@@ -107,7 +111,7 @@ class pcapMerge:
         def execbot(item):
             # 1. get list of all pcap files in folder. Following pattern as setup by Kieran ( $filename.pcap([0-9]*) )
             files = os.listdir(item[0])
-            files = filter( lambda x: re.match("(EMDI.*|ETI)\.pcap[0-9]{0,9}$", x) != None, files)
+            files = filter( lambda x: re.match("(EMDI.*|ETI).*.\.pcap[0-9]{0,9}$", x) != None, files)
             files = map(lambda x: os.path.join(item[0], x), files)
             files = filter( lambda x: x.endswith("bz2") == False, files) 
             if len(files) == 0:

@@ -135,21 +135,24 @@ if __name__ == "__main__":
             row.append("ERROR: Could not bunzip all files. See log for more errors. ")
             failed_transfers[row[0]] = row
 
-        # So, we managed to bunzip all the pcaps. Now what is left is to move them to the long term storage area.a
+        # So, we managed to bunzip all the pcaps. Now what is left is to move them to the long term storage area.
         outpath = os.path.join(raw_pcap_path,row[0], hrts )
         out.pout("Output to %s. Creating path if non existant." % outpath)
-        if os.path.exists(outpath) == False: os.makedirs(outpath)
-        createdPaths.append(outpath)
-        rc = os.system("rsync -rvc %s/ %s/" % (savedpath,outpath))
+        if os.path.exists(outpath) == False: 
+            os.makedirs(outpath)
+            createdPaths.append(outpath)
+            rc = os.system("rsync -rvu %s/ %s/" % (savedpath,outpath))
+        else:
+            out.pout("Path exists, replacing contents...")
+            rc = os.system("rsync --delete -rvc %s/ %s/" % (savedpath,outpath))
         
         if rc == 0: 
-            createdPaths.append(outpath)
             system("rm","-r","-f",savedpath) #We no longer need the savedpath, as we've copied the files off OK (zero rc)
             out.pout("Folder moved successfully.")
         else:
             out.perr("Error moving folder. Got return code: %d" % rc)
             # According to POSIX, return codes are 8 bit. Python and GNU/Linux seems to use 16-bit return codes.
-            # Therefore,  a return code which is modulo 256 will cause overflow,
+            # Therefore, it seems a return code which is modulo 256 will cause overflow,
             # and a return code of 0 is passed back to OS, even if it was a failure. The below
             # max() makes sure that any error > 256 is returned as 255. We lose some error info, but better than
             # returning 0 inadvertantly.
