@@ -16,15 +16,25 @@ class pcapMerge:
 
     def mergePCAPs(self,outfile,pcaplist):
         ''' Take a list of pcap files to merge (full paths) that we want to merge '''
+    
+        if not outfile.endswith(".pcap"):
+            outfile = outfile.strip() + ".pcap" #We always want the pcap extension for files, so add if not there
+
         #If we are processing PCAPs again, we need to delete the old target (if it exists), and recreate
         if len(pcaplist) < 3: self.multi = False
+        rc = -1
+        if os.path.exists( os.path.dirname(outfile) ) == True:  shutil.rmtree( os.path.dirname(outfile) )
+        try:
+            os.makedirs( os.path.dirname(outfile) )
+        except OSError as e:
+            self.out.perr("Could not make dir '%s'! Aborting and cleaning up." % os.path.dirname(outfile) )
+            exit(-1)
+
         if len(pcaplist) == 1 : 
             shutil.copyfile(pcaplist.pop(), outfile) #We only have one file, no need to merge
             return 0
 
-        rc = -1
-        if os.path.exists( os.path.dirname(outfile) ) == True:  shutil.rmtree( os.path.dirname(outfile) )
-        os.makedirs( os.path.dirname(outfile) )
+
         pcaplist = map( lambda x: x.strip(), pcaplist)
         tmplist = []
         if self.multi == False:
@@ -101,7 +111,7 @@ class pcapMerge:
         def execbot(item):
             # 1. get list of all pcap files in folder. Following pattern as setup by Kieran ( $filename.pcap([0-9]*) )
             files = os.listdir(item[0])
-            files = filter( lambda x: re.match("(EMDI.*|ETI)\.pcap[0-9]{0,9}$", x) != None, files)
+            files = filter( lambda x: re.match("(EMDI.*|ETI).*.\.pcap[0-9]{0,9}$", x) != None, files)
             files = map(lambda x: os.path.join(item[0], x), files)
             files = filter( lambda x: x.endswith("bz2") == False, files) 
             if len(files) == 0:
@@ -118,7 +128,6 @@ class pcapMerge:
         rp = []
         while len(uf) != 0:
             sleep(0.5)
-            print uf
             while (len(rp) < (mp.cpu_count()) ):
                 try:
                     item = uf.pop()
@@ -133,10 +142,25 @@ class pcapMerge:
 
         for p in rp: p[0].join() #wait for processes to finish
 if __name__ == "__main__":
-    print "Starting auto-testing system"
+    def cleanup():
+        os.unlink("/tmp/pcapmerge.pid")
+
+    if os.path.exists("/tmp/pcapmerge.pid") == True:
+        fd = open("/tmp/pcapmerge.pid","r")
+        pid = fd.readline()
+        fd.close()
+        print "ERROR! Lockfile present. Apparently we are already running as PID %d. If this is an error please delete /tmp/pcapmerge.pid and rerun" % int(pid)
+        sys.exit(2)
+    else:
+        fd = open("/tmp/pcapmerge.pid","w")
+        fd.write(str(os.getpid()) + "\n")
+        fd.close()
+
+    print "Beginning PCAP Merge"
     sclock = time()
     pm = pcapMerge(False)
     pm.merge_unprocessed_pcaps()
     print "Done. Execution took %2f seconds" % ( time() - sclock )
 
+    cleanup()
     sys.exit(0)
