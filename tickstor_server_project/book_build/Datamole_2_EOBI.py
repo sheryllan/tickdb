@@ -1,4 +1,3 @@
-from BookData import *
 import sys
 
 class EOBI:

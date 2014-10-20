@@ -1,15 +1,42 @@
 #!/usr/bin/env python3
 
-# TODO list
-# 1- add exception to Datamole constructir is id of the message is not EOBI, i.e. sl[0]!=2
-
-# -*- coding: utf-8 -*-
 import string, datetime, os, sys, argparse, logging, multiprocessing, pickle
 import xml.etree.ElementTree as ET
 import mimetypes as mim
 import Datamole_2_EOBI as EOBI
 import Datamole_2_ETI as ETI
+import numpy as np
+import pandas as pd
 
+template_to_columns = {}
+id_to_template = {}
+
+# =============================
+#	Datamole  decoder
+# =============================
+class Datamole:
+	def __init__(self,line):
+		self.name=""
+		self.timestamp=""
+		self.interface=-1
+		self.id=-1
+		self.values={}
+		
+		try:
+			sl=line.strip('\n').split(',')
+			self.interface=sl[0] 
+			self.id=sl[1]
+			#tick.seqnum=sl[2]
+			self.timestamp=sl[3].replace('.','') #arista timestamp
+			self.name=id_to_template[self.id]
+			# Values are supposed to appear in the CSV file in the same
+			# order as the <detail> tags in the XML file
+			for i,key in enumerate(template_to_columns[self.name]):
+				self.values[key]=sl[4+i]
+			self.valid = True
+		except:
+			self.valid = False
+	
 def setlog(log_level):
 	log = logging.getLogger()
 	log.setLevel(log_level)
@@ -46,38 +73,6 @@ def parseTemplates(path):
 	return id_to_template,template_to_columns
 
 # ====================
-#	Line decode
-# ====================
-class Datamole:
-	def __init__(self,line,id_to_template,template_to_columns,log=None):
-		if log is None:
-			log=setlog()
-		self.__log=log
-		self.name=""
-		self.timestamp=""
-		self.interface=-1
-		self.id=-1
-		self.values={}
-		self.id_to_template=id_to_template
-		self.template_to_columns=template_to_columns
-		self.__makeTick(line)
-		
-	def __makeTick(self,line):
-		try:
-			sl=line.strip('\n').split(',')
-			self.interface=sl[0]
-			self.id=sl[1]
-			#tick.seqnum=sl[2]
-			self.timestamp=sl[3].replace('.','') #arista timestamp
-			self.name=self.id_to_template[self.id]
-			# Values are supposed to appear in the CSV file in the same
-			# order as the <detail> tags in the XML file
-			for i,key in enumerate(self.template_to_columns[self.name]):
-				self.values[key]=sl[4+i]
-		except:
-			self.__log.fatal(line)
-				   
-# ====================
 #     Main program 
 # ====================
 def main():
@@ -98,22 +93,23 @@ def main():
 	levels = args.levels
 
 	#Parse XML Templates		
+	global id_to_template, template_to_columns
 	id_to_template,template_to_columns=parseTemplates(path)
 		
 	# Get EOBI files list
 	files=os.listdir(eobi_path)
 	# we only want .csv files
 	files = [x for x in sorted(files) if mim.guess_type(x)[0]=='text/csv']
-	dir_date=os.path.split(os.path.split(eobi_path)[0])[1] # date we want to process
-	log.info("Reading {0} files".format(len(files)))
+	# dates we want to process
+	dir_date=os.path.split(os.path.split(eobi_path)[0])[1]
 
 	# Read all the files in one pass
-	eobi_ticks=[] # ticks after "Datamole" parsing
+	log.info("Reading {0} files".format(len(files)))
 	lines=[] # ticks as strings from their respective files
 	for file in files:
 		# check the file date is the same as the dir date
 		file_date=datetime.datetime.fromtimestamp(
-				float(file.split('-')[0])).date().strftime("%Y%m%d")
+			float(file.split('-')[0])).date().strftime("%Y%m%d")
 		# read and store all the file
 		if file_date==dir_date:
 			with open(os.path.join(eobi_path,file)) as o:
@@ -122,12 +118,7 @@ def main():
 
 	# Parse string ticks into Datamole ticks
 	log.info("Parsing strings into ticks")
-	i=0
-	for line in lines:
-		eobi_ticks.append(Datamole(line,id_to_template,template_to_columns,log))
-		i+=1
-		if i%1000000==0:
-			log.info("processed {0} lines".format(i))
+	eobi_ticks = [ Datamole(line,id_to_template,template_to_columns,log) for line in lines]
 	log.info("Datamole decoded {0} lines into ticks".format(len(eobi_ticks)))
 	del lines # free up memory
 	sys.exit("Bye")
