@@ -11,22 +11,31 @@ class EOBI:
 		# fast set to check ticks type and process them or not
 		self.__headers = frozenset(["eobi_header","eobi_13600_product_summary",
 			"eobi_13601_instrument_summary_header_body","eobi_13602_snapshot_order"])
+		self.__snap_headers = frozenset(["eobi_13600_product_summary",
+			"eobi_13601_instrument_summary_header_body","eobi_13602_snapshot_order"])
+
+		# The books
 		self.bookData = ByOrderBookData(levels)
+
+		# Snapshot flow management
 		self.__snapshot_cycle=-1 # keeps track of where we are in the snapshot cycle
-		self.__new_snapshot_cycle=-1 # this is to handle a snapshot cycle that comes before the last one ends.
 		self.__snapshot_queue=[] # for storing out of sequence snapshot cycle ticks
-		self.__new_snapshot_queue=[] # for storing out of sequence snapshot cycle ticks for the new cylce when the old one is not done.
-		self.__last_header=None #this is the last eobi_header we use this to check for the end of the cycle
-		self.__previous_tick=None #this is the last tick... we use the to check for the end of the cycle
+		self.__new_snapshot_cycle=-1 # this is to handle a snapshot cycle that comes before the last one ends.
+		self.__new_snapshot_queue=[] # for storing out of sequence snapshot cycle ticks for the new cycle when the old one is not done.
+
+		self.__last_header=None # this is the last eobi_header we use this to check for the end of the cycle
+		self.__previous_tick=None #this is the last tick...    we use this to check for the end of the cycle
 		self.__last_seqnum=0 # The last sequence number that the snapshot cycle is looking at.
 		self.__uid=None #this is the current uid in the snapshot cycle
 		self.snapshot_products={} #we use this to make sure we only snapshot each product once.		
+
+		# ???
 		self.__missing_seqnum={}
 		self.__last_seqnum={}
 	
 	def __getstate__(self):
 		d = dict(self.__dict__)
-		print d.keys()
+		print(d.keys())
 		del d['_EOBI__log']#TODO: need to drop the logger because it won't pickle, but need to handle loading it better.
 		del d['_EOBI__snapshot_queue']
 		del d['_EOBI__last_header']
@@ -49,7 +58,7 @@ class EOBI:
 					self.bookData.init_book(uid,msgseqnum)
 					self.__log.info("Found first product:  {0} {1} {2}".
 							format(uid,tick.name,msgseqnum))
-			# XXX all the subsequent messages will be ignored from hereon.
+			# XXX all the subsequent messages will be ignored from here.
 			# XXX this loop should stop here !
 			
 	# 
@@ -80,6 +89,8 @@ class EOBI:
 		
 				# update last seq number with current number
 				self.__last_seqnum[uid]=msgseqnum
+		for uid in self.__missing_seqnum:
+			self.__log.info("{0} has {1} missing ticks".format(uid,len(self.__missing_seqnum[uid])))
 		
 	def computeSnapshotData(self,ticks):
 		for tick in ticks:
@@ -87,20 +98,21 @@ class EOBI:
 			if tick.name=='eobi_header':
 				# Check if the previous snapshot message was a Complete message
 				# indicating the end of the snapshot cycle.
-				if self.__previous_tick is not None and self.__previous_tick.name in self.__headers:
+				if self.__previous_tick is not None and self.__previous_tick.name in self.__snap_headers:
 					if self.__last_header is not None and int(self.__last_header.values["CompletionIndicator"])==1:
-						#End of snapshot cyle.  Clean up.
-						self.__log.debug("Clear End: " + tick.name)
+						# End of snapshot cyle.  Clean up.
+						self.__log.info("Clear End: " + tick.name)
 						self.__snapshot_queue=[]
 						self.__snapshot_cycle=-1
 						self.__last_seqnum=0
 				self.__last_header=tick 
-			count = 0
+
 			# This is the case where we get the start too early.
+			count = 0
 			if self.__snapshot_cycle==-1:
 				while count<len(self.__new_snapshot_queue):
-					self.__log.debug("Running New Cycle")
-					qtick= self.__new_snapshot_queue.pop(0)
+					self.__log.info("Running New Cycle")
+					qtick = self.__new_snapshot_queue.pop(0)
 					self.__readTickForSnapshot(qtick,True)
 					count+=1
 				self.__new_snapshot_queue=[]
@@ -114,26 +126,26 @@ class EOBI:
 			self.__previous_tick=tick
 
 	def __readTickForSnapshot(self,tick,recheck=False):
-		if tick.name in self.__headers:
+		if tick.name in self.__snap_headers:
 			msgseqnum=int(tick.values['msgseqnum'])
 			# If we are already in a snapshot cycle and get the start of
 			# a new one without an end one, we have out of sequence packets.
-			if self.__snapshot_cycle>-0 and msgseqnum==0 and tick.name=="eobi_13600_product_summary":
+			if self.__snapshot_cycle>=0 and msgseqnum==0 and tick.name=="eobi_13600_product_summary":
 				self.__new_snapshot_queue.append(tick)
-				self.__log.debug("Too Early: " + str(msgseqnum) + " " + str(len(self.__new_snapshot_queue)))
+				self.__log.info("Too Early: " + str(msgseqnum) + " " + str(len(self.__new_snapshot_queue)))
 			elif (self.__snapshot_cycle>=0 and msgseqnum==self.__new_snapshot_cycle+1 and
 			     (tick.name=="eobi_13601_instrument_summary_header_body" or
 				     tick.name=="eobi_13602_snapshot_order")):
 				self.__new_snapshot_cycle=msgseqnum
 				self.__new_snapshot_queue.append(tick)
-				self.__log.debug("Too Early: " + str(msgseqnum) +
+				self.__log.info("Too Early: " + str(msgseqnum) +
 						" " + str(len(self.__new_snapshot_queue)))
 			# A product summary message with a sequence number of 0 starts the snapshot cycle
 			elif self.__snapshot_cycle==-1 and msgseqnum==0 and tick.name=="eobi_13600_product_summary":
 				self.__last_seqnum=int(tick.values['lastmegseqnumprocessed'])
 				self.__snapshot_cycle=0
-				self.__log.debug("Product Summary: " + str(self.__last_seqnum) +
-						" " + str(len(self.__snapshot_queue)))
+				#self.__log.info("Product Summary: " + str(self.__last_seqnum) +
+				#		" " + str(len(self.__snapshot_queue)))
 			# If we are in a snapshot cycle we can get Instrument Summary messages 
 			# and then Order Messages to build the book
 			elif (self.__snapshot_cycle>=0 and msgseqnum==self.__snapshot_cycle+1 and
@@ -143,10 +155,10 @@ class EOBI:
 				if (tick.name=="eobi_13601_instrument_summary_header_body"):
 					self.__uid=None #clear the previous UID
 					uid=tick.values['securityid']
-					self.__log.debug("InstMsg: " + str(msgseqnum) + " Q: " +
-							str(len(self.__snapshot_queue))+ " uid:" +
-							str(uid)+ " last:" + str(self.__last_seqnum) +
-							" incr: " + str(self.bookData.product_sequence_numbers[uid]))
+					#self.__log.info("InstMsg: " + str(msgseqnum) + " Q: " +
+					#		str(len(self.__snapshot_queue))+ " uid:" +
+					#		str(uid)+ " last:" + str(self.__last_seqnum) +
+					#		" incr: " + str(self.bookData.product_sequence_numbers[uid]))
 					# We only want to consider the security if:
 					# 1) We have not used the product before
 					# 2) The sequence number is one that we can grow the incremental from 
@@ -156,9 +168,9 @@ class EOBI:
 						self.__uid=uid
 						self.snapshot_products[self.__uid]=self.__last_seqnum
 						self.bookData.product_sequence_numbers[self.__uid]=self.__last_seqnum
-						self.__log.debug("New Product: " + str(self.__uid) + " " + str(len(self.__snapshot_queue)))
+						#self.__log.info("New Product: " + str(self.__uid) + " " + str(len(self.__snapshot_queue)))
 				if (tick.name=="eobi_13602_snapshot_order"):
-					self.__log.debug("OrdMsg: " + str(msgseqnum) + " " + str(len(self.__snapshot_queue)))
+					#self.__log.info("OrdMsg: " + str(msgseqnum) + " " + str(len(self.__snapshot_queue)))
 					# self.__uid is set by the Instrument Summary message
 					if self.__uid is not None and self.__uid in self.snapshot_products.keys():
 						oid=tick.values['trdregTStimepriority'] 
@@ -167,9 +179,9 @@ class EOBI:
 						#TODO: I am not sure if this is right to divide by 100000000
 						price=float(tick.values["price"])/100000000.0
 						self.__new_order(self.__uid,oid,side,price,qty,tick.timestamp)
-						self.__log.debug("Order " + str(msgseqnum) + " " 
-								+ str(oid)+ " " + str(side) + " " 
-								+ str(price) + " " + str(qty ))
+						#self.__log.info("Order " + str(msgseqnum) + " " 
+						#		+ str(oid)+ " " + str(side) + " " 
+						#		+ str(price) + " " + str(qty ))
 			# If we are in a snapshot cycle but the sequence nubmers do not add up,
 			# then we have an out of sequence packet that we need to reorder
 			elif(self.__snapshot_cycle>=0 and msgseqnum!=self.__snapshot_cycle+1 and
@@ -177,9 +189,9 @@ class EOBI:
 				# TODO: There is some funny stuff going on with this where I am up to
 				# packet 5000 and then I get packet 1200 and move up to and past 5000.  WTF IS THAT?
 				self.__snapshot_queue.append(tick)
-				if not recheck:
-					self.__log.debug("Out of sequence Snapshot: " + str(msgseqnum) +
-					" " + str(len(self.__snapshot_queue)))
+				#if not recheck:
+					#self.__log.info("Out of sequence Snapshot: " + str(msgseqnum) +
+					#" " + str(len(self.__snapshot_queue)))
 			elif self.__snapshot_cycle>=0:
 				pass #Something has gone wrong if we see this I think
 				self.__log.warn(tick.name + " " + str(msgseqnum)+ " "  + str(self.__snapshot_cycle))
@@ -197,15 +209,13 @@ class EOBI:
 				self.__missing_seqnum.pop(uid)
 				self.bookData.delete_book(uid)
 		# Now parse the data
-		for tick in ticks: # read file line by line
-			if(tick.name=='eobi_header' or
-			   tick.name=="eobi_13600_product_summary" or
-			   tick.name=="eobi_13601_instrument_summary_header_body" or
-			   tick.name=="eobi_13602_snapshot_order"):
+		for tick in ticks:
+			# pass over everything Snapshot
+			if tick.name in self.__headers:
 				continue
 			uid=tick.values['secid']
 			msgseqnum=int(tick.values['msgseqnum'])
-			#cycle through the missing sequence numbers
+			# cycle through the missing sequence numbers
 			if len(self.__missing_seqnum[uid])>0:
 				while len(self.__missing_seqnum[uid])>0 and msgseqnum>self.__missing_seqnum[uid][0]:
 					seq=self.__missing_seqnum[uid].pop(0)
@@ -237,7 +247,7 @@ class EOBI:
 				if uid not in self.bookData.product_stored_data:
 					self.bookData.product_stored_data[uid]=[]
 				self.bookData.product_stored_data[uid].append(tick)
-				self.__log.debug("OutOfSeq: {0} LastSeq: {1} CurrSeq: {2} Len: {3}".format(uid,
+				self.__log.info("OutOfSeq: {0} LastSeq: {1} CurrSeq: {2} Len: {3}".format(uid,
 					self.bookData.product_sequence_numbers[uid],msgseqnum,
 					len(self.bookData.product_stored_data[uid])))
 				#TODO:  We need to check that we had a clean parse...
@@ -309,7 +319,7 @@ class EOBI:
 				else:
 					pass
 			except:
-				print tick.name,tick.values.keys()
+				print(tick.name,tick.values.keys())
 							
 
 	############################################################
