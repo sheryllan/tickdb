@@ -63,75 +63,80 @@ class EOBI_decoder:
 
 	def main_loop(self):
 		self.convert_to_UDP_list()
-		seqnum = {} # UDP sequence number
+		lastproc_seqnum = {} # last processed UDP sequence number
+		seqnum = {} # last inserted UDP sequence number
 		WL={} # UDP waiting list
 
 		logging.info("Running main loop on {0} datagrams".format(len(self.udplist)))
 		for datagram in self.udplist:
-			print("-----------:new datagram:------------")
 			seqn=datagram[0].values["applseqnum"]
 			ipp = datagram[0].values["ip_dst"]+":"+datagram[0].values["udp_dst"] # get ip:port
-			print("len=",len(datagram), "seqn=",seqn,"ipp=",ipp)
-			if ipp not in seqnum: # first packet on this IP/port
-				seqnum[ipp] = seqn
-				WL[ipp] = [datagram]
-				compl = datagram[0].values["CompletionIndicator"]
-				print("added new ipp={0} compl={1}".format(ipp,compl))
+			compl=False
+			do_update_wl=False
+
+			print(seqn,ipp,len(datagram),end='',sep=',')
+			if ipp not in WL: # if WL never used, create it
+				WL[ipp] = []
+
+			# 0- if waiting list is empty, just push the new datagram into it
+			if len(WL[ipp])==0:
+				do_update_wl = True
+				print(",wl was empty",end='')
+			# 1- an open seq. exists, insert datagram into it
+			elif WL[ipp][-1][0].values["CompletionIndicator"]==0:
+				do_update_wl = True
+				print(",insert in open sequence",end='')
+			# 2- the datagram belongs to a new sequence, the current is incomplete
+			elif WL[ipp][-1][0].values["CompletionIndicator"]==1 and seqn > WL[ipp][-1][0].values["applseqnum"]:
+				# new sequence, so discard the previous one
+				lastproc_seqnum[ipp] = WL[ipp][-1][0].values["applseqnum"]
+				WL[ipp] = []
+				do_update_wl = True
+				print(",new sequence before end of previous one",end='')
+			# 3- the datagram belongs to an old discarded incomplete sequence
+			elif WL[ipp][-1][0].values["CompletionIndicator"]==1 and seqn < lastproc_seqnum[ipp]:
+				do_update_wl = False
+				print(",datagram belonging to old sequence lastproc=",lastproc_seqnum[ipp],end='',sep='')
 			else:
-				# if new datagram is too far in seq num, remove the waiting sequence (if any)
-				if seqn - seqnum[ipp] > self.seqnum_big_gap:
-					print("forward big gap detected: seqn={0} seqnum[ipp]={1}".format(seqn,seqnum[ipp]))
-					seqnum[ipp]=seqn
-					WL[ipp] = [datagram]
-					compl = datagram[0].values["CompletionIndicator"]
-				# if new datagram is too old, ignore it
-				elif seqnum[ipp] - seqn > self.seqnum_big_gap:
-					print("ignoring old datagram: seqn={0} seqnum[ipp]={1}".format(seqn,seqnum[ipp]))
-					pass
-				# else the datagram is not too far away from the previous datagrams
-				else:
-					print("lenWLavant=",len(WL[ipp]))
-					# if we receive a new datagram after incomplete completion
-					# of the previous one we discard the old one
-					if len(WL[ipp]) and WL[ipp][-1][0].values["CompletionIndicator"]==1 and seqn>WL[ipp][-1][0].values["applseqnum"]:
-						print("incomplete sequence is discarded")
-						WL[ipp] = []
+				print(",NOTHING",end='',sep='')
 
-					# insert the new datagram by order of seqnum in WL[ipp]
-					i=0
-					while i<len(WL[ipp]):
-						if WL[ipp][i][0].values["applseqnum"]>seqn:
-							break
-						else:
-							i+=1
-					WL[ipp].insert(i,datagram)
-					# update the seqnum with the latest in the sequence
-					seqnum[ipp] = WL[ipp][-1][0].values["applseqnum"]
-					print("lenWLapres=",len(WL[ipp]))
+			# insert the new datagram in the waiting list at its right position
+			if do_update_wl:
+				i=0
+				while i<len(WL[ipp]):
+					if WL[ipp][i][0].values["applseqnum"]>seqn:
+						break
+					else: i+=1
+				WL[ipp].insert(i,datagram)
+				print(",insertion at i=",i,end='')
+			else:
+				print(", no insertion",end='')
 
-					# check sequence has been completed
-					print("COMPLETION: ",WL[ipp][-1][0].values["CompletionIndicator"])
+			# check if we have a complete sequence to process
+			if WL[ipp][-1][0].values["CompletionIndicator"]==1:
+				s = [x[0].values["applseqnum"] for x in WL[ipp]]
+				compl = all([x==1 for x in (s[i+1]-s[i] for i in range(len(s)-1))])
+				print(",tested seq len(s)=",len(s),end='',sep='')
+			else:
+				compl = False
+				print(",no complete sequence to test yet",end='')
 
-					if WL[ipp][-1][0].values["CompletionIndicator"]==1:
-						s = [x[0].values["applseqnum"] for x in WL[ipp]] # get all seqnum of WL[ipp]
-						print("s=",s)
-						compl = all([x==1 for x in (s[i+1]-s[i] for i in range(len(s)-1))]) # check they are contiguous
-						print("allcompl=",compl)
-					else:
-						compl = False
-						s = [x[0].values["applseqnum"] for x in WL[ipp]] # get all seqnum of WL[ipp]
-						print("s=",s)
-						print("no CI, no processing")
-
+			print(",compl=",compl,sep='')
+			
+			# if a sequence is complete, then process it
 			if compl:
-				# process all messages
-				print("processing ",len(WL[ipp]))
 				for msg in sum(WL[ipp],[]):
 					self.process_msg(msg)
-				print("before proc s=",[x[0].values["applseqnum"] for x in WL[ipp]])
+				# update the seqnum with the latest in the sequence
+				for i in [x[0].values["applseqnum"] for x in WL[ipp]]:
+					print("#",ipp,i,sep=',')
+				lastproc_seqnum[ipp] = WL[ipp][-1][0].values["applseqnum"]
+				print(",lastproc=",lastproc_seqnum[ipp],end='',sep='')
 				WL[ipp] = []
-			print("-------------------------------")
-		print("processing done: books=",len(self.books))
+
+			print("")
+		print("done with book=",len(self.books))
+
 
 	def process_msg(self,msg):
 		print("processing ",msg.name)
