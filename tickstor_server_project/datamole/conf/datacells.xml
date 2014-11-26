@@ -1,0 +1,162 @@
+<tables>
+        <table indexes_can_be_null="true" name="Datafeed Detail" oneway_identifier="oneway_id" stream_type="datafeed" table_type_name="dd" twoway_identifier="twoway_id">
+                <column datatype="bigint" display_behaviour="SHOW_ALL" id="tmstamp" name="Timestamp" ngt="none" notnull="false" partition_every="900000" partition_max="63000000" partition_min="28800000" primary_key="true" type="bigint" unsigned="true"/>
+                <column datatype="int" id="unique_id" name="Unique ID" ngt="none" notnull="false" primary_key="true" type="int" unsigned="true"/>
+                <column datatype="varchar" display_behaviour="SHOW_ALL" id="oneway_id" index="1" name="Oneway Identifier" ngt="none" notnull="false" size="64" type="varchar"/>
+        </table>
+        <table indexes_can_be_null="true" name="Datafeed Rollup" oneway_identifier="oneway_id" stream_type="datafeed" table_type_name="dr" twoway_identifier="twoway_id">
+                <column datatype="bigint" id="tmstamp" name="Timestamp" ngt="none" notnull="false" primary_key="true" type="bigint" unsigned="true"/>
+                <column datatype="int" id="metrics_ctr" name="Metrics Counter" ngt="ctr" notnull="false" type="int" unsigned="true"/>
+                <column datatype="int" id="metrics_min" name="Metrics Min" ngt="min" notnull="false" type="int" unsigned="true"/>
+                <column datatype="int" id="metrics_avg" name="Metrics Average" ngt="avg" notnull="false" type="int" unsigned="true"/>
+                <column datatype="int" id="metrics_max" name="Metrics Max" ngt="max" notnull="false" type="int" unsigned="true"/>
+                <column datatype="bigint" id="metrics_sum" name="Metrics Sum" ngt="sum" notnull="false" type="bigint" unsigned="true"/>
+                <column datatype="smallint" id="counter_all" name="Counter All" ngt="ctr" notnull="false" type="smallint" unsigned="true"/>
+                <column datatype="smallint" id="counter_dup" name="Counter Duplicates" ngt="ctr" notnull="false" type="smallint" unsigned="true"/>
+                <column datatype="smallint" id="counter_unm" name="Counter Unmatched" ngt="ctr" notnull="false" type="smallint" unsigned="true"/>
+                <column datatype="smallint" id="counter_drp" name="Counter Dropped" ngt="ctr" notnull="false" type="smallint" unsigned="true"/>
+                <column datatype="smallint" id="counter_oos" name="Counter Out Of Sequence" ngt="ctr" notnull="false" type="smallint" unsigned="true"/>
+                <column datatype="int" id="counter_chn" name="Counter Channels" ngt="ctr" notnull="false" type="int" unsigned="true"/>
+                <column datatype="int" id="jitter_chn" name="Jitter Channels" ngt="ctr" notnull="false" type="int" unsigned="true"/>
+                <column datatype="int" id="jitter_ctr" name="Jitter Counter" ngt="ctr" notnull="false" type="int" unsigned="true"/>
+                <column datatype="bigint" id="jitter_min" name="Jitter Min" ngt="min" notnull="false" type="bigint" unsigned="true"/>
+                <column datatype="bigint" id="jitter_avg" name="Jitter Average" ngt="avg" notnull="false" type="bigint" unsigned="true"/>
+                <column datatype="bigint" id="jitter_max" name="Jitter Max" ngt="max" notnull="false" type="bigint" unsigned="true"/>
+        </table>
+        <table indexes_can_be_null="false" name="Datafeed Alerts" oneway_identifier="oneway_id" stream_type="datafeed" table_type_name="da" twoway_identifier="twoway_id">
+                <column datatype="bigint" id="tmstamp" index="1" name="Timestamp" ngt="none" notnull="false" type="bigint" unsigned="true"/>
+                <column datatype="char" id="context" name="Context" ngt="none" notnull="false" size="2" type="char"/>
+                <column datatype="varchar" id="metric" name="Metric" ngt="none" notnull="false" size="15" type="varchar"/>
+                <column datatype="char" id="comparator" name="Comparator" ngt="none" notnull="false" size="2" type="char"/>
+                <column datatype="bigint" id="degraded" name="Degraded threshold" ngt="none" notnull="false" type="bigint" unsigned="true"/>
+                <column datatype="bigint" id="critical" name="Critical threshold" ngt="none" notnull="false" type="bigint" unsigned="true"/>
+                <column datatype="int" id="count" name="Breach Count" ngt="ctr" notnull="false" type="int" unsigned="true"/>
+                <column datatype="int" id="duration" name="Time Period" ngt="none" notnull="false" type="int" unsigned="true"/>
+                <column datatype="tinyint" id="severity" name="Severity" ngt="none" notnull="false" type="tinyint" unsigned="true"/>
+                <column datatype="bigint" id="value" name="Value" ngt="none" notnull="false" type="bigint" unsigned="true"/>
+                <column datatype="bigint" id="app_tmstamp" name="App Timestamp" ngt="none" notnull="false" type="bigint" unsigned="true"/>
+        </table>
+        <table indexes_can_be_null="true" name="Oneway Detail" oneway_identifier="oneway_id" stream_type="oneway" table_type_name="od" twoway_identifier="twoway_id">
+                <column datatype="bigint" display_behaviour="SHOW_ALL" id="tmstamp" name="Timestamp" ngt="none" notnull="false" partition_every="900000" partition_max="63000000" partition_min="28800000" primary_key="true" type="bigint" unsigned="true"/>
+                <column datatype="bigint" id="unique_id" name="Unique Identifier" ngt="none" notnull="false" primary_key="true" type="bigint" unsigned="true"/>
+                <column datatype="varchar" display_behaviour="SHOW_ALL" id="oneway_id" index="1" name="Oneway Identifier" ngt="none" notnull="false" size="64" type="varchar"/>
+                <column datatype="int" display_behaviour="SHOW_ALL" id="latency" name="Network Latency" ngt="none" notnull="false" type="int" unsigned="true"/>
+        </table>
+        <table indexes_can_be_null="true" name="Oneway Rollup" oneway_identifier="oneway_id" stream_type="oneway" table_type_name="or" twoway_identifier="twoway_id">
+                <column datatype="bigint" id="tmstamp" name="Timestamp" ngt="none" notnull="false" primary_key="true" type="bigint" unsigned="true"/>
+                <column datatype="tinyint" id="source1" name="Source 1" ngt="none" notnull="false" type="tinyint" unsigned="true"/>
+                <column datatype="tinyint" id="source2" name="Source 2" ngt="none" notnull="false" type="tinyint" unsigned="true"/>
+                <column datatype="int" id="latency_ctr" name="Latency Counter" ngt="ctr" notnull="false" type="int" unsigned="true"/>
+                <column datatype="int" id="latency_min" name="Latency Min" ngt="min" notnull="false" type="int" unsigned="true"/>
+                <column datatype="int" id="latency_avg" name="Latency Average" ngt="avg" notnull="false" type="int" unsigned="true"/>
+                <column datatype="int" id="latency_max" name="Latency Max" ngt="max" notnull="false" type="int" unsigned="true"/>
+                <column datatype="bigint" id="latency_sum" name="Latency Sum" ngt="sum" notnull="false" type="bigint" unsigned="true"/>
+                <column datatype="smallint" id="counter_all" name="Counter All" ngt="ctr" notnull="false" type="smallint" unsigned="true"/>
+                <column datatype="smallint" id="counter_dup" name="Counter Duplicates" ngt="ctr" notnull="false" type="smallint" unsigned="true"/>
+                <column datatype="smallint" id="counter_unm" name="Counter Unmatched" ngt="ctr" notnull="false" type="smallint" unsigned="true"/>
+                <column datatype="smallint" id="counter_drp" name="Counter Dropped" ngt="ctr" notnull="false" type="smallint" unsigned="true"/>
+                <column datatype="smallint" id="counter_oos" name="Counter Out Of Sequence" ngt="ctr" notnull="false" type="smallint" unsigned="true"/>
+                <column datatype="int" id="counter_chn" name="Counter Channels" ngt="ctr" notnull="false" type="int" unsigned="true"/>
+                <column datatype="int" id="jitter_chn" name="Jitter Channels" ngt="ctr" notnull="false" type="int" unsigned="true"/>
+                <column datatype="int" id="jitter_ctr" name="Jitter Counter" ngt="ctr" notnull="false" type="int" unsigned="true"/>
+                <column datatype="bigint" id="jitter_min" name="Jitter Min" ngt="min" notnull="false" type="bigint" unsigned="true"/>
+                <column datatype="bigint" id="jitter_avg" name="Jitter Average" ngt="avg" notnull="false" type="bigint" unsigned="true"/>
+                <column datatype="bigint" id="jitter_max" name="Jitter Max" ngt="max" notnull="false" type="bigint" unsigned="true"/>
+        </table>
+        <table indexes_can_be_null="true" name="Oneway Hops" oneway_identifier="oneway_id" stream_type="oneway" table_type_name="oh" twoway_identifier="twoway_id">
+                <column datatype="bigint" id="tmstamp" name="Timestamp" ngt="none" notnull="false" primary_key="true" type="bigint" unsigned="true"/>
+                <column datatype="tinyint" id="source1" name="Source 1" ngt="none" notnull="false" primary_key="true" type="tinyint" unsigned="true"/>
+                <column datatype="tinyint" id="source2" name="Source 2" ngt="none" notnull="false" primary_key="true" type="tinyint" unsigned="true"/>
+                <column datatype="int" id="latency_ctr" name="Latency Counter" ngt="ctr" notnull="false" type="int" unsigned="true"/>
+                <column datatype="int" id="latency_min" name="Latency Min" ngt="min" notnull="false" type="int" unsigned="true"/>
+                <column datatype="int" id="latency_avg" name="Latency Average" ngt="avg" notnull="false" type="int" unsigned="true"/>
+                <column datatype="int" id="latency_max" name="Latency Max" ngt="max" notnull="false" type="int" unsigned="true"/>
+                <column datatype="bigint" id="latency_sum" name="Latency Sum" ngt="sum" notnull="false" type="bigint" unsigned="true"/>
+                <column datatype="smallint" id="counter_all" name="Counter All" ngt="ctr" notnull="false" type="smallint" unsigned="true"/>
+                <column datatype="smallint" id="counter_dup" name="Counter Duplicates" ngt="ctr" notnull="false" type="smallint" unsigned="true"/>
+                <column datatype="smallint" id="counter_unm" name="Counter Unmatched" ngt="ctr" notnull="false" type="smallint" unsigned="true"/>
+                <column datatype="smallint" id="counter_drp" name="Counter Dropped" ngt="ctr" notnull="false" type="smallint" unsigned="true"/>
+                <column datatype="smallint" id="counter_oos" name="Counter Out Of Sequence" ngt="ctr" notnull="false" type="smallint" unsigned="true"/>
+                <column datatype="int" id="counter_chn" name="Counter Channels" ngt="ctr" notnull="false" type="int" unsigned="true"/>
+                <column datatype="int" id="jitter_chn" name="Jitter Channels" ngt="ctr" notnull="false" type="int" unsigned="true"/>
+                <column datatype="int" id="jitter_ctr" name="Jitter Counter" ngt="ctr" notnull="false" type="int" unsigned="true"/>
+                <column datatype="bigint" id="jitter_min" name="Jitter Min" ngt="min" notnull="false" type="bigint" unsigned="true"/>
+                <column datatype="bigint" id="jitter_avg" name="Jitter Average" ngt="avg" notnull="false" type="bigint" unsigned="true"/>
+                <column datatype="bigint" id="jitter_max" name="Jitter Max" ngt="max" notnull="false" type="bigint" unsigned="true"/>
+        </table>
+        <table indexes_can_be_null="false" name="Oneway Alerts" oneway_identifier="oneway_id" stream_type="oneway" table_type_name="oa" twoway_identifier="twoway_id">
+                <column datatype="bigint" id="tmstamp" index="1" name="Timestamp" ngt="none" notnull="false" type="bigint" unsigned="true"/>
+                <column datatype="char" id="context" name="Context" ngt="none" notnull="false" size="2" type="char"/>
+                <column datatype="varchar" id="metric" name="Metric" ngt="none" notnull="false" size="15" type="varchar"/>
+                <column datatype="char" id="comparator" name="Comparator" ngt="none" notnull="false" size="2" type="char"/>
+                <column datatype="bigint" id="degraded" name="Degraded threshold" ngt="none" notnull="false" type="bigint" unsigned="true"/>
+                <column datatype="bigint" id="critical" name="Critical threshold" ngt="none" notnull="false" type="bigint" unsigned="true"/>
+                <column datatype="int" id="count" name="Breach Count" ngt="ctr" notnull="false" type="int" unsigned="true"/>
+                <column datatype="int" id="duration" name="Time Period" ngt="none" notnull="false" type="int" unsigned="true"/>
+                <column datatype="tinyint" id="severity" name="Severity" ngt="none" notnull="false" type="tinyint" unsigned="true"/>
+                <column datatype="bigint" id="value" name="Value" ngt="none" notnull="false" type="bigint" unsigned="true"/>
+                <column datatype="bigint" id="app_tmstamp" name="App Timestamp" ngt="none" notnull="false" type="bigint" unsigned="true"/>
+        </table>
+        <table indexes_can_be_null="true" name="Twoway Details" oneway_identifier="oneway_id" stream_type="twoway" table_type_name="td" twoway_identifier="twoway_id">
+                <column datatype="bigint" display_behaviour="SHOW_ALL" id="tmstamp" name="Timestamp" ngt="none" notnull="false" partition_every="300000" partition_max="63000000" partition_min="28800000" primary_key="true" type="bigint" unsigned="true"/>
+                <column datatype="bigint" id="unique_id" name="Unique Identifier" ngt="none" notnull="false" primary_key="true" type="bigint" unsigned="true"/>
+                <column datatype="varchar" display_behaviour="SHOW_ALL" id="oneway_id" name="Oneway Identifier" ngt="none" notnull="false" size="64" type="varchar"/>
+                <column datatype="varchar" display_behaviour="SHOW_ALL" id="twoway_id" index="1" name="Twoway Identifier" ngt="none" notnull="false" size="64" type="varchar"/>
+                <column datatype="tinyint" display_behaviour="SHOW_ALL" id="direction" name="Direction" ngt="none" notnull="false" type="tinyint" unsigned="true"/>
+                <column datatype="bigint" display_behaviour="SHOW_ALL" id="latency_rq" name="Request Latency" ngt="none" notnull="false" type="bigint" unsigned="true"/>
+                <column datatype="bigint" display_behaviour="SHOW_ALL" id="latency_rp" name="Response Latency" ngt="none" notnull="false" type="bigint" unsigned="true"/>
+                <column datatype="bigint" display_behaviour="SHOW_ALL" id="latency_fl" name="Round Trip Latency" ngt="none" notnull="false" type="bigint" unsigned="true"/>
+                <column datatype="bigint" display_behaviour="SHOW_ALL" id="latency_lf" name="Turn Around Latency" ngt="none" notnull="false" type="bigint" unsigned="true"/>
+        </table>
+        <table indexes_can_be_null="true" name="Twoway Last-First" oneway_identifier="oneway_id" stream_type="twoway" table_type_name="tl" twoway_identifier="twoway_id">
+                <column datatype="bigint" id="tmstamp" name="Timestamp" ngt="none" notnull="false" primary_key="true" type="bigint" unsigned="true"/>
+                <column datatype="int" id="latency_ctr" name="Latency Counter" ngt="ctr" notnull="false" type="int" unsigned="true"/>
+                <column datatype="int" id="latency_min" name="Latency Min" ngt="min" notnull="false" type="int" unsigned="true"/>
+                <column datatype="int" id="latency_avg" name="Latency Average" ngt="avg" notnull="false" type="int" unsigned="true"/>
+                <column datatype="int" id="latency_max" name="Latency Max" ngt="max" notnull="false" type="int" unsigned="true"/>
+                <column datatype="bigint" id="latency_sum" name="Latency Sum" ngt="sum" notnull="false" type="bigint" unsigned="true"/>
+                <column datatype="smallint" id="counter_all" name="Counter All" ngt="ctr" notnull="false" type="smallint" unsigned="true"/>
+                <column datatype="smallint" id="counter_dup" name="Counter Duplicates" ngt="ctr" notnull="false" type="smallint" unsigned="true"/>
+                <column datatype="smallint" id="counter_unm" name="Counter Unmatched" ngt="ctr" notnull="false" type="smallint" unsigned="true"/>
+                <column datatype="smallint" id="counter_drp" name="Counter Dropped" ngt="ctr" notnull="false" type="smallint" unsigned="true"/>
+                <column datatype="smallint" id="counter_oos" name="Counter Out Of Sequence" ngt="ctr" notnull="false" type="smallint" unsigned="true"/>
+                <column datatype="int" id="counter_chn" name="Counter Channels" ngt="ctr" notnull="false" type="int" unsigned="true"/>
+                <column datatype="int" id="jitter_chn" name="Jitter Channels" ngt="ctr" notnull="false" type="int" unsigned="true"/>
+                <column datatype="int" id="jitter_ctr" name="Jitter Counter" ngt="ctr" notnull="false" type="int" unsigned="true"/>
+                <column datatype="bigint" id="jitter_min" name="Jitter Min" ngt="min" notnull="false" type="bigint" unsigned="true"/>
+                <column datatype="bigint" id="jitter_avg" name="Jitter Average" ngt="avg" notnull="false" type="bigint" unsigned="true"/>
+                <column datatype="bigint" id="jitter_max" name="Jitter Max" ngt="max" notnull="false" type="bigint" unsigned="true"/>
+        </table>
+        <table indexes_can_be_null="true" name="Twoway First-Last" oneway_identifier="oneway_id" stream_type="twoway" table_type_name="tf" twoway_identifier="twoway_id">
+                <column datatype="bigint" id="tmstamp" name="Timestamp" ngt="none" notnull="false" primary_key="true" type="bigint" unsigned="true"/>
+                <column datatype="int" id="latency_ctr" name="Latency Counter" ngt="ctr" notnull="false" type="int" unsigned="true"/>
+                <column datatype="int" id="latency_min" name="Latency Min" ngt="min" notnull="false" type="int" unsigned="true"/>
+                <column datatype="int" id="latency_avg" name="Latency Average" ngt="avg" notnull="false" type="int" unsigned="true"/>
+                <column datatype="int" id="latency_max" name="Latency Max" ngt="max" notnull="false" type="int" unsigned="true"/>
+                <column datatype="bigint" id="latency_sum" name="Latency Sum" ngt="sum" notnull="false" type="bigint" unsigned="true"/>
+                <column datatype="smallint" id="counter_all" name="Counter All" ngt="ctr" notnull="false" type="smallint" unsigned="true"/>
+                <column datatype="smallint" id="counter_dup" name="Counter Duplicates" ngt="ctr" notnull="false" type="smallint" unsigned="true"/>
+                <column datatype="smallint" id="counter_unm" name="Counter Unmatched" ngt="ctr" notnull="false" type="smallint" unsigned="true"/>
+                <column datatype="smallint" id="counter_drp" name="Counter Dropped" ngt="ctr" notnull="false" type="smallint" unsigned="true"/>
+                <column datatype="smallint" id="counter_oos" name="Counter Out Of Sequence" ngt="ctr" notnull="false" type="smallint" unsigned="true"/>
+                <column datatype="int" id="counter_chn" name="Counter Channels" ngt="ctr" notnull="false" type="int" unsigned="true"/>
+                <column datatype="int" id="jitter_chn" name="Jitter Channels" ngt="ctr" notnull="false" type="int" unsigned="true"/>
+                <column datatype="int" id="jitter_ctr" name="Jitter Counter" ngt="ctr" notnull="false" type="int" unsigned="true"/>
+                <column datatype="bigint" id="jitter_min" name="Jitter Min" ngt="min" notnull="false" type="bigint" unsigned="true"/>
+                <column datatype="bigint" id="jitter_avg" name="Jitter Average" ngt="avg" notnull="false" type="bigint" unsigned="true"/>
+                <column datatype="bigint" id="jitter_max" name="Jitter Max" ngt="max" notnull="false" type="bigint" unsigned="true"/>
+        </table>
+        <table indexes_can_be_null="false" name="Twoway Alerts" oneway_identifier="oneway_id" stream_type="twoway" table_type_name="ta" twoway_identifier="twoway_id">
+                <column datatype="bigint" id="tmstamp" index="1" name="Timestamp" ngt="none" notnull="false" type="bigint" unsigned="true"/>
+                <column datatype="char" id="context" name="Context" ngt="none" notnull="false" size="2" type="char"/>
+                <column datatype="varchar" id="metric" name="Metric" ngt="none" notnull="false" size="15" type="varchar"/>
+                <column datatype="char" id="comparator" name="Comparator" ngt="none" notnull="false" size="2" type="char"/>
+                <column datatype="bigint" id="degraded" name="Degraded threshold" ngt="none" notnull="false" type="bigint" unsigned="true"/>
+                <column datatype="bigint" id="critical" name="Critical threshold" ngt="none" notnull="false" type="bigint" unsigned="true"/>
+                <column datatype="int" id="count" name="Breach Count" ngt="ctr" notnull="false" type="int" unsigned="true"/>
+                <column datatype="int" id="duration" name="Time Period" ngt="none" notnull="false" type="int" unsigned="true"/>
+                <column datatype="tinyint" id="severity" name="Severity" ngt="none" notnull="false" type="tinyint" unsigned="true"/>
+                <column datatype="bigint" id="value" name="Value" ngt="none" notnull="false" type="bigint" unsigned="true"/>
+                <column datatype="bigint" id="app_tmstamp" name="App Timestamp" ngt="none" notnull="false" type="bigint" unsigned="true"/>
+        </table>
+</tables>

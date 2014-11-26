@@ -1,0 +1,304 @@
+<strings>
+        <string id="eti_trade_twoway" template="eti_trade">
+                <component detail="msgseqnum"/>
+        </string>
+        <string id="eti_trade_oneway" template="eti_trade">
+                <component detail="ip_id"/>
+                <component detail="tcp_seq"/>
+        </string>
+        <string id="eti_10100_new_ord_oneway" template="eti_10100_new_ord">
+                <component detail="ip_id"/>
+                <component detail="tcp_seq"/>
+        </string>
+        <string id="eti_10101_new_ord_resp_oneway" template="eti_10101_new_ord_resp">
+                <component detail="ip_id"/>
+                <component detail="tcp_seq"/>
+        </string>
+        <string id="eti_10125_new_ord_s_oneway" template="eti_10125_new_ord_s">
+                <component detail="ip_id"/>
+                <component detail="tcp_seq"/>
+        </string>
+        <string id="eti_10102_new_ord_s_resp_oneway" template="eti_10102_new_ord_s_resp">
+                <component detail="ip_id"/>
+                <component detail="tcp_seq"/>
+        </string>
+        <string id="eti_10113_new_ord_m_oneway" template="eti_10113_new_ord_m">
+                <component detail="ip_id"/>
+                <component detail="tcp_seq"/>
+        </string>
+        <string id="eti_10103_imm_exec_resp_oneway" template="eti_10103_imm_exec_resp">
+                <component detail="ip_id"/>
+                <component detail="tcp_seq"/>
+        </string>
+        <string id="eti_10104_book_order_exec_oneway" template="eti_10104_book_order_exec">
+                <component detail="ip_id"/>
+                <component detail="tcp_seq"/>
+        </string>
+        <string id="eti_10106_rep_ord_oneway" template="eti_10106_rep_ord">
+                <component detail="ip_id"/>
+                <component detail="tcp_seq"/>
+        </string>
+        <string id="eti_10107_rep_ord_resp_oneway" template="eti_10107_rep_ord_resp">
+                <component detail="ip_id"/>
+                <component detail="tcp_seq"/>
+        </string>
+        <string id="eti_10126_rep_ord_s_oneway" template="eti_10126_rep_ord_s">
+                <component detail="ip_id"/>
+                <component detail="tcp_seq"/>
+        </string>
+        <string id="eti_10108_rep_ord_resp_s_oneway" template="eti_10108_rep_ord_resp_s">
+                <component detail="ip_id"/>
+                <component detail="tcp_seq"/>
+        </string>
+        <string id="eti_10114_rep_ord_m_oneway" template="eti_10114_rep_ord_m">
+                <component detail="ip_id"/>
+                <component detail="tcp_seq"/>
+        </string>
+        <string id="eti_10109_can_ord_oneway" template="eti_10109_can_ord">
+                <component detail="ip_id"/>
+                <component detail="tcp_seq"/>
+        </string>
+        <string id="eti_10107_can_ord_resp_oneway" template="eti_10107_can_ord_resp">
+                <component detail="ip_id"/>
+                <component detail="tcp_seq"/>
+        </string>
+        <string id="eti_10111_can_ord_resp_s_oneway" template="eti_10111_can_ord_resp_s">
+                <component detail="ip_id"/>
+                <component detail="tcp_seq"/>
+        </string>
+        <string id="eti_10123_can_ord_m_oneway" template="eti_10123_can_ord_m">
+                <component detail="ip_id"/>
+                <component detail="tcp_seq"/>
+        </string>
+        <string id="eti_10112_can_ord_not_oneway" template="eti_10112_can_ord_not">
+                <component detail="ip_id"/>
+                <component detail="tcp_seq"/>
+        </string>
+        <string id="eti_10120_mass_can_ord_oneway" template="eti_10120_mass_can_ord">
+                <component detail="ip_id"/>
+                <component detail="tcp_seq"/>
+        </string>
+        <string id="eti_10121_10124_mass_can_resp_oneway" template="eti_10121_10124_mass_can_resp">
+                <component detail="ip_id"/>
+                <component detail="tcp_seq"/>
+        </string>
+        <string id="eti_10122_mass_can_not_oneway" template="eti_10122_mass_can_not">
+                <component detail="ip_id"/>
+                <component detail="tcp_seq"/>
+        </string>
+        <string id="eti_10401_10118_quote_cross_req_oneway" template="eti_10401_10118_quote_cross_req">
+                <component detail="ip_id"/>
+                <component detail="tcp_seq"/>
+        </string>
+        <string id="eti_10402_10119_quote_cross_req_resp_oneway" template="eti_10402_10119_quote_cross_req_resp">
+                <component detail="ip_id"/>
+                <component detail="tcp_seq"/>
+        </string>
+        <string id="eti_10405_mass_quote_oneway" template="eti_10405_mass_quote">
+                <component detail="ip_id"/>
+                <component detail="tcp_seq"/>
+        </string>
+        <string id="eti_10406_mass_quote_resp_oneway" template="eti_10406_mass_quote_resp">
+                <component detail="ip_id"/>
+                <component detail="tcp_seq"/>
+        </string>
+        <string id="eti_10407_quote_exec_oneway" template="eti_10407_quote_exec">
+                <component detail="ip_id"/>
+                <component detail="tcp_seq"/>
+        </string>
+        <string id="eti_10408_quote_mass_cancel_req_oneway" template="eti_10408_quote_mass_cancel_req">
+                <component detail="ip_id"/>
+                <component detail="tcp_seq"/>
+        </string>
+        <string id="eti_10409_quote_mass_canc_resp_oneway" template="eti_10409_quote_mass_canc_resp">
+                <component detail="ip_id"/>
+                <component detail="tcp_seq"/>
+        </string>
+        <string id="eti_10410_quote_mass_canc_not_oneway" template="eti_10410_quote_mass_canc_not">
+                <component detail="ip_id"/>
+                <component detail="tcp_seq"/>
+        </string>
+        <string id="eti_10403_quote_activ_req_oneway" template="eti_10403_quote_activ_req">
+                <component detail="ip_id"/>
+                <component detail="tcp_seq"/>
+        </string>
+        <string id="eti_10404_quote_activ_resp_oneway" template="eti_10404_quote_activ_resp">
+                <component detail="ip_id"/>
+                <component detail="tcp_seq"/>
+        </string>
+        <string id="eti_10411_quote_activ_not_oneway" template="eti_10411_quote_activ_not">
+                <component detail="ip_id"/>
+                <component detail="tcp_seq"/>
+        </string>
+        <string id="eti_10100_new_ord_twoway" template="eti_10100_new_ord">
+                <component detail="msgseqnum"/>
+        </string>
+        <string id="eti_10101_new_ord_resp_twoway" template="eti_10101_new_ord_resp">
+                <component detail="msgseqnum"/>
+        </string>
+        <string id="eti_10125_new_ord_s_twoway" template="eti_10125_new_ord_s">
+                <component detail="msgseqnum"/>
+        </string>
+        <string id="eti_10102_new_ord_s_resp_twoway" template="eti_10102_new_ord_s_resp">
+                <component detail="msgseqnum"/>
+        </string>
+        <string id="eti_10113_new_ord_m_twoway" template="eti_10113_new_ord_m">
+                <component detail="msgseqnum"/>
+        </string>
+        <string id="eti_10103_imm_exec_resp_twoway" template="eti_10103_imm_exec_resp">
+                <component detail="msgseqnum"/>
+        </string>
+        <string id="eti_10104_book_order_exec_twoway" template="eti_10104_book_order_exec">
+                <component detail="execid"/>
+        </string>
+        <string id="eti_10106_rep_ord_twoway" template="eti_10106_rep_ord">
+                <component detail="msgseqnum"/>
+        </string>
+        <string id="eti_10107_rep_ord_resp_twoway" template="eti_10107_rep_ord_resp">
+                <component detail="msgseqnum"/>
+        </string>
+        <string id="eti_10126_rep_ord_s_twoway" template="eti_10126_rep_ord_s">
+                <component detail="msgseqnum"/>
+        </string>
+        <string id="eti_10108_rep_ord_resp_s_twoway" template="eti_10108_rep_ord_resp_s">
+                <component detail="msgseqnum"/>
+        </string>
+        <string id="eti_10114_rep_ord_m_twoway" template="eti_10114_rep_ord_m">
+                <component detail="msgseqnum"/>
+        </string>
+        <string id="eti_10109_can_ord_twoway" template="eti_10109_can_ord">
+                <component detail="msgseqnum"/>
+        </string>
+        <string id="eti_10107_can_ord_resp_twoway" template="eti_10107_can_ord_resp">
+                <component detail="msgseqnum"/>
+        </string>
+        <string id="eti_10111_can_ord_resp_s_twoway" template="eti_10111_can_ord_resp_s">
+                <component detail="msgseqnum"/>
+        </string>
+        <string id="eti_10123_can_ord_m_twoway" template="eti_10123_can_ord_m">
+                <component detail="msgseqnum"/>
+        </string>
+        <string id="eti_10120_mass_can_ord_twoway" template="eti_10120_mass_can_ord">
+                <component detail="msgseqnum"/>
+        </string>
+        <string id="eti_10121_10124_mass_can_resp_twoway" template="eti_10121_10124_mass_can_resp">
+                <component detail="msgseqnum"/>
+        </string>
+        <string id="eti_10112_can_ord_not_twoway" template="eti_10112_can_ord_not">
+                <component detail="ordid" offset="0" size="4"/>
+        </string>
+        <string id="eti_10122_mass_can_not_twoway" template="eti_10122_mass_can_not">
+                <component detail="trdregtstimeout"/>
+        </string>
+        <string id="eti_10401_10118_quote_cross_req_twoway" template="eti_10401_10118_quote_cross_req">
+                <component detail="msgseqnum"/>
+        </string>
+        <string id="eti_10402_10119_quote_cross_req_resp_twoway" template="eti_10402_10119_quote_cross_req_resp">
+                <component detail="msgseqnum"/>
+        </string>
+        <string id="eti_10405_mass_quote_twoway" template="eti_10405_mass_quote">
+                <component detail="msgseqnum"/>
+        </string>
+        <string id="eti_10406_mass_quote_resp_twoway" template="eti_10406_mass_quote_resp">
+                <component detail="msgseqnum"/>
+        </string>
+        <string id="eti_10407_quote_exec_twoway" template="eti_10407_quote_exec">
+                <component detail="sendingtime"/>
+        </string>
+        <string id="eti_10408_quote_mass_cancel_req_twoway" template="eti_10408_quote_mass_cancel_req">
+                <component detail="msgseqnum"/>
+        </string>
+        <string id="eti_10409_quote_mass_canc_resp_twoway" template="eti_10409_quote_mass_canc_resp">
+                <component detail="msgseqnum"/>
+        </string>
+        <string id="eti_10403_quote_activ_req_twoway" template="eti_10403_quote_activ_req">
+                <component detail="msgseqnum"/>
+        </string>
+        <string id="eti_10404_quote_activ_resp_twoway" template="eti_10404_quote_activ_resp">
+                <component detail="msgseqnum"/>
+        </string>
+        <string id="eti_10410_quote_mass_canc_not_twoway" template="eti_10410_quote_mass_canc_not">
+                <component detail="sendingtime" offset="0" size="4"/>
+        </string>
+        <string id="eti_10411_quote_activ_not_twoway" template="eti_10411_quote_activ_not">
+                <component detail="sendingtime" offset="0" size="4"/>
+        </string>
+        <string id="eobi_header_channel" template="eobi_header">
+                <component detail="ip_src"/>
+                <component detail="ip_dst"/>
+        </string>
+        <string id="eobi_header_oneway" template="eobi_header">
+                <component detail="ip_id"/>
+                <component detail="applseqnum"/>
+        </string>
+        <string id="eobi_13100_ord_add_oneway" template="eobi_13100_ord_add">
+                <component detail="ip_id"/>
+                <component detail="msgseqnum"/>
+        </string>
+        <string id="eobi_13504_top_of_book_oneway" template="eobi_13504_top_of_book">
+                <component detail="ip_id"/>
+                <component detail="msgseqnum"/>
+        </string>
+        <string id="eobi_13101_order_mod_oneway" template="eobi_13101_order_mod">
+                <component detail="ip_id"/>
+                <component detail="msgseqnum"/>
+        </string>
+        <string id="eobi_13102_order_del_oneway" template="eobi_13102_order_del">
+                <component detail="ip_id"/>
+                <component detail="msgseqnum"/>
+        </string>
+        <string id="eobi_13103_order_mass_del_oneway" template="eobi_13103_order_mass_del">
+                <component detail="ip_id"/>
+                <component detail="msgseqnum"/>
+        </string>
+        <string id="eobi_13106_order_mod_same_priority_oneway" template="eobi_13106_order_mod_same_priority">
+                <component detail="ip_id"/>
+                <component detail="msgseqnum"/>
+        </string>
+        <string id="eobi_13104_13105_order_exec_oneway" template="eobi_13104_13105_order_exec">
+                <component detail="ip_id"/>
+                <component detail="msgseqnum"/>
+        </string>
+        <string id="eobi_13202_exec_summary_oneway" template="eobi_13202_exec_summary">
+                <component detail="ip_id"/>
+                <component detail="msgseqnum"/>
+        </string>
+        <string id="eobi_13503_quote_request_oneway" template="eobi_13503_quote_request">
+                <component detail="ip_id"/>
+                <component detail="msgseqnum"/>
+        </string>
+        <string id="eobi_13502_cross_request_oneway" template="eobi_13502_cross_request">
+                <component detail="ip_id"/>
+                <component detail="msgseqnum"/>
+        </string>
+        <string id="eobi_13201_trade_report_oneway" template="eobi_13201_trade_report">
+                <component detail="ip_id"/>
+                <component detail="msgseqnum"/>
+        </string>
+        <string id="Eurex-EMDI_packet_oneway" template="Eurex-EMDI">
+                <component detail="vid"/>
+                <component detail="ip_id"/>
+                <component detail="ip_src"/>
+        </string>
+        <string id="Eurex-EMDI_packet_channel" template="Eurex-EMDI">
+                <component detail="vid"/>
+                <component detail="ip_src"/>
+                <component detail="ip_dst"/>
+        </string>
+        <string id="Eurex-EMDI_message_oneway" template="Eurex-EMDI">
+                <component detail="vid"/>
+                <component detail="ip_id"/>
+                <component detail="ip_src"/>
+        </string>
+        <string id="Eurex-EMDI_message_channel" template="Eurex-EMDI">
+                <component detail="vid"/>
+                <component detail="ip_src"/>
+                <component detail="ip_dst"/>
+                <component detail="template"/>
+        </string>
+        <string id="Eurex-EMDI_beacon_oneway" template="Eurex-EMDI">
+                <component detail="vid"/>
+                <component detail="ip_id"/>
+                <component detail="ip_src"/>
+        </string>
+</strings>

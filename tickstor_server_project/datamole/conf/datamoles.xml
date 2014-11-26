@@ -1,0 +1,19 @@
+<datamoles>
+        <datamole id="lcmrst4" license=".6TCAOjphM/5BKHql8WPiLZT8teHeA" >
+                <includes>
+			<!-- Side A -->
+                        <include interface="1"/>
+                        <include interface="2"/>
+                        <include interface="3"/>
+                        <include interface="4"/>
+			<!-- Side B -->
+                        <include interface="5"/>
+                        <include interface="6"/>
+                        <include interface="7"/>
+                        <include interface="8"/>
+			
+
+
+                </includes>
+        </datamole>
+</datamoles>

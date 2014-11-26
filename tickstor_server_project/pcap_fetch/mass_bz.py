@@ -1,8 +1,8 @@
-#!/usr/bin/python
-# vim: ts=4 expandtab
+#!/usr/local/bin/python
+# vim: expandtab ts=4 ai
 
-import os,sys
-from multiprocessing import Pool,cpu_count
+from ut import massZip,output
+import sys
 
 try:
     ziptype= sys.argv[1]
@@ -18,36 +18,18 @@ except IndexError:
     sys.exit(-1)
 
 
-if ziptype == "bzip":
-    files = os.popen("find %s -type f -not -name \"*.bz2\"" % path).readlines()
-    files = map( lambda x: x.strip(), files)
+mZ = massZip(output())
 
-    print "We are batch bzipping %d files" % len(files)
-
-    def prun(x):
-        print ">>>" + x
-        rc = os.system("/usr/bin/bzip2 %s" % x)
-        if rc == 256:
-            print "Removing '%s'" % x
-            os.unlink(x)
-
-    p = Pool(cpu_count() + (cpu_count() / 4))
-    p.map(prun, files)
-elif ziptype == "bunzip":
-    files = os.popen("find %s -type f -name \"*.bz2\"" % path).readlines()
-    files = map( lambda x: x.strip(), files)
-                                              
-    print "We are batch bunzipping %d files" % len(files)
-    
-    def prun(x):
-        print ">>>" + x
-        rc = os.system("/usr/bin/bunzip2 %s" % x)
-        if rc == 256:
-            print "Removing '%s'" % x
-            os.unlink(x)
-
-    p = Pool(cpu_count() + (cpu_count() / 4))
-    p.map(prun, files)
-
+if ziptype == "bunzip":
+	print mZ.bunzipdir(path, overwrite="yes")
+elif ziptype == "bzip2":
+	print mz.bzipdir(path, overwrite="yes")
 else:
-    print "Error, ziptype '%s' is not valid" % ziptype
+	print "I'm sorry, ziptype %s is not recognised. Cannot continue" % ziptype
+	sys.exit(-1)
+
+
+
+sys.exit(0)
+
+
