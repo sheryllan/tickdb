@@ -1,0 +1,69 @@
+<outputs>
+
+        <output id="emdi_A_csv_only" name="EMDI A CSV only">
+                <destination path="../csv/emdi/A/" roll="300" type="csv"/>
+        </output>
+
+        <output id="eobi_A_csv_only" name="EOBI A CSV only">
+                <destination path="../csv/eobi/A/" roll="300" type="csv"/>
+        </output>
+
+        <output id="eobi_snapshot_A_csv_only" name="EOBI Snapshot A CSV only">
+                <destination path="../csv/eobi-snapshot/A/" roll="300" type="csv"/>
+        </output>
+
+        <output id="eti_A_csv_only" name="ETI A CSV only">
+                <destination path="../csv/eti/A/" roll="300" type="csv"/>
+        </output>
+
+        <output id="emdi_B_csv_only" name="EMDI B CSV only">
+                <destination path="../csv/emdi/B/" roll="300" type="csv"/>
+        </output>
+
+        <output id="eobi_B_csv_only" name="EOBI B CSV only">
+                <destination path="../csv/eobi/B/" roll="300" type="csv"/>
+        </output>
+
+        <output id="eobi_snapshot_B_csv_only" name="EOBI Snapshot B CSV only">
+                <destination path="../csv/eobi-snapshot/B/" roll="300" type="csv"/>
+        </output>
+
+        <output id="eti_B_csv_only" name="ETI B CSV only">
+                <destination path="../csv/eti/B/" roll="300" type="csv"/>
+        </output>
+
+
+
+
+        <output id="database_only" name="Database Only">
+                <destination profile="standard_database" roll="300" type="live"/>
+        </output>
+        <output id="database_via_socket_only" name="Database via Socket">
+                <destination profile="socket_database" roll="300" type="live"/>
+        </output>
+        <output id="csv_only" name="CSV only">
+                <destination path="../csv" roll="300" type="csv"/>
+        </output>
+
+
+
+        <output id="pcap_only" name="PCAP only">
+                <destination path="../csv" roll="300" type="pcap"/>
+        </output>
+        <output id="pcap_over_tcp" name="PCAP over TCP">
+                <destination profile="tcp_connection" roll="300" type="data"/>
+        </output>
+        <output id="database_and_csv" name="Database and CSV">
+                <destination profile="standard_database" roll="300" type="live"/>
+                <destination path="../csv" roll="300" type="csv"/>
+        </output>
+        <output id="database_and_csv_and_pcap" name="Database, CSV, and PCAP">
+                <destination profile="standard_database" roll="300" type="live"/>
+                <destination path="../csv" roll="300" type="csv"/>
+                <destination path="../pcap" roll="300" type="pcap"/>
+        </output>
+        <output id="database_db_and_pcap" name="Database and PCAP">
+                <destination profile="standard_database" roll="300" type="live"/>
+                <destination path="../csv" roll="300" type="pcap"/>
+        </output>
+</outputs>

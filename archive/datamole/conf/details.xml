@@ -1,0 +1,181 @@
+<details>
+        <detail created="2014-06-04 14:04:10" id="Eurex-PCAP" live="false" modified="2014-07-30 10:46:40">
+                <wizards>
+                        <wizard default="true" id="default">
+                                <interfaces>
+                                        <interface protocols="eurex-eti,eurex-eobi,eurex-emdi" type="live">
+                                                <attributes>
+                                                        <attribute edit="false" id="device" label="Device" optional="false"/>
+                                                        <attribute edit="false" id="from" label="From" optional="false" readonly="now"/>
+                                                        <attribute edit="false" id="to" label="To" optional="false" readonly="follow"/>
+                                                </attributes>
+                                                <dataflows>
+                                                        <attribute dependent="template" edit="true" id="filter" label="Filter ID" optional="false"/>
+                                                        <attribute edit="false" id="mode" optional="false"/>
+                                                        <attribute edit="false" id="output" optional="false"/>
+                                                </dataflows>
+                                        </interface>
+                                        <interface protocols="eurex-eti,eurex-eobi,eurex-emdi" type="pcap">
+                                                <attributes>
+                                                        <attribute edit="false" id="device" label="File" optional="false"/>
+                                                        <attribute altctrl="textbox" altlabel="Start Timestamp" edit="false" id="from" label="From" optional="false" readonly="start"/>
+                                                        <attribute altctrl="textbox" altlabel="End Timestamp" edit="false" id="to" label="To" optional="false" readonly="end"/>
+                                                </attributes>
+                                                <dataflows>
+                                                        <attribute dependent="template" edit="true" id="filter" label="Filter ID" optional="false"/>
+                                                        <attribute edit="false" id="mode" optional="false"/>
+                                                        <attribute edit="false" id="output" optional="false"/>
+                                                </dataflows>
+                                        </interface>
+                                        <interface protocols="eurex-eti,eurex-eobi,eurex-emdi" type="pcapns">
+                                                <attributes>
+                                                        <attribute edit="false" id="device" label="File" optional="false"/>
+                                                        <attribute altctrl="textbox" altlabel="Start Timestamp" edit="false" id="from" label="From" optional="false" readonly="start"/>
+                                                        <attribute altctrl="textbox" altlabel="End Timestamp" edit="false" id="to" label="To" optional="false" readonly="end"/>
+                                                </attributes>
+                                                <dataflows>
+                                                        <attribute dependent="template" edit="true" id="filter" label="Filter ID" optional="false"/>
+                                                        <attribute edit="false" id="mode" optional="false"/>
+                                                        <attribute edit="false" id="output" optional="false"/>
+                                                </dataflows>
+                                        </interface>
+                                        <interface protocols="eurex-eti,eurex-eobi,eurex-emdi" type="nstfa">
+                                                <attributes>
+                                                        <attribute edit="false" id="device" label="Device" optional="false"/>
+                                                        <attribute edit="false" id="ip" label="IP Address" optional="false"/>
+                                                        <attribute edit="false" id="ns_if" label="Interface Number" optional="false"/>
+                                                        <attribute edit="false" id="from" label="From" optional="false" readonly="now"/>
+                                                        <attribute edit="false" id="to" label="To" optional="false" readonly="follow"/>
+                                                </attributes>
+                                                <dataflows>
+                                                        <attribute dependent="template" edit="true" id="filter" label="Filter ID" optional="false"/>
+                                                        <attribute edit="false" id="mode" optional="false"/>
+                                                        <attribute edit="false" id="output" optional="false"/>
+                                                </dataflows>
+                                        </interface>
+                                        <interface protocols="eurex-eti,eurex-eobi,eurex-emdi" type="nstfax">
+                                                <attributes>
+                                                        <attribute edit="false" id="device" label="Device" optional="false"/>
+                                                        <attribute edit="false" id="ip" label="IP Address" optional="false"/>
+                                                        <attribute edit="false" id="ns_if" label="Interface Number" optional="false"/>
+                                                        <attribute edit="false" id="from" label="From" optional="false" readonly="now"/>
+                                                        <attribute edit="false" id="to" label="To" optional="false" readonly="follow"/>
+                                                </attributes>
+                                                <dataflows>
+                                                        <attribute dependent="template" edit="true" id="filter" label="Filter ID" optional="false"/>
+                                                        <attribute edit="false" id="mode" optional="false"/>
+                                                        <attribute edit="false" id="output" optional="false"/>
+                                                </dataflows>
+                                        </interface>
+                                        <interface protocols="eurex-eti,eurex-eobi,eurex-emdi" type="nstcp">
+                                                <attributes>
+                                                        <attribute edit="false" id="device" label="Device" optional="false"/>
+                                                        <attribute edit="false" id="ip" label="IP Address" optional="false"/>
+                                                        <attribute edit="false" id="ns_if" label="Interface Number" optional="false"/>
+                                                        <attribute edit="false" id="from" label="From" optional="false" readonly="now"/>
+                                                        <attribute edit="false" id="to" label="To" optional="false" readonly="follow"/>
+                                                </attributes>
+                                                <dataflows>
+                                                        <attribute dependent="template" edit="true" id="filter" label="Filter ID" optional="false"/>
+                                                        <attribute edit="false" id="mode" optional="false"/>
+                                                        <attribute edit="false" id="output" optional="false"/>
+                                                </dataflows>
+                                        </interface>
+                                        <interface protocols="eurex-eti,eurex-eobi,eurex-emdi" type="nsraw">
+                                                <attributes>
+                                                        <attribute edit="false" id="device" label="Device" optional="false"/>
+                                                        <attribute edit="false" id="ip" label="IP Address" optional="false"/>
+                                                        <attribute edit="false" id="ns_if" label="Interface Number" optional="false"/>
+                                                        <attribute edit="false" id="from" label="From" optional="false" readonly="now"/>
+                                                        <attribute edit="false" id="to" label="To" optional="false" readonly="follow"/>
+                                                </attributes>
+                                                <dataflows>
+                                                        <attribute dependent="template" edit="true" id="filter" label="Filter ID" optional="false"/>
+                                                        <attribute edit="false" id="mode" optional="false"/>
+                                                        <attribute edit="false" id="output" optional="false"/>
+                                                </dataflows>
+                                        </interface>
+                                        <interface protocols="eurex-eti,eurex-eobi,eurex-emdi" type="nsxdr">
+                                                <attributes>
+                                                        <attribute edit="false" id="device" label="Device" optional="false"/>
+                                                        <attribute edit="false" id="ip" label="IP Address" optional="false"/>
+                                                        <attribute edit="false" id="ns_if" label="Interface Number" optional="false"/>
+                                                        <attribute edit="false" id="from" label="From" optional="false" readonly="now"/>
+                                                        <attribute edit="false" id="to" label="To" optional="false" readonly="follow"/>
+                                                </attributes>
+                                                <dataflows>
+                                                        <attribute dependent="template" edit="true" id="filter" label="Filter ID" optional="false"/>
+                                                        <attribute edit="false" id="mode" optional="false"/>
+                                                        <attribute edit="false" id="output" optional="false"/>
+                                                </dataflows>
+                                        </interface>
+                                </interfaces>
+                                <streams>
+                                        <stream protocols="eurex-eti,eurex-eobi,eurex-emdi" type="oneway">
+                                                <attributes>
+                                                        <attribute edit="false" id="name" label="Stream Name" optional="false"/>
+                                                        <attribute edit="false" id="table" label="Details Table" optional="false"/>
+                                                </attributes>
+                                                <sources>
+                                                        <attribute edit="false" id="name" label="Source Name" optional="false"/>
+                                                        <attribute edit="false" id="interface" label="Interface ID" optional="false"/>
+                                                        <attribute edit="false" id="override" label="Interface Override" optional="true"/>
+                                                        <attribute edit="false" id="device" label="Hop Diagram Device" optional="false"/>
+                                                </sources>
+                                                <datafeeds>
+                                                        <attribute edit="false" id="dataflow" label="Dataflow ID" optional="false"/>
+                                                        <attribute dependent="template" edit="true" id="oneway" label="Oneway ID" optional="false"/>
+                                                        <attribute dependent="table" edit="false" id="mapping" label="Database/Template Mapping" optional="false"/>
+                                                        <attribute dependent="template" edit="true" id="filter" label="Filter ID" optional="false"/>
+                                                        <attribute dependent="template" edit="false" id="sequence" label="Sequence Detail ID" optional="false"/>
+                                                        <attribute dependent="template" edit="true" id="channel" label="Channel ID" optional="false"/>
+                                                </datafeeds>
+                                        </stream>
+                                        <stream protocols="eurex-eti,eurex-eobi,eurex-emdi" type="twoway">
+                                                <attributes>
+                                                        <attribute edit="false" id="name" label="Stream Name" optional="false"/>
+                                                        <attribute edit="false" id="table" label="Details Table" optional="false"/>
+                                                </attributes>
+                                                <sources>
+                                                        <attribute edit="false" id="name" label="Source Name" optional="false"/>
+                                                        <attribute edit="false" id="interface" label="Interface ID" optional="false"/>
+                                                        <attribute edit="false" id="override" label="Interface Override" optional="true"/>
+                                                        <attribute edit="false" id="device" label="Hop Diagram Device" optional="false"/>
+                                                </sources>
+                                                <datafeeds>
+                                                        <attribute edit="false" id="dataflow" label="Dataflow ID" optional="false"/>
+                                                        <attribute dependent="template" edit="true" id="oneway" label="Oneway ID" optional="false"/>
+                                                        <attribute dependent="template" edit="true" id="twoway" label="Twoway ID" optional="false"/>
+                                                        <attribute edit="false" id="direction" label="Direction" optional="false"/>
+                                                        <attribute dependent="table" edit="false" id="mapping" label="Database/Template Mapping" optional="false"/>
+                                                        <attribute dependent="template" edit="true" id="filter" label="Filter ID" optional="false"/>
+                                                        <attribute dependent="template" edit="false" id="sequence" label="Sequence Detail ID" optional="false"/>
+                                                        <attribute dependent="template" edit="true" id="channel" label="Channel ID" optional="false"/>
+                                                </datafeeds>
+                                        </stream>
+                                        <stream protocols="eurex-eti,eurex-eobi,eurex-emdi" type="datafeed">
+                                                <attributes>
+                                                        <attribute edit="false" id="name" label="Stream Name" optional="false"/>
+                                                        <attribute edit="false" id="table" label="Details Table" optional="false"/>
+                                                </attributes>
+                                                <sources>
+                                                        <attribute edit="false" id="name" label="Source Name" optional="false"/>
+                                                        <attribute edit="false" id="interface" label="Interface ID" optional="false"/>
+                                                        <attribute edit="false" id="override" label="Interface Override" optional="true"/>
+                                                        <attribute edit="false" id="device" label="Hop Diagram Device" optional="false"/>
+                                                </sources>
+                                                <datafeeds>
+                                                        <attribute edit="false" id="dataflow" label="Dataflow ID" optional="false"/>
+                                                        <attribute dependent="template" edit="true" id="oneway" label="Oneway ID" optional="false"/>
+                                                        <attribute dependent="table" edit="false" id="mapping" label="Database/Template Mapping" optional="false"/>
+                                                        <attribute dependent="template" edit="false" id="metric" label="Metric" optional="false"/>
+                                                        <attribute dependent="template" edit="true" id="filter" label="Filter ID" optional="false"/>
+                                                        <attribute dependent="template" edit="false" id="sequence" label="Sequence Detail ID" optional="false"/>
+                                                        <attribute dependent="template" edit="true" id="channel" label="Channel ID" optional="false"/>
+                                                </datafeeds>
+                                        </stream>
+                                </streams>
+                        </wizard>
+                </wizards>
+        </detail>
+</details>

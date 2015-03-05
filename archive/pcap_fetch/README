@@ -1,0 +1,38 @@
+Does what it says on the tin. 
+
+This program will be run by cron daily, and will iterate through a list of key:value pairs in the following format:
+
+	"hostname":"path"
+
+within the path, we will have the following structure:
+	/var/reactor/pcaps/EMDI/
+	/var/reactor/pcaps/ETI/
+
+It will save the path into the following:
+	write everything to /storage/scratchdisk/$hostname/$start_of_transfer_timestamp
+
+then:
+	1. bunzip files (if necessary) and move to  /storage/P2D/raw_pcaps/$hostname/$timestamp/...
+	2. Merge pcaps into A.cap and B.pcap in /storage/P2D/merged_pcaps/$hostname/$timestamp/
+
+# User/system permissions
+
+This script will be ran as the pcapdump user. It will connect to the target as the pcapdump user. This user will be in the "pcap" group on both
+ends. The pulls will happen via a passwordless ssh-key which will be stored on the server (and only there).
+
+# Exit codes
+
+* fetch_pcaps.py:
+	* exit code 0 = program completed, no errors
+	* exit code 1 = program completed, with errors, please check logs and see if you care
+	* exit code >1 = We had a serious error, cannot continue. Return code depends on called program
+
+
+# ===================================================================================
+
+WORKFLOW:
+
+1. run pcap_dumps.py.  If exit 0 then continue, otherwise investigate
+2. run parallel_pcap_merge.py. If exit 0 then continue, otherwise investigate
+
+
