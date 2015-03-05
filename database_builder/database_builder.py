@@ -10,7 +10,8 @@ from decimal import *
 from numpy import *
 from pandas import *
 import logging
-from qtg_text_file_decoder import *
+from qtg_EOBI_file_decoder import *
+from qtg_CME_file_decoder import *
 
 # ============
 # Main program
@@ -20,9 +21,9 @@ def main():
 	parser = argparse.ArgumentParser(__file__,description="order book parser")
 	parser.add_argument("--levels", "-l", help="max OB levels", type=int,default=5)
 	parser.add_argument("--odir",   "-o", help="output directory",type=str,default=".")
-	parser.add_argument("--decoder","-d", help="decoder type: qtg_eobi,qtg_emdi,pcap_eobi,pcap_emdi",type=str,default="qtg_eobi")
-	parser.add_argument("--format",   "-f", help="output file format: csv, csv.bz2, csv.xz, hdf,...",type=str,default="csv")
-	parser.add_argument("--insdb",  "-i", help="Instrument database",type=str,default="/mnt/data/database/instRefdataCoh.csv")
+	parser.add_argument("--decoder","-d", help="decoder type: qtg_eobi,qtg_cme,qtg_emdi,pcap_eobi,pcap_emdi",type=str,default="qtg_eobi")
+	parser.add_argument("--format",   "-f", help="output file format: csv, csv.xz, csv.bz2",type=str,default="csv")
+	parser.add_argument("--insdb",  "-i", help="Instrument database",type=str,default="/mnt/data/qtg/instRefdataCoh.csv")
 	parser.add_argument("--log",    "-g", help="loggin file",type=str,default="./obp.log")
 	parser.add_argument("ifname",help="input filename",type=str)
 	args = parser.parse_args()
@@ -44,6 +45,8 @@ def main():
 	
 	if args.decoder=="qtg_eobi":
 		books,symbols = decode_qtg_EOBI(fi,args.levels,date)
+	elif args.decoder=="qtg_cme":
+		books, symbols = decode_qtg_CME(fi,args.levels,date)
 	elif args.decoder=="qtg_emdi":
 		books,symbols = decode_qtg_EMDI(fi,args.levels,date)
 	elif args.decoder=="pcap_eobi":
@@ -54,7 +57,20 @@ def main():
 	# Write files
 	df = read_csv(args.insdb)
 	for uid in books:
-		x = DataFrame(books[uid].output,columns=books[uid].header)
+		# DEBUG
+#		print(uid,"--", len(books[uid].output),"--")
+#		if uid==1587:
+#			print(books[uid].output)
+#			print(books[uid].header)
+#			print(type(books[uid].output))
+#			books[uid].output=[list(range(1,21)), list(range(2,22))]
+		# DEBUG
+
+		if len(books[uid].output)>0:
+			x = DataFrame(books[uid].output,columns=books[uid].header)
+		else:
+			x = DataFrame([ [np.nan]*len(books[uid].header) ],columns=books[uid].header)
+
 		prodname = df[df['#instuid']==uid].iat[0,3]
 		output_file = args.odir+"/"+prodname+"_"+"20"+date+"."+args.format
 

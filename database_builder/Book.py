@@ -5,6 +5,7 @@ from math import floor
 from decimal import *
 import numpy as np
 import h5py as h
+from enum import IntEnum
 
 # ====================
 #      Order Book
@@ -16,18 +17,29 @@ import h5py as h
 #	M: Order Modify no priority change
 #	L: Order Modify loss of priority
 #	T: Trade
-#	E: Execution summary (Eurex)
+#	S: Execution summary (Eurex)
 #	C: Book Cleared
 #	Q: Quote
 
-def tots(t):
-	f = int(floor(t/1e9))
+class Precision(IntEnum):
+	sec  =1e0
+	milli=1e3
+	micro=1e6
+	nano =1e9
+	pico =1e12
+	femto=1e15
+	atto=1e18
+	zepto=1e21
+	yocto=1e24
+
+def tots(t,precision=Precision.micro):
+	f = int(floor(t/precision))
 	dt=datetime.fromtimestamp(f)
-	ns = t - f*1e9
-	delta=int((dt-datetime(dt.year,dt.month,dt.day,0,0,0)).total_seconds()*1e9) + ns
+	aftervirgule = t - f*precision
+	delta=int((dt-datetime(dt.year,dt.month,dt.day,0,0,0)).total_seconds()*precision) + aftervirgule
 	# we report the date up to nanosecond resolution, followed by 
 	# the number of nanoseconds since the beginning of the day
-	return (dt.hour,dt.minute,dt.second,ns,delta)
+	return (dt.hour,dt.minute,dt.second,aftervirgule,delta)
 
 # Output:
 # A : add
@@ -51,15 +63,29 @@ class Order:
 
 class Book:
 
-	# Structure of a book
+	# Structure of a book for level 3 data
+	#
 	# book[side][price][oid] = (recv,exch,qty)
-	#       ^      ^     ^        True
+	#       ^      ^     ^        ^
 	#       |      |     |        |
 	#      tuple  dict  dict     tuple
 	#
+	#
+	#
+	# Structure of a book for level 2 data
+	#
+	# book[side][level] = (price,qty,order_count)
+	#       ^      ^                  ^
+	#       |      |                  |
+	#     tuple  dict               # of orders
+	#
 	# price is a Decimal
+	#
+	# mode:
+	#	level_3 : publish all the updates at the time of the update (ex.: Eurex EOBI)
+	#	level_2 : oid is never used throughout the program, only price levels (ex.: CME, EMDI)
 
-	def __init__(self, uid, date, levels):
+	def __init__(self, uid, date, levels, mode='level_3'):
 		self.uid = uid
 		self.date = date
 		self.levels = levels
@@ -75,6 +101,11 @@ class Book:
 		self.header += bid+bidv+nbid+ask+askv+nask
 		self.output = []
 		self.valid = True
+		self.mode= mode
+
+	# ===============
+	# Level 3 methods
+	# ===============
 
 	# find an order using its oid
 	def find_order(self,oid):
@@ -91,7 +122,8 @@ class Book:
 	def clear(self,recv,exch):
 		self.book = ({}, {})
 		self.valid = True
-		self.store_update("C",recv,exch)
+		if self.mode=='level_3':
+			self.store_update("C",recv,exch)
 		return True
 
 	# Add a new order
@@ -103,7 +135,8 @@ class Book:
 		# check we're not processing twice the same order
 		if oid not in self.book[side][price]:
 			self.book[side][price][oid] = (recv,exch,qty)
-			self.store_update("A",recv,exch)
+			if self.mode=='level_3':
+				self.store_update("A",recv,exch)
 			return True
 		else:
 			return False
@@ -125,7 +158,8 @@ class Book:
 				self.book[side][newprice] = {}
 			# add the new order
 			self.book[side][newprice][newoid] = (recv,exch,newqty)
-			self.store_update("L",recv,exch)
+			if self.mode=='level_3':
+				self.store_update("L",recv,exch)
 			return True
 		else:
 			return False
@@ -138,7 +172,8 @@ class Book:
 		# check if price level and order id exist
 		if order.price in self.book[side] and order.oid in self.book[side][order.price]:
 			self.book[side][order.price][oid] = (recv,exch,newqty) 
-			self.store_update("M",recv,exch)
+			if self.mode=='level_3':
+				self.store_update("M",recv,exch)
 			return True
 		else:
 			return False
@@ -151,7 +186,8 @@ class Book:
 			# if price level is empty
 			if not self.book[side][price]:
 				del self.book[side][price]
-			self.store_update("D",recv,exch)
+			if self.mode=='level_3':
+				self.store_update("D",recv,exch)
 			return True
 		# if order exists and price is not provided
 		elif price==-1: 
@@ -160,18 +196,68 @@ class Book:
 					del self.book[side][p][oid]
 					if not self.book[side][p]: # price level empty ?
 						del self.book[side][p]
-					self.store_update("D",exch,recv)
+					if self.mode=='level_3':
+						self.store_update("D",exch,recv)
 					return True
 		return False # if we're here, it means no order has been deleted
+
+	# ===============
+	# Level 2 methods
+	# ===============
+
+	def add_level(self,level,side,qty,price,ord_cnt):
+		#print("A",side,level,self.book[side])
+		# if level exists then push all sub levels by one
+		if level in self.book[side]:
+			for i in range(max(self.book[side]),level-1,-1):
+				if i in self.book[side]: # this should be true all the time
+					self.book[side][i+1]=self.book[side][i]
+				else:
+					return False
+		self.book[side][level] = (price,qty,ord_cnt)
+		return True
+
+	def amend_level(self,level,side,qty,price,ord_cnt):
+		#print("M",side,level,self.book[side])
+		if level not in self.book[side]:
+			return False
+		else:
+			self.book[side][level] = (price,qty,ord_cnt)
+			return True
+
+	def delete_level(self,level,side):
+		#print("D",side,level,self.book[side])
+		if level not in self.book[side]:
+			return False
+		else:
+			M = max(self.book[side])
+			for i in range(level+1,M+1):
+				self.book[side][i-1]=self.book[side][i]
+			del self.book[side][M]
+			return True
+
+	# =================
+	# Reporting methods
+	# =================
 
 	def output_head(self,otype,recv,exch):
 		return [otype] + list(tots(exch)) + [recv,exch]
 
-	def report_trade(self,price,qty,recv,exch):
-		self.output.append(
-			self.output_head("T",recv,exch)
-			+[price,qty]
-			+([np.nan]*(4*self.levels-2)))
+	def report_trade(self,price,qty,recv,exch,side=0):
+		if self.mode=="level_3":
+			self.output.append(
+				self.output_head("T",recv,exch)
+				+[price,qty]
+				+([np.nan]*(4*self.levels-2)))
+			return True
+		elif self.mode=="level_2":
+			self.output.append(
+				self.output_head("T",recv,exch)
+				+[price,qty,side]
+				+([np.nan]*(4*self.levels-3)))
+			return True
+		else:
+			return False
 
 	def exec_summary(self,price,qty,recv,exch):
 		self.output.append(
@@ -182,17 +268,24 @@ class Book:
 	def store_update(self,otype,recv,exch):
 		r = self.output_head(otype,recv,exch)
 		for s in [0,1]:
-			# count number of prices available on each side
-			count = min(self.levels, len(self.book[s]))
-			# get the ordered list of prices
-			prices=sorted(list(self.book[s]), reverse=s==0)[0:count]
-			# extract order, sum qty, count number of orders and make a list out of that
-			list_qty = [sum([self.book[s][p][o][2] 
-				for o in self.book[s][p]]) 
-				for p in prices]
-			list_len = [len(self.book[s][p]) for p in prices]
+			if self.mode=="level_3":
+				# count number of prices available on each side
+				count = min(self.levels, len(self.book[s]))
+				# get the ordered list of prices
+				prices=sorted(list(self.book[s]), reverse=s==0)[0:count]
+				# extract order, sum qty, count number of orders and make a list out of that
+				list_qty = [sum([self.book[s][p][o][2] 
+					for o in self.book[s][p]]) 
+					for p in prices]
+				list_len = [len(self.book[s][p]) for p in prices]
+			elif self.mode=="level_2":
+				count = min(self.levels, len(self.book[s]))
+				keys = sorted(self.book[s].keys())[0:count]
+				prices   = [self.book[s][i][0] for i in keys]
+				list_qty = [self.book[s][i][1] for i in keys]
+				list_len = [self.book[s][i][2] for i in keys]
 
-			# complete with nan is necessary
+			# complete with nan if necessary
 			if count < self.levels:
 				prices += [np.nan]*(self.levels-count)
 				list_qty += [np.nan]*(self.levels-count)
