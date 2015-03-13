@@ -1,0 +1,4 @@
+<databases>
+        <database curfew_end="18:30" curfew_start="05:30" database="datacell_db" engine_type="myisam" id="jdbc_database" ip="localhost" name="Datacell DB" password="dce_pass" port="3306" url="jdbc:mysql://localhost/datacell_db" username="dce_user"/>
+        <database curfew_end="18:30" curfew_start="05:30" database="datacell_db" engine_type="myisam" id="socket_database" ip="localhost" name="Datacell DB (Socket)" password="dce_pass" port="3306" url="jdbc:mysql:///seefix_db?socketFactory=com.mysql.jdbc.NamedPipeSocketFactory&amp;namedPipePath=\\\\.\\Pipe\\mysql.sock" username="dce_user"/>
+</databases>

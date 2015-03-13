@@ -1,0 +1,70 @@
+<streams>
+        <stream id="1" name="Eurex-ETI" table="Eurex-ETI" type="twoway">
+                <sources>
+                        <source device="unknown" interface="1" name="PCAP">
+                                <datafeed dataflow="1" direction="request" mapping="eti_10100_new_ord" oneway="eti_10100_new_ord_oneway" twoway="eti_10100_new_ord_twoway"/>
+                                <datafeed dataflow="2" direction="response" mapping="eti_10101_new_ord_resp" oneway="eti_10101_new_ord_resp_oneway" twoway="eti_10101_new_ord_resp_twoway"/>
+                                <datafeed dataflow="3" direction="request" mapping="eti_10125_new_ord_s" oneway="eti_10125_new_ord_s_oneway" twoway="eti_10125_new_ord_s_twoway"/>
+                                <datafeed dataflow="4" direction="response" mapping="eti_10102_new_ord_s_resp" oneway="eti_10102_new_ord_s_resp_oneway" twoway="eti_10102_new_ord_s_resp_twoway"/>
+                                <datafeed dataflow="5" direction="request" mapping="eti_10113_new_ord_m" oneway="eti_10113_new_ord_m_oneway" twoway="eti_10113_new_ord_m_twoway"/>
+                                <datafeed dataflow="6" direction="response" mapping="eti_10103_imm_exec_resp" oneway="eti_10103_imm_exec_resp_oneway" twoway="eti_10103_imm_exec_resp_twoway"/>
+                                <datafeed dataflow="7" direction="response" mapping="eti_10104_book_order_exec" oneway="eti_10104_book_order_exec_oneway" twoway="eti_10104_book_order_exec_twoway"/>
+                                <datafeed dataflow="8" direction="request" mapping="eti_10106_rep_ord" oneway="eti_10106_rep_ord_oneway" twoway="eti_10106_rep_ord_twoway"/>
+                                <datafeed dataflow="9" direction="response" mapping="eti_10107_rep_ord_resp" oneway="eti_10107_rep_ord_resp_oneway" twoway="eti_10107_rep_ord_resp_twoway"/>
+                                <datafeed dataflow="10" direction="request" mapping="eti_10126_rep_ord_s" oneway="eti_10126_rep_ord_s_oneway" twoway="eti_10126_rep_ord_s_twoway"/>
+                                <datafeed dataflow="11" direction="response" mapping="eti_10108_rep_ord_resp_s" oneway="eti_10108_rep_ord_resp_s_oneway" twoway="eti_10108_rep_ord_resp_s_twoway"/>
+                                <datafeed dataflow="12" direction="request" mapping="eti_10114_rep_ord_m" oneway="eti_10114_rep_ord_m_oneway" twoway="eti_10114_rep_ord_m_twoway"/>
+                                <datafeed dataflow="13" direction="request" mapping="eti_10109_can_ord" oneway="eti_10109_can_ord_oneway" twoway="eti_10109_can_ord_twoway"/>
+                                <datafeed dataflow="14" direction="response" mapping="eti_10107_can_ord_resp" oneway="eti_10107_can_ord_resp_oneway" twoway="eti_10107_can_ord_resp_twoway"/>
+                                <datafeed dataflow="15" direction="response" mapping="eti_10111_can_ord_resp_s" oneway="eti_10111_can_ord_resp_s_oneway" twoway="eti_10111_can_ord_resp_s_twoway"/>
+                                <datafeed dataflow="16" direction="request" mapping="eti_10123_can_ord_m" oneway="eti_10123_can_ord_m_oneway" twoway="eti_10123_can_ord_m_twoway"/>
+                                <datafeed dataflow="17" direction="request" mapping="eti_10112_can_ord_not" oneway="eti_10112_can_ord_not_oneway" twoway="eti_10112_can_ord_not_twoway"/>
+                                <datafeed dataflow="18" direction="request" mapping="eti_10120_mass_can_ord" oneway="eti_10120_mass_can_ord_oneway" twoway="eti_10120_mass_can_ord_twoway"/>
+                                <datafeed dataflow="19" direction="response" mapping="eti_10121_10124_mass_can_resp" oneway="eti_10121_10124_mass_can_resp_oneway" twoway="eti_10121_10124_mass_can_resp_twoway"/>
+                                <datafeed dataflow="20" direction="request" mapping="eti_10122_mass_can_not" oneway="eti_10122_mass_can_not_oneway" twoway="eti_10122_mass_can_not_twoway"/>
+                                <datafeed dataflow="21" direction="request" mapping="eti_10401_10118_quote_cross_req" oneway="eti_10401_10118_quote_cross_req_oneway" twoway="eti_10401_10118_quote_cross_req_twoway"/>
+                                <datafeed dataflow="22" direction="response" mapping="eti_10402_10119_quote_cross_req_resp" oneway="eti_10402_10119_quote_cross_req_resp_oneway" twoway="eti_10402_10119_quote_cross_req_resp_twoway"/>
+                                <datafeed dataflow="23" direction="request" mapping="eti_10405_mass_quote" oneway="eti_10405_mass_quote_oneway" twoway="eti_10405_mass_quote_twoway"/>
+                                <datafeed dataflow="24" direction="response" mapping="eti_10406_mass_quote_resp" oneway="eti_10406_mass_quote_resp_oneway" twoway="eti_10406_mass_quote_resp_twoway"/>
+                                <datafeed dataflow="25" direction="response" mapping="eti_10407_quote_exec" oneway="eti_10407_quote_exec_oneway" twoway="eti_10407_quote_exec_twoway"/>
+                                <datafeed dataflow="26" direction="request" mapping="eti_10408_quote_mass_cancel_req" oneway="eti_10408_quote_mass_cancel_req_oneway" twoway="eti_10408_quote_mass_cancel_req_twoway"/>
+                                <datafeed dataflow="27" direction="response" mapping="eti_10409_quote_mass_canc_resp" oneway="eti_10409_quote_mass_canc_resp_oneway" twoway="eti_10409_quote_mass_canc_resp_twoway"/>
+                                <datafeed dataflow="28" direction="request" mapping="eti_10410_quote_mass_canc_not" oneway="eti_10410_quote_mass_canc_not_oneway" twoway="eti_10410_quote_mass_canc_not_twoway"/>
+                                <datafeed dataflow="29" direction="request" mapping="eti_10403_quote_activ_req" oneway="eti_10403_quote_activ_req_oneway" twoway="eti_10403_quote_activ_req_twoway"/>
+                                <datafeed dataflow="30" direction="response" mapping="eti_10404_quote_activ_resp" oneway="eti_10404_quote_activ_resp_oneway" twoway="eti_10404_quote_activ_resp_twoway"/>
+                                <datafeed dataflow="31" direction="request" mapping="eti_10411_quote_activ_not" oneway="eti_10411_quote_activ_not_oneway" twoway="eti_10411_quote_activ_not_twoway"/>
+                        </source>
+                </sources>
+        </stream>
+        <stream id="2" name="EOBI Packet Headers" table="eobi_header" type="datafeed">
+                <sources>
+                        <source device="unknown" interface="1" name="PCAP">
+                                <datafeed channel="eobi_header_channel" dataflow="32" mapping="eobi_header" metric="applseqnum" oneway="eobi_header_oneway" sequence="applseqnum"/>
+                        </source>
+                </sources>
+        </stream>
+        <stream id="4" name="EOBI messages" table="eobi_msg_md" type="datafeed">
+                <sources>
+                        <source device="unknown" interface="1" name="PCAP">
+                                <datafeed dataflow="33" mapping="eobi_13100_ord_add" metric="msgseqnum" oneway="eobi_13100_ord_add_oneway"/>
+                                <datafeed dataflow="34" mapping="eobi_13101_order_mod" metric="msgseqnum" oneway="eobi_13101_order_mod_oneway"/>
+                                <datafeed dataflow="35" mapping="eobi_13504_top_of_book" metric="msgseqnum" oneway="eobi_13504_top_of_book_oneway"/>
+                                <datafeed dataflow="36" mapping="eobi_13102_order_del" metric="msgseqnum" oneway="eobi_13102_order_del_oneway"/>
+                                <datafeed dataflow="37" mapping="eobi_13103_order_mass_del" metric="msgseqnum" oneway="eobi_13103_order_mass_del_oneway"/>
+                                <datafeed dataflow="38" mapping="eobi_13106_order_mod_same_priority" metric="msgseqnum" oneway="eobi_13106_order_mod_same_priority_oneway"/>
+                                <datafeed dataflow="39" mapping="eobi_13104_13105_order_exec" metric="msgseqnum" oneway="eobi_13104_13105_order_exec_oneway"/>
+                                <datafeed dataflow="40" mapping="eobi_13202_exec_summary" metric="msgseqnum" oneway="eobi_13202_exec_summary_oneway"/>
+                                <datafeed dataflow="41" mapping="eobi_13503_quote_request" metric="msgseqnum" oneway="eobi_13503_quote_request_oneway"/>
+                                <datafeed dataflow="42" mapping="eobi_13502_cross_request" metric="msgseqnum" oneway="eobi_13502_cross_request_oneway"/>
+                                <datafeed dataflow="43" mapping="eobi_13201_trade_report" metric="msgseqnum" oneway="eobi_13201_trade_report_oneway"/>
+                        </source>
+                </sources>
+        </stream>
+        <stream id="5" name="Eurex EMDI Messages" table="Eurex-EMDI" type="datafeed">
+                <sources>
+                        <source interface="1" name="PCAP">
+                                <datafeed channel="Eurex-EMDI_message_channel" dataflow="45" mapping="Eurex-EMDI" metric="msgseq_num" oneway="Eurex-EMDI_message_oneway" sequence="msgseq_num"/>
+                        </source>
+                </sources>
+        </stream>
+</streams>

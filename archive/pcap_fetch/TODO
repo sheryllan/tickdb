@@ -1,0 +1,7 @@
+Here I write things that are currently broken, that need to be done, or that are left ambiguous 
+
+1. What should be done if a bzipped PCAP file cannot be unzipped? For now we do nothing else but report it.
+   How much do we care if one file is corrupt out of the batch?
+
+2. Implement cleanup() function, so that if we are interrupted, we don't leave droppings everywhere
+
