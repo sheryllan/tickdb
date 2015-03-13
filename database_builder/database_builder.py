@@ -57,14 +57,6 @@ def main():
 	# Write files
 	df = read_csv(args.insdb)
 	for uid in books:
-		# DEBUG
-#		print(uid,"--", len(books[uid].output),"--")
-#		if uid==1587:
-#			print(books[uid].output)
-#			print(books[uid].header)
-#			print(type(books[uid].output))
-#			books[uid].output=[list(range(1,21)), list(range(2,22))]
-		# DEBUG
 
 		if len(books[uid].output)>0:
 			x = DataFrame(books[uid].output,columns=books[uid].header)

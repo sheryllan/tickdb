@@ -36,10 +36,11 @@ def tots(t,precision=Precision.micro):
 	f = int(floor(t/precision))
 	dt=datetime.fromtimestamp(f)
 	aftervirgule = t - f*precision
-	delta=int((dt-datetime(dt.year,dt.month,dt.day,0,0,0)).total_seconds()*precision) + aftervirgule
+	#delta=int((dt-datetime(dt.year,dt.month,dt.day,0,0,0)).total_seconds()*precision) + aftervirgule
 	# we report the date up to nanosecond resolution, followed by 
 	# the number of nanoseconds since the beginning of the day
-	return (dt.hour,dt.minute,dt.second,aftervirgule,delta)
+	#return (dt.hour,dt.minute,dt.second,aftervirgule,delta)
+	return (dt.hour,dt.minute,dt.second,aftervirgule)
 
 # Output:
 # A : add
@@ -91,7 +92,7 @@ class Book:
 		self.levels = levels
 
 		self.book = ({}, {})
-		self.header = ["otype","h","min","sec","ts","dayts","recv","exch"]
+		self.header = ["otype","h","min","sec","us","recv","exch"]
 		bid =  ["bid{}".format(i)  for i in range(1,levels+1)]
 		bidv = ["bidv{}".format(i) for i in range(1,levels+1)]
 		nbid = ["nbid{}".format(i) for i in range(1,levels+1)]
@@ -268,6 +269,7 @@ class Book:
 	def store_update(self,otype,recv,exch):
 		r = self.output_head(otype,recv,exch)
 		for s in [0,1]:
+			# Eurex
 			if self.mode=="level_3":
 				# count number of prices available on each side
 				count = min(self.levels, len(self.book[s]))
@@ -278,12 +280,13 @@ class Book:
 					for o in self.book[s][p]]) 
 					for p in prices]
 				list_len = [len(self.book[s][p]) for p in prices]
+			# CME/CBOT
 			elif self.mode=="level_2":
 				count = min(self.levels, len(self.book[s]))
-				keys = sorted(self.book[s].keys())[0:count]
-				prices   = [self.book[s][i][0] for i in keys]
-				list_qty = [self.book[s][i][1] for i in keys]
-				list_len = [self.book[s][i][2] for i in keys]
+				# keys = sorted(self.book[s].keys())[0:count]
+				prices   = [self.book[s][i][0] for i in range(count)]
+				list_qty = [self.book[s][i][1] for i in range(count)]
+				list_len = [self.book[s][i][2] for i in range(count)]
 
 			# complete with nan if necessary
 			if count < self.levels:
@@ -291,5 +294,6 @@ class Book:
 				list_qty += [np.nan]*(self.levels-count)
 				list_len += [np.nan]*(self.levels-count)
 
-			r += prices + list_qty + list_len # append to r
+			r += prices + list_qty + list_len
+
 		self.output.append(r)
