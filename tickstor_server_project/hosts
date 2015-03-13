@@ -1,7 +1,0 @@
-# This is the hosts file that needs to be used on all the tickstor boxes to make sure
-# the targets are reachable. This is a global hosts file, so that in a worst case
-# scenario, one regions system can take over duties of another. 
-
-#Frankfurt
-10.10.12.243            lcmfrs23
-

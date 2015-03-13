@@ -1,9 +1,0 @@
-<engines>
-        <engine id="localhost.localdomain" profile="standard_database">
-                <includes>
-                        <include stream="1"/>
-                        <include stream="2"/>
-                        <include stream="4"/>
-                </includes>
-        </engine>
-</engines>
