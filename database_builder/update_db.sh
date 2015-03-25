@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# ---------------
+#    Functions
+# ---------------
 function exchange {
 echo $(basename $1 | awk -F '.' '{print $1}')
 }
@@ -25,6 +28,9 @@ function is_database_builder_in_path {
 which database_builder.py &> /dev/null ; echo $?
 }
 
+# ---------------------------
+#    Setup main parameters
+# ---------------------------
 rootdir=/mnt/data/
 tmpdir=/tmp
 level=5
@@ -34,6 +40,8 @@ timestamp=$(date --utc --rfc-3339='ns' | tr ' .:+-' '_')
 gnupar=$(which parallel)
 qtg_src_dir=${rootdir}/qtg
 parjobfile=/tmp/gnupar_job_file.sh
+nbcores=$(($(nproc)-2)) # get all the cores minus 2
+
 # Check if db file exists
 if [ ! -f ${dbprocessed} ]; then
 	touch ${dbprocessed}
@@ -53,9 +61,9 @@ else
 	database_builder=$(which database_builder.py)
 fi
 
-# -----
-#  QTG
-# -----
+# ---------
+#    QTG
+# ---------
 all_qtg=${tmpdir}/qtg_${timestamp}
 new_qtg=${tmpdir}/new_qtg_${timestamp}
 
@@ -70,10 +78,10 @@ rm -f ${all_qtg}
 rm -f ${parjobfile}
 while read line
 do
-echo ${database_builder} -l 5 -o ${dbdir}/qtg/$(exchange ${line})/$(month ${line}) -d $(decoder ${line}) -f csv.bz2 -i ${dbdir}/qtg/instRefdataCoh.csv -g ${dbdir}/qtg/qtg.log ${line} >> ${parjobfile}
+	echo -n ${database_builder} -l 5 -o ${dbdir}/qtg/$(exchange ${line})/$(month ${line}) -d $(decoder ${line}) -f csv.bz2 -i ${dbdir}/qtg/instRefdataCoh.csv -g ${dbdir}/qtg/qtg.log ${line} >> ${parjobfile}
 done < "${new_qtg}"
 
-cat ${parjobfile} | ${gnupar} &> /dev/null
+cat ${parjobfile} | ${gnupar} -j ${nbcores} &> /dev/null
 
 rm -f ${parjobfile} 
 cat ${new_qtg} >> ${dbprocessed}
