@@ -1,33 +1,80 @@
 #!/bin/bash
 
-rootdir=/mnt/data
+function exchange {
+echo $(basename $1 | awk -F '.' '{print $1}')
+}
+
+function month {
+echo $(basename $(dirname $1))
+}
+
+function decoder {
+local exch=$(exchange $1)
+if [ "$exch" = "eurex" ]; then
+	echo qtg_eobi
+elif [ "$exch" = "cme" ]; then
+	echo qtg_cme
+elif [ "$exch" = "cbot" ]; then
+	echo qtg_cme
+else
+	echo qtg_eobi
+fi
+}
+
+function is_database_builder_in_path {
+which database_builder.py &> /dev/null ; echo $?
+}
+
+rootdir=/mnt/data/
 tmpdir=/tmp
 level=5
-
-destdir=${rootdir}/level${level}data
-dbfile=${rootdir}/obp2.db
-tmpfile=${tmpdir}/`date +%s%N``echo -n ${RANDOM}`_obp2.dat
-dirlist="BSXEURMA1 BSBUSKMA1 BSXCBTMA1 BSXCMEMA1 BSXNYMMA1"
-gnupar=`which parallel`
-
-# test if dbfile exists
-if [ ! -f $dbfile ]; then
-	touch $dbfile
+dbdir=${rootdir}/database
+dbprocessed=${dbdir}/processed_files.db
+timestamp=$(date --utc --rfc-3339='ns' | tr ' .:+-' '_')
+gnupar=$(which parallel)
+qtg_src_dir=${rootdir}/qtg
+parjobfile=/tmp/gnupar_job_file.sh
+# Check if db file exists
+if [ ! -f ${dbprocessed} ]; then
+	touch ${dbprocessed}
 fi
 
-# remove tmpfile
-rm -f $tmpfile
+# Check if GNU parallel exists
+if [ ! -f ${gnupar} ]; then
+	echo "Error: GNU parallel not found"
+	exit 1
+fi
 
-# find new files to process
-find $dirlist -type f | sort - $dbfile | uniq -u | sort -t '/' +1 -2 -n -r > $tmpfile
-
-# run parallel update
-$gnupar $rootdir/obp2.py -l $level -o $destdir :::: $tmpfile
-
-# update db
-if [ $? -eq 0 ]; then
-	cat $tmpfile >> $dbfile
-	rm -f $tmpfile
+# Check if database_builder exists
+if [ "$(is_database_builder_in_path)" = "1" ]; then
+	database_builder="/home/dbellot/recherche/tickdatabase/database_builder/database_builder.py"
+	PYTHONPATH="/home/dbellot/recherche/tickdatabase/database_builder/":${PYTHONPATH}
 else
-	echo "Error while processing files"
+	database_builder=$(which database_builder.py)
 fi
+
+# -----
+#  QTG
+# -----
+all_qtg=${tmpdir}/qtg_${timestamp}
+new_qtg=${tmpdir}/new_qtg_${timestamp}
+
+
+# get all qtg files
+find ${qtg_src_dir} -name '*.dat.gz' -type f > ${all_qtg}
+
+# find new files only
+sort ${all_qtg} ${dbprocessed} | uniq -u | sort - ${all_qtg} | uniq -d > ${new_qtg}
+rm -f ${all_qtg}
+
+rm -f ${parjobfile}
+while read line
+do
+echo ${database_builder} -l 5 -o ${dbdir}/qtg/$(exchange ${line})/$(month ${line}) -d $(decoder ${line}) -f csv.bz2 -i ${dbdir}/qtg/instRefdataCoh.csv -g ${dbdir}/qtg/qtg.log ${line} >> ${parjobfile}
+done < "${new_qtg}"
+
+cat ${parjobfile} | ${gnupar} &> /dev/null
+
+rm -f ${parjobfile} 
+cat ${new_qtg} >> ${dbprocessed}
+rm -f ${new_qtg}
