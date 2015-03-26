@@ -78,7 +78,9 @@ rm -f ${all_qtg}
 rm -f ${parjobfile}
 while read line
 do
-	echo -n ${database_builder} -l 5 -o ${dbdir}/qtg/$(exchange ${line})/$(month ${line}) -d $(decoder ${line}) -f csv.bz2 -i ${dbdir}/qtg/instRefdataCoh.csv -g ${dbdir}/qtg/qtg.log ${line} >> ${parjobfile}
+	outputdir = ${dbdir}/qtg/$(exchange ${line})/$(month ${line})
+	mkdir -p ${outputdir} # -p create dirs all the way long and does not fail if dir exists
+	echo -n ${database_builder} -l 5 -o ${outputdir} -d $(decoder ${line}) -f csv.bz2 -i ${dbdir}/qtg/instRefdataCoh.csv -g ${dbdir}/qtg/qtg.log ${line} >> ${parjobfile}
 done < "${new_qtg}"
 
 cat ${parjobfile} | ${gnupar} -j ${nbcores} &> /dev/null
