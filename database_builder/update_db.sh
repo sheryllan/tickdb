@@ -58,7 +58,7 @@ level=5
 dbdir=${rootdir}/database
 dbprocessed=${dbdir}/processed_files.db
 unwanted=${dbdir}/unwanted_files.db
-symbol_per_day=${dbdir}/symbol_per_day.db
+symbol_per_day_file=${dbdir}/symbol_per_day.db
 timestamp=$(date --utc --rfc-3339='ns' | tr ' .:+-' '_')
 gnupar=$(which parallel)
 qtg_src_dir=${rootdir}/qtg
@@ -135,7 +135,7 @@ rm -f ${new_qtg}
 find ${dbdir} -name '*.bz2' |\
 ${gnupar} basename {} .csv.bz2 |\
 awk -F '_' '{print $1,$2}' |\
-symbol_per_day
+symbol_per_day > ${symbol_per_day_file}
 
 
 # Run daily statistic on each symbol
