@@ -137,5 +137,4 @@ ${gnupar} basename {} .csv.bz2 |\
 awk -F '_' '{print $1,$2}' |\
 symbol_per_day > ${symbol_per_day_file}
 
-
 # Run daily statistic on each symbol
