@@ -3,7 +3,8 @@
 # ---------------
 #    Functions
 # ---------------
-function exchange {
+
+function qtg_exchange {
 echo $(basename $1 | awk -F '.' '{print $1}')
 }
 
@@ -11,16 +12,24 @@ function month {
 echo $(basename $(dirname $1))
 }
 
-function decoder {
-local exch=$(exchange $1)
+# this function analyses the file name and validate it
+# by returning a decoder for it
+# if the file is invalid for any reason, then "not_valid" is returned
+# and this file will simply be ignored during this session
+function qtg_valid_and_decoder {
+local exch=$(qtg_exchange $1)
 if [ "$exch" = "eurex" ]; then
 	echo qtg_eobi
 elif [ "$exch" = "cme" ]; then
 	echo qtg_cme
 elif [ "$exch" = "cbot" ]; then
 	echo qtg_cme
+#elif [ "$exch" = "kospi" ]; then
+#	echo qtg_kospi
+#elif [ "$exch" = "nym" ]; then
+#	echo qtg_nym_after_2015
 else
-	echo qtg_eobi
+	echo not_valid
 fi
 }
 
@@ -94,7 +103,7 @@ fi
 # ---------
 all_qtg=${tmpdir}/qtg_${timestamp}
 new_qtg=${tmpdir}/new_qtg_${timestamp}
-
+invalid_qtg=${tmpdir}/invalid_qtg_${timestamp}
 
 # get all qtg files
 find ${qtg_src_dir} -name '*.dat.gz' -type f > ${all_qtg}
@@ -106,16 +115,28 @@ rm -f ${all_qtg}
 rm -f ${parjobfile}
 while read line
 do
-	outputdir=${dbdir}/qtg/$(exchange ${line})/$(month ${line})
+	outputdir=${dbdir}/qtg/$(qtg_exchange ${line})/$(month ${line})
 	mkdir -p ${outputdir} # -p create dirs all the way long and does not fail if dir exists
-	echo ${database_builder} -l 5 -o ${outputdir} -d $(decoder ${line}) -f csv.bz2 -i ${dbdir}/qtg/instRefdataCoh.csv -g ${dbdir}/qtg/qtg.log ${line} >> ${parjobfile}
+
+	# Look for a decoder and discard invalid files
+	dec=$(qtg_valid_and_decoder ${line})
+	if [ "$dec" != "not_valid" ]; then
+		# write the command line to process this file
+		echo ${database_builder} -l 5 -o ${outputdir} -d ${dec} -f csv.bz2 -i ${dbdir}/qtg/instRefdataCoh.csv -g ${dbdir}/qtg/qtg.log ${line} >> ${parjobfile}
+	else
+		# store invalid files here
+		echo $line >> ${invalid_qtg}
+	fi
 done < "${new_qtg}"
 
+# Launch the parallel jobs
 #cat ${parjobfile} | ${gnupar} -j ${nbcores} &> /dev/null
 cat ${parjobfile} | ${gnupar} -j 10 &> /dev/null
 
+# Update the list of processed for only valid files
+cat ${new_qtg} ${invalid_qtg} | sort | uniq -u >> ${dbprocessed}
+
 rm -f ${parjobfile} 
-cat ${new_qtg} >> ${dbprocessed}
 rm -f ${new_qtg}
 
 # -----------------------
@@ -131,10 +152,10 @@ rm -f ${new_qtg}
 # find produced files | extract symbol name and date in 2 columns |
 # remove _ | create a csv files with date,symbol,symbol,symbol,...
 # for each date we obtain the list of available symbols in the database
-
 find ${dbdir} -name '*.bz2' |\
 ${gnupar} basename {} .csv.bz2 |\
 awk -F '_' '{print $1,$2}' |\
 symbol_per_day > ${symbol_per_day_file}
 
 # Run daily statistic on each symbol
+# TODO
