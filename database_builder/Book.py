@@ -36,18 +36,11 @@ def tots(t,precision=Precision.micro):
 	f = int(floor(t/precision))
 	dt=datetime.fromtimestamp(f)
 	aftervirgule = t - f*precision
-<<<<<<< HEAD
-	delta=int((dt-datetime(dt.year,dt.month,dt.day,0,0,0)).total_seconds()*precision) + aftervirgule
-	# we report the date up to nanosecond resolution, followed by 
-	# the number of nanoseconds since the beginning of the day
-	return (dt.hour,dt.minute,dt.second,aftervirgule,delta)
-=======
 	#delta=int((dt-datetime(dt.year,dt.month,dt.day,0,0,0)).total_seconds()*precision) + aftervirgule
 	# we report the date up to nanosecond resolution, followed by 
 	# the number of nanoseconds since the beginning of the day
 	#return (dt.hour,dt.minute,dt.second,aftervirgule,delta)
 	return (dt.hour,dt.minute,dt.second,aftervirgule)
->>>>>>> david
 
 # Output:
 # A : add
@@ -99,11 +92,8 @@ class Book:
 		self.levels = levels
 
 		self.book = ({}, {})
-<<<<<<< HEAD
-		self.header = ["otype","h","min","sec","ts","dayts","recv","exch"]
-=======
-		self.header = ["otype","h","min","sec","us","recv","exch"]
->>>>>>> david
+		#self.header = ["otype","h","min","sec","us","recv","exch"]
+		self.header = ["otype","recv","exch"]
 		bid =  ["bid{}".format(i)  for i in range(1,levels+1)]
 		bidv = ["bidv{}".format(i) for i in range(1,levels+1)]
 		nbid = ["nbid{}".format(i) for i in range(1,levels+1)]
@@ -253,7 +243,8 @@ class Book:
 	# =================
 
 	def output_head(self,otype,recv,exch):
-		return [otype] + list(tots(exch)) + [recv,exch]
+		#return [otype] + list(tots(exch)) + [recv,exch]
+		return [otype,recv,exch]
 
 	def report_trade(self,price,qty,recv,exch,side=0):
 		if self.mode=="level_3":

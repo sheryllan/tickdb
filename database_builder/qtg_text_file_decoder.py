@@ -51,8 +51,7 @@ def decode_qtg_EOBI(fi,levels,day):
 					price=Decimal(l[6])
 					qty = int(l[7])
 					if not books[uid].add_order(side,price,oid,qty,recv,exch):
-						logging.error("Error with ADD_ORDER at line {}".format(_C))
-						logging.error(line)
+						logging.error("Error with ADD_ORDER at line {0} in {1}".format(_C,fi.name))
 
 				elif msg=='REDUCE_ORDER':
 					side= int(l[4].split('/')[0])-1
@@ -61,15 +60,15 @@ def decode_qtg_EOBI(fi,levels,day):
 					price=Decimal(l[6])
 					order = books[uid].find_order(oid)
 					if order is None:
-						logging.error("ERROR at line {}, order does not exist".format(_C))
-						logging.error("{} {}".format(l[4],l[5]))
-						logging.error("{} {}".format(oldoid,newoid))
-						logging.error(line)
+						logging.error("ERROR at line {0}, order does not exist in {1}".format(_C,fi.name))
+						#logging.error("{} {}".format(l[4],l[5]))
+						#logging.error("{} {}".format(oldoid,newoid))
+						#logging.error(line)
 					else:
 						oldqty = order.qty
 						if not books[uid].modify_inplace(side,oid,oldqty-delta_qty,recv,exch):
-							logging.error("Error with REDUCE_ORDER at line {}".format(_C))
-							logging.error(line)
+							logging.error("Error with REDUCE_ORDER at line {0} in {1}".format(_C,fi.name))
+							#logging.error(line)
 				elif msg=='REPLACE_ORDER':
 					side=int(l[4].split('/')[0])-1
 					oldoid  = l[4]
@@ -77,16 +76,16 @@ def decode_qtg_EOBI(fi,levels,day):
 					newprice=Decimal(l[6])
 					newqty = int(l[7])
 					if not books[uid].replace_order(side,newprice,newoid,newqty,recv,exch,oldoid):
-						logging.error("Error with REPLACE_ORDER at line {}".format(_C))
-						logging.error("{} {}".format(l[4],l[5]))
-						logging.error("{} {}".format(oldoid,newoid))
-						logging.error(line)
+						logging.error("Error with REPLACE_ORDER at line {0} in {1}".format(_C,fi.name))
+						#logging.error("{} {}".format(l[4],l[5]))
+						#logging.error("{} {}".format(oldoid,newoid))
+						#logging.error(line)
 				elif msg=='DEL_ORDER':
 					side= int(l[4].split('/')[0])-1
 					oid = l[4]
 					if not books[uid].delete_order(side,-1,oid,recv,exch):
-						logging.error("Error with DEL_ORDER at line {}".format(_C))
-						logging.error(line)
+						logging.error("Error with DEL_ORDER at line {0} in {1}".format(_C,fi.name))
+						#logging.error(line)
 				elif msg=='EXECUTION':
 					price=Decimal(l[6])
 					qty = int(l[7])

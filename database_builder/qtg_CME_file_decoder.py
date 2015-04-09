@@ -50,15 +50,13 @@ def decode_qtg_CME(fi,levels,day):
 					ord_cnt=int(l[7])
 
 					if not books[uid].add_level(level,side,qty,price,ord_cnt):
-						logging.error("Error with ADD_LEVEL at line {}".format(_C))
-						logging.error(line)
+						logging.error("Error with ADD_LEVEL at line {0} in {1}".format(_C,fi.name))
 
 				elif msg=='DELETE_LEVEL':
 					level = int(l[2])
 					side  = int(l[3])-1
 					if not books[uid].delete_level(level,side):
-						logging.error("Error with DELETE_LEVEL at line {}".format(_C))
-						logging,error(line)
+						logging.error("Error with DELETE_LEVEL at line {0} in {1}".format(_C,fi.name))
 
 				elif msg=='AMEND_LEVEL':
 					level = int(l[2])
@@ -68,8 +66,7 @@ def decode_qtg_CME(fi,levels,day):
 					ord_cnt=int(l[7])
 
 					if not books[uid].amend_level(level,side,qty,price,ord_cnt):
-						logging.error("Error with AMEND_LEVEL at line {}".format(_C))
-						logging.error(line)
+						logging.error("Error with AMEND_LEVEL at line {0} in {1}".format(_C,fi.name))
 
 				elif msg=='TRADE_WITH_SIDE':
 					qty   = int(l[4])
@@ -78,8 +75,7 @@ def decode_qtg_CME(fi,levels,day):
 					#trade_volume = int(l[9])
 
 					if not books[uid].report_trade(price,qty,recv,exch,side):
-						logging.error("Error with TRADE_WITH_SIDE at line {}".format(_C))
-						logging.error(line)
+						logging.error("Error with TRADE_WITH_SIDE at line {0} in {1}".format(_C,fi.name))
 
 				elif msg=='FINAL':
 					exch = int(l[2])
