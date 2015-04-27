@@ -1,10 +1,5 @@
 #!/bin/bash
 
-if [[ $# -ne 1 ]]; then
-	echo "Error: missing argument"
-	exit 1
-fi
-
 # ---------------
 #    Functions
 # ---------------
@@ -17,54 +12,25 @@ function month {
 echo $(basename $(dirname $1))
 }
 
-# print the value of a single key from a JSON file
-# argv[1] = JSON file
-# argv[2] = key
-# behaviour is undefined is the value associated to the key is complex
-function get_json_val {
-/bin/env python3 -c '
-import sys,os,json
-
-j=json.load(open(sys.argv[1]))
-print(j[sys.argv[2]])
-' $1 $2
-}
-
 # this function analyses the file name and validate it
 # by returning a decoder for it
 # if the file is invalid for any reason, then "not_valid" is returned
 # and this file will simply be ignored during this session
-# argv[1] = JSON config file
-# argv[2] = filename
-function qtg_find_decoder {
-/bin/env python3 -c '
-import sys,os,json
-
-j=json.load(open(sys.argv[1]))
-
-x=sys.argv[2]
-x=x.split("/")
-try:
-	month=int(x[len(x)-2])
-except:
-	print("not_valid")
-	sys.exit(0)
-
-repo =x[len(x)-3]
-
-if repo not in j["decoder"]:
-	print("not_valid")
-else:
-	for v in j["decoder"][repo]:
-		from_=v["from"]
-		to_=v["to"]
-		if to_==0:
-			to_=10**10
-		if month>=from_ and month<=to_:
-			print(v["code"])
-			sys.exit(0)
-	print("not_valid")
-' $1 $2
+function qtg_valid_and_decoder {
+local exch=$(qtg_exchange $1)
+if [ "$exch" = "eurex" ]; then
+	echo qtg_eobi
+elif [ "$exch" = "cme" ]; then
+	echo qtg_cme
+#elif [ "$exch" = "cbot" ]; then
+#	echo qtg_cme
+#elif [ "$exch" = "kospi" ]; then
+#	echo qtg_kospi
+#elif [ "$exch" = "nym" ]; then
+#	echo qtg_nym_after_2015
+else
+	echo not_valid
+fi
 }
 
 function is_database_builder_in_path {
@@ -95,23 +61,16 @@ for d in dates:
 # ---------------------------
 #    Setup main parameters
 # ---------------------------
-jsonconf=$1
-if [ ! -e ${jsonconf} ]; then
-	echo "Error: JSON config file does not exit. Aborting..."
-	exit 1
-fi
-
-rootdir=$(get_json_val ${jsonconf} "rootdir")
-tmpdir=$(get_json_val ${jsonconf} "tmpdir")
-level=$(get_json_val ${jsonconf} "level")
-dbdir=$(get_json_val ${jsonconf} "dbdir")
-dbprocessed=$(get_json_val ${jsonconf} "dbprocessed")
-unwanted=$(get_json_val ${jsonconf} "unwanted")
-symbol_per_day_file=$(get_json_val ${jsonconf} "symbol_per_day_file")
-qtg_src_dir=$(get_json_val ${jsonconf} "qtg_src_dir")
-
+rootdir=/mnt/data
+tmpdir=/tmp
+level=5
+dbdir=${rootdir}/database
+dbprocessed=${dbdir}/processed_files.db
+unwanted=${dbdir}/unwanted_files.db
+symbol_per_day_file=${dbdir}/symbol_per_day.db
 timestamp=$(date --utc --rfc-3339='ns' | tr ' .:+-' '_')
 gnupar=$(which parallel)
+qtg_src_dir=${rootdir}/qtg
 parjobfile=/tmp/gnupar_job_file.sh
 nbcores=$(($(nproc)-2)) # get all the cores minus 2
 
@@ -156,11 +115,12 @@ rm -f ${all_qtg}
 rm -f ${parjobfile}
 while read line
 do
+	outputdir=${dbdir}/qtg/$(qtg_exchange ${line})/$(month ${line})
+	mkdir -p ${outputdir} # -p create dirs all the way long and does not fail if dir exists
+
 	# Look for a decoder and discard invalid files
-	dec=$(qtg_find_decoder ${jsonconf} ${line})
+	dec=$(qtg_valid_and_decoder ${line})
 	if [ "$dec" != "not_valid" ]; then
-		outputdir=${dbdir}/qtg/$(qtg_exchange ${line})/$(month ${line})
-		mkdir -p ${outputdir} # -p create dirs all the way long and does not fail if dir exists
 		# write the command line to process this file
 		echo ${database_builder} -l 5 -o ${outputdir} -d ${dec} -f csv.bz2 -i ${dbdir}/qtg/instRefdataCoh.csv -g ${dbdir}/qtg/qtg.log ${line} >> ${parjobfile}
 	else
@@ -171,7 +131,7 @@ done < "${new_qtg}"
 
 # Launch the parallel jobs
 #cat ${parjobfile} | ${gnupar} -j ${nbcores} &> /dev/null
-cat ${parjobfile} | ${gnupar} -j 12 &> /dev/null
+cat ${parjobfile} | ${gnupar} -j 10 &> /dev/null
 
 # Update the list of processed for only valid files
 cat ${new_qtg} ${invalid_qtg} | sort | uniq -u >> ${dbprocessed}
