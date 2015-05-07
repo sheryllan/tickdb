@@ -2,6 +2,7 @@
 
 if [[ $# -ne 1 ]]; then
 	echo "Error: missing argument"
+	echo "Usage: update_db.sh <JSON config file>"
 	exit 1
 fi
 
@@ -168,10 +169,10 @@ do
 		echo $line >> ${invalid_qtg}
 	fi
 done < "${new_qtg}"
-
+exit 0
 # Launch the parallel jobs
 #cat ${parjobfile} | ${gnupar} -j ${nbcores} &> /dev/null
-cat ${parjobfile} | ${gnupar} -j 12 &> /dev/null
+cat ${parjobfile} | ${gnupar} -j 22 &> /dev/null
 
 # Update the list of processed for only valid files
 cat ${new_qtg} ${invalid_qtg} | sort | uniq -u >> ${dbprocessed}

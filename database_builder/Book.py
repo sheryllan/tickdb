@@ -85,8 +85,10 @@ class Book:
 	# mode:
 	#	level_3 : publish all the updates at the time of the update (ex.: Eurex EOBI)
 	#	level_2 : oid is never used throughout the program, only price levels (ex.: CME, EMDI)
+	#
+	# channel_id is used for CME/CBOT only
 
-	def __init__(self, uid, date, levels, mode='level_3'):
+	def __init__(self, uid, date, levels, mode='level_3', channel_id=-1):
 		self.uid = uid
 		self.date = date
 		self.levels = levels
@@ -104,6 +106,7 @@ class Book:
 		self.output = []
 		self.valid = True
 		self.mode= mode
+		self.channel_id = channel_id
 
 	# ===============
 	# Level 3 methods
@@ -208,7 +211,7 @@ class Book:
 	# ===============
 
 	def add_level(self,level,side,qty,price,ord_cnt):
-		#print("A",side,level,self.book[side])
+		#print("A",side,level,qty,price,ord_cnt)
 		# if level exists then push all sub levels by one
 		if level in self.book[side]:
 			for i in range(max(self.book[side]),level-1,-1):
@@ -217,26 +220,34 @@ class Book:
 				else:
 					return False
 		self.book[side][level] = (price,qty,ord_cnt)
+
 		return True
 
 	def amend_level(self,level,side,qty,price,ord_cnt):
-		#print("M",side,level,self.book[side])
+		#print("M",side,level,qty,price,ord_cnt)
 		if level not in self.book[side]:
 			return False
 		else:
-			self.book[side][level] = (price,qty,ord_cnt)
-			return True
+			try:
+				self.book[side][level] = (price,qty,ord_cnt)
+				return True
+			except:
+				self.valid = False
 
 	def delete_level(self,level,side):
-		#print("D",side,level,self.book[side])
+		#print("D",side,level)
 		if level not in self.book[side]:
 			return False
 		else:
-			M = max(self.book[side])
-			for i in range(level+1,M+1):
-				self.book[side][i-1]=self.book[side][i]
-			del self.book[side][M]
-			return True
+			try:
+				M = max(self.book[side])
+				for i in range(level+1,M+1):
+					self.book[side][i-1]=self.book[side][i]
+				del self.book[side][M]
+	
+				return True
+			except:
+				self.valid = False
 
 	# =================
 	# Reporting methods
