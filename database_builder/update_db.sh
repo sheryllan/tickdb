@@ -169,7 +169,7 @@ do
 		echo $line >> ${invalid_qtg}
 	fi
 done < "${new_qtg}"
-exit 0
+
 # Launch the parallel jobs
 #cat ${parjobfile} | ${gnupar} -j ${nbcores} &> /dev/null
 cat ${parjobfile} | ${gnupar} -j 22 &> /dev/null
