@@ -2,6 +2,7 @@
 	"rootdir": "/mnt/data",
 	"tmpdir" : "/tmp",
 	"level": 5,
+	"nbcores": 20,
 
 	"dbdir" :       "/mnt/data/database",
 	"dbprocessed" : "/mnt/data/database/processed_files.db",
@@ -9,23 +10,28 @@
 	"symbol_per_day_file" : "/mnt/data/database/symbol_per_day.db",
 
 	"qtg_src_dir" : "/mnt/data/qtg",
+	"qtg_instrument_db" : "/mnt/data/qtg/instRefdataCoh.csv",
 
 	"decoder":
 	{
 		"BSXCBTMA1" : [{ "from": 0,	"to":201312,	"code": "not_valid"},
 			       { "from": 201401,"to":0,		"code": "not_valid"}],
-		"BSXCBT3MA1": [{ "from": 0,	"to":201412,	"code": "not_valid"},
-			       { "from": 201501,"to":0,		"code": "qtg_mdp3" }],
 
-		"BSXCMEMA1" : [{ "from": 0,	"to":201312,	"code": "not_valid" },
+		"BSXCBT3MA1": [{ "from": 0,	"to":201502,	"code": "not_valid"},
+			       { "from": 201503,"to":0,		"code": "qtg_mdp3" }],
+
+		"BSXCMEMA1" : [{ "from": 0,	"to":201312,	"code": "not_valid"},
 			       { "from": 201401,"to":0,         "code": "not_valid"}],
-		"BSXCME3MA1": [{ "from": 0,	"to":201412,	"code": "not_valid" },
-			       { "from": 201501,"to":0,		"code": "qtg_mdp3" }],
 
-		"BSXEURMA1" : [{ "from": 0,	"to":0,		"code": "qtg_eobi" }],
+		"BSXCME3MA1": [{ "from": 0,	"to":201502,	"code": "not_valid"},
+			       { "from": 201503,"to":0,		"code": "qtg_mdp3" }],
 
-		"BSXNYMMA1" : [{ "from": 0,	"to":201412,	"code": "not_valid" },
-			       { "from": 201501,"to":0,		"code": "qtg_mdp3" }],
-		"BSBUSKMA1" : [{ "from": 0,	"to":0,		"code": "not_valid" }]
+		"BSXEURMA1" : [{ "from": 0,	"to":201502,	"code": "not_valid"},
+			       { "from": 201503,"to":0,		"code": "not_valid" }],
+
+		"BSXNYMMA1" : [{ "from": 0,	"to":201502,	"code": "not_valid"},
+			       { "from": 201503,"to":0,		"code": "qtg_mdp3" }],
+
+		"BSBUSKMA1" : [{ "from": 0,	"to":0,		"code": "not_valid"}]
 	}
 }

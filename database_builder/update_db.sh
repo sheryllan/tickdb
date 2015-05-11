@@ -110,11 +110,12 @@ dbprocessed=$(get_json_val ${jsonconf} "dbprocessed")
 unwanted=$(get_json_val ${jsonconf} "unwanted")
 symbol_per_day_file=$(get_json_val ${jsonconf} "symbol_per_day_file")
 qtg_src_dir=$(get_json_val ${jsonconf} "qtg_src_dir")
+qtg_instrument_db=$(get_json_val ${jsonconf} "qtg_instrument_db")
 
 timestamp=$(date --utc --rfc-3339='ns' | tr ' .:+-' '_')
 gnupar=$(which parallel)
 parjobfile=/tmp/gnupar_job_file.sh
-nbcores=$(($(nproc)-2)) # get all the cores minus 2
+nbcores=$(get_json_val ${jsonconf} "nbcores")
 
 # Check if db file exists
 if [ ! -e ${dbprocessed} ]; then
@@ -163,7 +164,7 @@ do
 		outputdir=${dbdir}/qtg/$(qtg_exchange ${line})/$(month ${line})
 		mkdir -p ${outputdir} # -p create dirs all the way long and does not fail if dir exists
 		# write the command line to process this file
-		echo ${database_builder} -l 5 -o ${outputdir} -d ${dec} -f csv.bz2 -i ${dbdir}/qtg/instRefdataCoh.csv -g ${dbdir}/qtg/qtg.log ${line} >> ${parjobfile}
+		echo ${database_builder} -l 5 -o ${outputdir} -d ${dec} -f csv.bz2 -i ${qtg_instrument_db} -g ${dbdir}/qtg/qtg.log ${line} >> ${parjobfile}
 	else
 		# store invalid files here
 		echo $line >> ${invalid_qtg}
@@ -172,7 +173,7 @@ done < "${new_qtg}"
 
 # Launch the parallel jobs
 #cat ${parjobfile} | ${gnupar} -j ${nbcores} &> /dev/null
-cat ${parjobfile} | ${gnupar} -j 22 &> /dev/null
+cat ${parjobfile} | ${gnupar} -j ${nbcores} &> /dev/null
 
 # Update the list of processed for only valid files
 cat ${new_qtg} ${invalid_qtg} | sort | uniq -u >> ${dbprocessed}

@@ -65,6 +65,7 @@ def main():
 	# Write files
 	df = read_csv(args.insdb)
 	for uid in books:
+		print("writing ",uid," ",symbols[uid])
 		if not books[uid].valid:
 			pass
 
@@ -72,7 +73,7 @@ def main():
 			x = DataFrame(books[uid].output,columns=books[uid].header)
 		else:
 			x = DataFrame([ [np.nan]*len(books[uid].header) ],columns=books[uid].header)
-
+		print("\tdata frame done")
 		prodname = df[df['#instuid']==uid].iat[0,3]
 		output_file = args.odir+"/"+prodname+"_"+"20"+date+"."+args.format
 
@@ -85,7 +86,9 @@ def main():
 			output_file = bz2.open(output_file,"wt",9,"UTF-8")
 
 		#x[grep("bidv|askv|nbid|nask", list(x.columns))] = x[grep("bidv|askv|nbid|nask", list(x.columns))].astype(int) 
+		print("writing csv file")
 		x.to_csv(output_file,na_rep="NA",index=False,index_label=False)
+		print("csv file done")
 
 	sys.exit(0)
 

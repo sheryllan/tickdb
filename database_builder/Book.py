@@ -281,6 +281,7 @@ class Book:
 
 	def store_update(self,otype,recv,exch):
 		r = self.output_head(otype,recv,exch)
+		do_update=True
 		for s in [0,1]:
 			# Eurex
 			if self.mode=="level_3":
@@ -308,5 +309,8 @@ class Book:
 				list_len += [np.nan]*(self.levels-count)
 
 			r += prices + list_qty + list_len
-
-		self.output.append(r)
+		
+		# do update only if there is a change in the top levels
+		ll=3+self.levels*6
+		if len(self.output)==0 or (len(self.output) and self.output[-1][3:ll]!=r[3:ll]):
+			self.output.append(r)
