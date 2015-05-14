@@ -17,20 +17,18 @@
 		"BSXCBTMA1" : [{ "from": 0,	"to":201312,	"code": "not_valid"},
 			       { "from": 201401,"to":0,		"code": "not_valid"}],
 
-		"BSXCBT3MA1": [{ "from": 0,	"to":201502,	"code": "not_valid"},
-			       { "from": 201503,"to":0,		"code": "qtg_mdp3" }],
+		"BSXCBT3MA1": [{ "from": 0,	"to":0,		"code": "qtg_mdp3"}],
 
 		"BSXCMEMA1" : [{ "from": 0,	"to":201312,	"code": "not_valid"},
 			       { "from": 201401,"to":0,         "code": "not_valid"}],
 
-		"BSXCME3MA1": [{ "from": 0,	"to":201502,	"code": "not_valid"},
-			       { "from": 201503,"to":0,		"code": "qtg_mdp3" }],
+		"BSXCME3MA1": [{ "from": 0,	"to":0,		"code": "qtg_mdp3"}],
 
 		"BSXEURMA1" : [{ "from": 0,	"to":201502,	"code": "not_valid"},
-			       { "from": 201503,"to":0,		"code": "not_valid" }],
+			       { "from": 201503,"to":0,		"code": "not_valid"}],
 
-		"BSXNYMMA1" : [{ "from": 0,	"to":201502,	"code": "not_valid"},
-			       { "from": 201503,"to":0,		"code": "qtg_mdp3" }],
+		"BSXNYMMA1" : [{ "from": 0,	"to":201412,	"code": "not_valid"},
+			       { "from": 201501,"to":0,		"code": "qtg_mdp3"}],
 
 		"BSBUSKMA1" : [{ "from": 0,	"to":0,		"code": "not_valid"}]
 	}
