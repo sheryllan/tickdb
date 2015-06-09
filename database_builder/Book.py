@@ -258,20 +258,11 @@ class Book:
 		return [otype,recv,exch]
 
 	def report_trade(self,price,qty,recv,exch,side=0):
-		if self.mode=="level_3":
-			self.output.append(
-				self.output_head("T",recv,exch)
-				+[price,qty]
-				+([np.nan]*(4*self.levels-2)))
-			return True
-		elif self.mode=="level_2":
-			self.output.append(
-				self.output_head("T",recv,exch)
-				+[price,qty,side]
-				+([np.nan]*(4*self.levels-3)))
-			return True
-		else:
-			return False
+		self.output.append(
+			self.output_head("T",recv,exch)
+			+[price,qty,side]
+			+([np.nan]*(4*self.levels-3)))
+		return True
 
 	def exec_summary(self,price,qty,recv,exch):
 		self.output.append(

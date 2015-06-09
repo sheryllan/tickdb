@@ -24,8 +24,8 @@
 
 		"BSXCME3MA1": [{ "from": 0,	"to":0,		"code": "qtg_mdp3"}],
 
-		"BSXEURMA1" : [{ "from": 0,	"to":201502,	"code": "not_valid"},
-			       { "from": 201503,"to":0,		"code": "not_valid"}],
+		"BSXEURMA1" : [{ "from": 0,	"to":201412,	"code": "not_valid"},
+			       { "from": 201501,"to":0,		"code": "qtg_eobi"}],
 
 		"BSXNYMMA1" : [{ "from": 0,	"to":201412,	"code": "not_valid"},
 			       { "from": 201501,"to":0,		"code": "qtg_mdp3"}],
