@@ -3,7 +3,6 @@
 if [ -n "$RUN_BY_CRON" ]; then
 	source ~/.bashrc
 	export PATH=/usr/local/bin:${PATH}
-	echo $PATH
 fi
 
 exec "$@"

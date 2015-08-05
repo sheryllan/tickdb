@@ -102,6 +102,7 @@ if [ ! -e ${jsonconf} ]; then
 	exit 1
 fi
 
+# Extract config from JSON file
 rootdir=$(get_json_val ${jsonconf} "rootdir")
 tmpdir=$(get_json_val ${jsonconf} "tmpdir")
 level=$(get_json_val ${jsonconf} "level")
@@ -111,10 +112,9 @@ unwanted=$(get_json_val ${jsonconf} "unwanted")
 symbol_per_day_file=$(get_json_val ${jsonconf} "symbol_per_day_file")
 qtg_src_dir=$(get_json_val ${jsonconf} "qtg_src_dir")
 qtg_instrument_db=$(get_json_val ${jsonconf} "qtg_instrument_db")
-
 timestamp=$(date --utc --rfc-3339='ns' | tr ' .:+-' '_')
 gnupar=$(which parallel)
-parjobfile=/tmp/gnupar_job_file.sh
+parjobfile=$(get_json_val ${jsonconf} "parjobfile")
 nbcores=$(get_json_val ${jsonconf} "nbcores")
 
 # Check if db file exists
@@ -156,6 +156,8 @@ sort ${all_qtg} ${dbprocessed} ${unwanted} | uniq -u > ${new_qtg}
 rm -f ${all_qtg}
 
 rm -f ${parjobfile}
+touch ${parjobfile}
+
 while read line
 do
 	# Look for a decoder and discard invalid files
@@ -172,7 +174,6 @@ do
 done < "${new_qtg}"
 
 # Launch the parallel jobs
-#cat ${parjobfile} | ${gnupar} -j ${nbcores} &> /dev/null
 cat ${parjobfile} | ${gnupar} -j ${nbcores} &> /dev/null
 
 # Update the list of processed for only valid files

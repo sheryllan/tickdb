@@ -1,6 +1,7 @@
 {
 	"rootdir": "/mnt/data",
 	"tmpdir" : "/tmp",
+	"parjobfile" : "/tmp/gnupar_job_file.sh",
 	"level": 5,
 	"nbcores": 20,
 
