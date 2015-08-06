@@ -210,6 +210,15 @@ class Book:
 	# Level 2 methods
 	# ===============
 
+	def replace_book(self,bid,ask,bidv,askv,nbid,nask,recv,exch):
+		self.book = ({}, {})
+		bid_side = { i : (bid[i],bidv[i],nbid[i]) for i in range(0,5) }
+		ask_side = { i : (ask[i],askv[i],nask[i]) for i in range(0,5) }
+		self.book = {0:bid_side, 1:ask_side}
+		self.valid=True
+		self.store_update("Q",recv,exch)
+		return True
+
 	def add_level(self,level,side,qty,price,ord_cnt):
 		#print("A",side,level,qty,price,ord_cnt)
 		# if level exists then push all sub levels by one
@@ -285,7 +294,7 @@ class Book:
 					for o in self.book[s][p]]) 
 					for p in prices]
 				list_len = [len(self.book[s][p]) for p in prices]
-			# CME/CBOT
+			# CME/CBOT/Nymex, Kospi
 			elif self.mode=="level_2":
 				count = min(self.levels, len(self.book[s]))
 				# keys = sorted(self.book[s].keys())[0:count]

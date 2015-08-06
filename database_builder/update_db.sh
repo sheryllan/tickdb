@@ -72,27 +72,6 @@ function is_database_builder_in_path {
 which database_builder.py &> /dev/null ; echo $?
 }
 
-function symbol_per_day {
-/bin/env python3 -c '
-import sys
-x={}
-
-for line in sys.stdin:
-	line=line.split()
-	symbol=line[0]
-	date=line[1]
-
-	if date not in x:
-		x[date]=list()
-	x[date].append(symbol)
-
-dates=sorted(x.keys())
-for d in dates:
-	print("{0},".format(d),end="")
-	print(",".join(sorted(x[d])))
-'
-}
-
 # ---------------------------
 #    Setup main parameters
 # ---------------------------
@@ -198,7 +177,8 @@ rm -f ${new_qtg}
 find ${dbdir} -name '*.bz2' |\
 ${gnupar} basename {} .csv.bz2 |\
 awk -F '_' '{print $1,$2}' |\
-symbol_per_day > ${symbol_per_day_file}
+
+symbol_per_day.py > ${symbol_per_day_file}
 
 # Run daily statistic on each symbol
 # TODO
