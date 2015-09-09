@@ -178,7 +178,7 @@ find ${dbdir} -name '*.bz2' |\
 ${gnupar} basename {} .csv.bz2 |\
 awk -F '_' '{print $1,$2}' |\
 
-symbol_per_day.py > ${symbol_per_day_file}
+/home/dbellot/recherche/tickdatabase/database_builder/symbol_per_day.py > ${symbol_per_day_file}
 
 # Run daily statistic on each symbol
 # TODO
