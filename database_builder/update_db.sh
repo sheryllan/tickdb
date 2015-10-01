@@ -10,6 +10,10 @@ fi
 #    Functions
 # ---------------
 
+function launch_qtg_jobs {
+cat $1 | $2 -j $3 &> /dev/null
+}
+
 function qtg_exchange {
 echo $(basename $1 | awk -F '.' '{print $1}')
 }
@@ -152,14 +156,13 @@ do
 	fi
 done < "${new_qtg}"
 
-# Launch the parallel jobs
-cat ${parjobfile} | ${gnupar} -j ${nbcores} &> /dev/null
-
 # Update the list of processed for only valid files
 cat ${new_qtg} ${invalid_qtg} | sort | uniq -u >> ${dbprocessed}
+rm -f ${new_qtg} ${invalid_qtg}
 
+# Launch the parallel jobs
+cat ${parjobfile} | ${gnupar} -j ${nbcores} &> /dev/null
 rm -f ${parjobfile} 
-rm -f ${new_qtg}
 
 # -----------------------
 #    LIQUID PCAP FILES
