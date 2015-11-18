@@ -1,5 +1,6 @@
 import string
 
+import sys
 from datetime import datetime
 from math import floor
 from decimal import *
@@ -12,6 +13,7 @@ from enum import IntEnum
 # ====================
 
 # keys in book output are
+# level 3:
 #	A: Order Add
 #	D: Order Delete
 #	M: Order Modify no priority change
@@ -20,6 +22,15 @@ from enum import IntEnum
 #	S: Execution summary (Eurex)
 #	C: Book Cleared
 #	Q: Quote
+#
+# Eurex EMDI level 2:
+# A: add level
+# V: change volume in a level
+# D: delete level
+# H: delete from level 1 to level l included
+# F: delete from level l to the end
+# O: overlay = change price of a level
+
 
 class Precision(IntEnum):
 	sec  =1e0
@@ -41,16 +52,6 @@ def tots(t,precision=Precision.micro):
 	# the number of nanoseconds since the beginning of the day
 	#return (dt.hour,dt.minute,dt.second,aftervirgule,delta)
 	return (dt.hour,dt.minute,dt.second,aftervirgule)
-
-# Output:
-# A : add
-# D : delete
-# M : modify same priority
-# L : modify loss of priority
-# T : trade execution
-# S : execution summary
-# Q : quote (Kospi)
-# C : clear book
 
 class Order:
 	def __init__(self,_uid,_oid,_side,_price,_recv,_exch,_qty):
@@ -88,7 +89,7 @@ class Book:
 	#
 	# channel_id is used for CME/CBOT only
 
-	def __init__(self, uid, date, levels, mode='level_3', channel_id=-1):
+	def __init__(self, uid, date, levels, mode='level_3', channel_id=-1, ofname='', min_output_size=10000):
 		self.uid = uid
 		self.date = date
 		self.levels = levels
@@ -107,6 +108,8 @@ class Book:
 		self.valid = True
 		self.mode= mode
 		self.channel_id = channel_id
+		self.ofname=ofname
+		self.min_output_size = min_output_size
 
 	# ===============
 	# Level 3 methods
@@ -266,11 +269,11 @@ class Book:
 		#return [otype] + list(tots(exch)) + [recv,exch]
 		return [otype,recv,exch]
 
-	def report_trade(self,price,qty,recv,exch,side=0):
+	def report_trade(self,price,qty,recv,exch,side=0,nb_orders=0,aggrtime=0,nb_buy=0,nb_sell=0):
 		self.output.append(
 			self.output_head("T",recv,exch)
-			+[price,qty,side]
-			+([np.nan]*(4*self.levels-3)))
+			+[price,qty,side,nb_orders,aggrtime,nb_buy,nb_sell]
+			+([np.nan]*(4*self.levels-7)))
 		return True
 
 	def exec_summary(self,price,qty,recv,exch):
@@ -294,13 +297,14 @@ class Book:
 					for o in self.book[s][p]]) 
 					for p in prices]
 				list_len = [len(self.book[s][p]) for p in prices]
-			# CME/CBOT/Nymex, Kospi
+			# CME/CBOT/Nymex, Kospi, Eurex EMDI
 			elif self.mode=="level_2":
 				count = min(self.levels, len(self.book[s]))
-				# keys = sorted(self.book[s].keys())[0:count]
-				prices   = [self.book[s][i][0] for i in range(count)]
-				list_qty = [self.book[s][i][1] for i in range(count)]
-				list_len = [self.book[s][i][2] for i in range(count)]
+				keys = sorted(self.book[s].keys())[0:count]
+				prices   = [self.book[s][i][0] for i in keys]
+
+				list_qty = [self.book[s][i][1] for i in keys]
+				list_len = [self.book[s][i][2] for i in keys]
 
 			# complete with nan if necessary
 			if count < self.levels:
@@ -314,3 +318,5 @@ class Book:
 		ll=3+self.levels*6
 		if len(self.output)==0 or (len(self.output) and self.output[-1][3:ll]!=r[3:ll]):
 			self.output.append(r)
+			if self.output and len(self.output)==self.min_output_size:
+				self.output = []
