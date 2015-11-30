@@ -1,11 +1,11 @@
 import string
 
 import sys
+import numpy as np
 from datetime import datetime
 from math import floor
 from decimal import *
-import numpy as np
-import h5py as h
+from pandas import *
 from enum import IntEnum
 
 # ====================
@@ -89,7 +89,7 @@ class Book:
 	#
 	# channel_id is used for CME/CBOT only
 
-	def __init__(self, uid, date, levels, mode='level_3', channel_id=-1, ofname='', min_output_size=10000):
+	def __init__(self, uid, date, levels, mode='level_3', channel_id=-1, ofile=None, min_output_size=10000):
 		self.uid = uid
 		self.date = date
 		self.levels = levels
@@ -108,7 +108,8 @@ class Book:
 		self.valid = True
 		self.mode= mode
 		self.channel_id = channel_id
-		self.ofname=ofname
+		self.ofile=ofile
+		self.nb_write=0
 		self.min_output_size = min_output_size
 
 	# ===============
@@ -318,5 +319,15 @@ class Book:
 		ll=3+self.levels*6
 		if len(self.output)==0 or (len(self.output) and self.output[-1][3:ll]!=r[3:ll]):
 			self.output.append(r)
-			if self.output and len(self.output)==self.min_output_size:
-				self.output = []
+			if self.ofile and len(self.output)==self.min_output_size:
+				self.write_output()
+
+	def write_output(self):
+		x=DataFrame(self.output, columns=self.header)
+		# write in CSV form
+		# adding header only if it's the first time we write in the file
+		x.to_csv(self.ofile, na_rep="NA", index=False,index_label=False,
+				header=self.nb_write==0)
+		self.ofile.flush() # push data into file (to make its size changes)
+		self.nb_write += 1
+		self.output = [] # clean up the big list to make it fast again
