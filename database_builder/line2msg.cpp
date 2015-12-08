@@ -1,34 +1,38 @@
 #include <unordered_map>
 #include <vector>
-#include <boost/algorithm/string.hpp>
-#include <boost/algorithm/string/classification.hpp>
+#include <sstream>
+#include <string>
+#include <cstdio>
+#include <cstring>
 #include <boost/python.hpp>
 
 namespace py=boost::python;
+
 py::dict line2msg(const std::string& line)
 {
-	std::vector<std::string> l;
-	//split(l,line,boost::algorithm::is_any_of(":"));
-	boost::split(l,line,[](char c){return c==':';});
-	l.back().pop_back();
-
-	std::unordered_map<std::string, std::vector<boost::iterator_range<std::string::iterator>>> data;
-
-	for(size_t i=0; i<l.size(); i+=2)
-		data[l[i]].push_back(l[i+1]);
+	std::unordered_map<std::string, std::vector<std::string>> data;
+	std::stringstream ss(line);
+	std::string key;
+	std::string value;
+	while(std::getline(ss,key,':'))
+	{
+		std::getline(ss,value,':');
+		if(value.back()=='\n')
+			value.pop_back();
+		data[key].push_back(value);
+	}
 
 	py::dict d1;
-	for(auto it=begin(data); it!=end(data); ++it)
+	for(const auto& obj : data)
 	{
-		if(it->second.size()>1)
+		if(obj.second.size()>1)
 		{
-			for(size_t i=0; i<it->second.size(); i++)
-				d1[it->first+"."+std::to_string(i)] = 
-					std::string((it->second)[i].begin(),(it->second)[i].end());
+			for(size_t i=0; i<obj.second.size(); i++)
+				d1[obj.first+"."+std::to_string(i)] = obj.second[i];
 		}
 		else
 		{
-			d1[it->first] = std::string(it->second.front().begin(), it->second.front().end());
+			d1[obj.first] = obj.second.front();
 		}
 	}
 

@@ -79,7 +79,7 @@ class Book:
 	# book[side][level] = (price,qty,order_count)
 	#       ^      ^                  ^
 	#       |      |                  |
-	#     tuple  dict               # of orders
+	#     tuple  list               # of orders
 	#
 	# price is a Decimal
 	#
@@ -94,7 +94,10 @@ class Book:
 		self.date = date
 		self.levels = levels
 
-		self.book = ({}, {})
+		if mode=='level_3':
+			self.book = ({}, {})
+		else:
+			self.book = ([], [])
 		#self.header = ["otype","h","min","sec","us","recv","exch"]
 		self.header = ["otype","recv","exch"]
 		bid =  ["bid{}".format(i)  for i in range(1,levels+1)]
@@ -129,10 +132,12 @@ class Book:
 
 	# Clear the book
 	def clear(self,recv,exch):
-		self.book = ({}, {})
-		self.valid = True
-		if self.mode=='level_3':
+		if self.mode=='level_2':
+			self.book = ([],[])
+		elif self.mode=='level_3':
+			self.book = ({},{})
 			self.store_update("C",recv,exch)
+		self.valid = True
 		return True
 
 	# Add a new order
@@ -215,52 +220,33 @@ class Book:
 	# ===============
 
 	def replace_book(self,bid,ask,bidv,askv,nbid,nask,recv,exch):
-		self.book = ({}, {})
-		bid_side = { i : (bid[i],bidv[i],nbid[i]) for i in range(0,5) }
-		ask_side = { i : (ask[i],askv[i],nask[i]) for i in range(0,5) }
-		self.book = {0:bid_side, 1:ask_side}
+		self.book = ([], [])
+		self.book[0] = [ (bid[i],bidv[i],nbid[i]) for i in range(5) ]
+		self.book[1] = [ (ask[i],askv[i],nask[i]) for i in range(5) ]
 		self.valid=True
 		self.store_update("Q",recv,exch)
 		return True
 
 	def add_level(self,level,side,qty,price,ord_cnt):
-		#print("A",side,level,qty,price,ord_cnt)
-		# if level exists then push all sub levels by one
-		if level in self.book[side]:
-			for i in range(max(self.book[side]),level-1,-1):
-				if i in self.book[side]: # this should be true all the time
-					self.book[side][i+1]=self.book[side][i]
-				else:
-					return False
-		self.book[side][level] = (price,qty,ord_cnt)
-
-		return True
+		if level<=len(self.book[side]):
+			self.book[side].insert(level, (price,qty,ord_cnt) )
+			return True
+		else:
+			return False
 
 	def amend_level(self,level,side,qty,price,ord_cnt):
-		#print("M",side,level,qty,price,ord_cnt)
-		if level not in self.book[side]:
-			return False
+		if level < len(self.book[side]):
+			self.book[side][level] = (price,qty,ord_cnt)
+			return True
 		else:
-			try:
-				self.book[side][level] = (price,qty,ord_cnt)
-				return True
-			except:
-				self.valid = False
+			return False
 
 	def delete_level(self,level,side):
-		#print("D",side,level)
-		if level not in self.book[side]:
-			return False
+		if level < len(self.book[side]):
+			self.book[side].pop(level)
+			return True
 		else:
-			try:
-				M = max(self.book[side])
-				for i in range(level+1,M+1):
-					self.book[side][i-1]=self.book[side][i]
-				del self.book[side][M]
-	
-				return True
-			except:
-				self.valid = False
+			return False
 
 	# =================
 	# Reporting methods
@@ -301,23 +287,21 @@ class Book:
 			# CME/CBOT/Nymex, Kospi, Eurex EMDI
 			elif self.mode=="level_2":
 				count = min(self.levels, len(self.book[s]))
-				keys = sorted(self.book[s].keys())[0:count]
-				prices   = [self.book[s][i][0] for i in keys]
+				prices = [item[0] for item in self.book[s][0:count]] \
+						+[np.nan]*(self.levels-count)
 
-				list_qty = [self.book[s][i][1] for i in keys]
-				list_len = [self.book[s][i][2] for i in keys]
+				list_qty = [item[1] for item in self.book[s][0:count]] \
+						+[np.nan]*(self.levels-count)
 
-			# complete with nan if necessary
-			if count < self.levels:
-				prices += [np.nan]*(self.levels-count)
-				list_qty += [np.nan]*(self.levels-count)
-				list_len += [np.nan]*(self.levels-count)
+				list_len = [item[2] for item in self.book[s][0:count]] \
+						+[np.nan]*(self.levels-count)
 
 			r += prices + list_qty + list_len
 		
 		# do update only if there is a change in the top levels
 		ll=3+self.levels*6
-		if len(self.output)==0 or (len(self.output) and self.output[-1][3:ll]!=r[3:ll]):
+		if len(self.output)==0 or (len(self.output) and 
+				self.output[-1][3:ll]!=r[3:ll]):
 			self.output.append(r)
 			if self.ofile and len(self.output)==self.min_output_size:
 				self.write_output()

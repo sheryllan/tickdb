@@ -4,49 +4,43 @@ import os
 import tarfile
 import shutil
 import sys
-import pathlib
 import time
 import argparse
 from Book import *
 import csv
 from copy import deepcopy
-from collections import deque
 from datetime import *
-from enum import Enum
-import memprof
 import line2msg
 
-class state(Enum):
-	init = 0
-	reading_datagram=1
-	wait_for_snapshot=2
+# I was using Enum before for the following definitions.
+# But Enum is surprisingly very slow and was taking up
+# to 5% of the total time according to the profiler.
+# For example Enum is heavily using a hash function !!!
+# And Enum methods are also the most called functions of this code !!!
+# Overall it costs 32 minutes of computation !!!!!!!!!
+# Hence the following variables to replace Enum's
+# State constant
+state_init = 0
+state_reading_datagram=1
+state_wait_for_snapshot=2
 
-	# RDD
-	snapshot_cycle = 3
-	product_cycle = 4
+# RDD
+state_snapshot_cycle = 3
+state_product_cycle = 4
 
-	# EMDI
-	incremental_cycle = 5
+# EMDI
+state_incremental_cycle = 5
 
-class channel(Enum):
-	A=1
-	B=2
-
-class code(Enum):
-	new_scid = 1
-	too_old = 2
-	on_time = 3
-	too_early = 4
-	broken_stream = 5
-	good = 6
-	EOF = 7
+# Channels
+channel_A=1
+channel_B=2
 
 def keyname(s,i,N):
 	return s if N==1 else s+"."+str(i)
 
 class generic_decoder:
 	def __init__(self,header_type):
-		self.udp_state = { channel.A : state.init, channel.B:state.init}
+		self.udp_state = { channel_A : state_init, channel_B:state_init}
 		self.header_type = header_type
 		self.packetseqnum = {}
 		self.queue = {}
@@ -108,7 +102,7 @@ class generic_decoder:
 		# due to a bug in pcapread I couldn't find so far
 		# I have to test for dport.1. It seems there is a
 		# problem at the end of each pcap file and an empty
-		# packet is reported where it should be nothing
+		# packet is reported where there should be nothing
 		if 'dport.1' in packet[0]: 
 			scid = packet[0]['dport.1']+packet[0]['SenderCompID']
 		else: 
@@ -153,7 +147,7 @@ class generic_decoder:
 class rdd_decoder(generic_decoder):
 	def __init__(self):
 		generic_decoder.__init__(self,'RDPacketHeader')
-		self.state = state.init
+		self.state = state_init
 		self.scid = 0
 		self.lastseqnum = 0
 		self.msgseqnum = -1
@@ -249,14 +243,14 @@ class rdd_decoder(generic_decoder):
 				self.scid = int(msg['SenderCompID'])
 
 			# Run FSA
-			if self.state == state.init:
+			if self.state == state_init:
 				if ('MarketDataReport' in msg) and (msg['MDReportEvent']=='1'):
-					self.state = state.snapshot_cycle
+					self.state = state_snapshot_cycle
 					#print("init->snapshot_cycle")
 
-			elif self.state == state.snapshot_cycle:
+			elif self.state == state_snapshot_cycle:
 				if found_gap:
-					self.state = state.init
+					self.state = state_init
 					#print("snapshot_cycle->init GAP")
 				elif 'MarketDataReport' in msg and msg['MDReportEvent']=='0':
 					self.lastseqnum = int(msg['LastMsgSeqNumProcessed'])
@@ -264,15 +258,15 @@ class rdd_decoder(generic_decoder):
 					nb_inst = int(msg['TotNoInstruments'])
 				elif 'ProductSnapshot' in msg:
 					#print("snapshot_cycle->product_cycle")
-					self.state = state.product_cycle
+					self.state = state_product_cycle
 					i = int(msg['MsgSeqNum'])
 					if self.msgseqnum == -1 or (self.msgseqnum==(i-1)):
 						self.msgseqnum = i
 						self.create_product(msg)
 
-			elif self.state == state.product_cycle:
+			elif self.state == state_product_cycle:
 				if found_gap:
-					self.state = state.snapshot_cycle
+					self.state = state_snapshot_cycle
 					#print("product_cycle->snapshot_cycle GAP")
 				elif 'InstrumentSnapshot' in msg:
 					self.create_inst(msg)
@@ -281,14 +275,14 @@ class rdd_decoder(generic_decoder):
 					self.create_product(msg)
 					#print("create prod")
 				elif 'MarketDataReport' in msg and msg['MDReportEvent']=='2':
-					self.state = state.init
+					self.state = state_init
 					#print("product_cycle->init MDRE=2")
 
 class Product:
 	def __init__(self):
 		self.scid = -1
 		self.msn = -1
-		self.state = state.init
+		self.state = state_init
 		self.queue = []
 		self.inst = {}
 		self.first_uid = -1
@@ -447,7 +441,7 @@ class emdi_decoder(generic_decoder):
 			scid = int(msg['SenderCompID'])
 			msn = int(msg.get('MsgSeqNum'))
 
-			if self.prod[pid].state == state.incremental_cycle:
+			if self.prod[pid].state == state_incremental_cycle:
 				if any(i in msg for i in self.DI): # instrument message
 					#print("processing inc message")
 					if msn == self.prod[pid].msn+1:
@@ -457,25 +451,25 @@ class emdi_decoder(generic_decoder):
 					elif msn > self.prod[pid].msn+1:
 						self.prod[pid].scid=-1
 						self.prod[pid].msn = -1
-						self.prod[pid].state = state.init
+						self.prod[pid].state = state_init
 						self.prod[pid].queue = []
 						self.prod[pid].inst_map = {}
 						print("prod ",pid," found gap incremental -> init msn=",msn," was ",self.prod[pid].msn)
-			elif self.prod[pid].state == state.snapshot_cycle:
+			elif self.prod[pid].state == state_snapshot_cycle:
 				if any(i in msg for i in self.DI): # instrument message
 					self.prod[pid].queue.append(msg)
 					#print("prod ",pid," DI snapshot -> snapshot len=",len(self.prod[pid].queue))
 				elif 'DepthSnapshot' in msg:
 					uid = msg['SecurityID']
 					if uid == self.prod[pid].first_uid: # end of snapshot
-						self.prod[pid].state = state.incremental_cycle
+						self.prod[pid].state = state_incremental_cycle
 						self.process_inc_queue(recv,pid)
 						#print("prod ",pid," snapshot -> incremental first uid=",uid)
 					else:
 						self.process_snapshot(recv,pid,msg,msn)
 						self.prod[pid].msn = int(msg['LastMsgSeqNumProcessed'])
 						#print("prod ",pid," snapshot -> snapshot last msn=",msn)
-			elif self.prod[pid].state == state.init:
+			elif self.prod[pid].state == state_init:
 				if any(i in msg for i in self.DI): # instrument message
 					self.prod[pid].queue.append(msg)
 					#print("prod {} DI -> storing DI. len={}".format(pid,len(self.prod[pid].queue)))
@@ -485,51 +479,35 @@ class emdi_decoder(generic_decoder):
 					self.process_snapshot(recv,pid,msg,msn)
 					self.prod[pid].msn = int(msg['LastMsgSeqNumProcessed'])
 					self.prod[pid].scid = scid
-					self.prod[pid].state=state.snapshot_cycle
+					self.prod[pid].state=state_snapshot_cycle
 					#print("prod ",pid," DS init -> snapshot msn=",self.prod[pid].msn)
 
 class dummy_decoder:
 	def __init__(self):
-		self.udp_state = { channel.A : state.init, channel.B:state.init}
+		self.udp_state = { channel_A : state_init, channel_B:state_init}
 		self.header_type = 'RDPacketHeader'
 
 	def process_udp_datagram(self,packet):
 		print("UDP datagram: ",len(packet)," packets")
 
 
-#def line2msg(string):
-#	l = string[:-1].split(':')
-#	data = {}
-#
-#	for i in range(0,len(l),2):
-#		key = l[i]
-#		if key in data:
-#			data[key].append(l[i+1])
-#		else:
-#			data[key] = [l[i+1]]
-#
-#	d1 = {k+'.'+str(i):data[k][i] for k in data if len(data[k])>1 for i in range(len(data[k]))}
-#	d1.update({k:data[k][0] for k in data if len(data[k])==1})
-#	return d1
-
-
 def process_line(line,packet,packet_decoder, chan):
 	""" Process one line of FAST text. If a UDP datagram is complete with this line
 	then process the packet otherwise keeps accumulating lines
 	"""
-	data=line2msg.line2msg(line)
+#	data=line2msg.line2msg(line)
 
-	if packet_decoder.udp_state[chan] == state.init:
-		if packet_decoder.header_type in data:
-			packet_decoder.udp_state[chan] = state.reading_datagram
-			packet.append(data)
-	elif packet_decoder.udp_state[chan] == state.reading_datagram:
-		if packet_decoder.header_type in data: 
+	if packet_decoder.udp_state[chan] == state_init:
+		if packet_decoder.header_type ==  line.split(':',1)[0]:
+			packet_decoder.udp_state[chan] = state_reading_datagram
+			packet.append(line)
+	elif packet_decoder.udp_state[chan] == state_reading_datagram:
+		if packet_decoder.header_type == line.split(':',1)[0]:
 			packet_decoder.process_udp_datagram(packet)
 			packet.clear() # this is needed to ensure the original object...
-			packet.append(data) # is erased and the new data added
-		elif packet_decoder.header_type not in data:
-			packet.append(data)
+			packet.append(line) # is erased and the new data added
+		else:
+			packet.append(line)
 
 
 def parse_text(namea,nameb,packet_decoder):
@@ -549,7 +527,7 @@ def parse_text(namea,nameb,packet_decoder):
 	while linea or lineb:
 		# channel A
 		if linea:
-			process_line(linea,packeta,packet_decoder,channel.A)
+			process_line(linea,packeta,packet_decoder,channel_A)
 			linea=filea.readline()
 			ia+=1
 			if ia % 1000000 == 0:
@@ -557,7 +535,7 @@ def parse_text(namea,nameb,packet_decoder):
 
 		# channel B
 		if lineb:
-			process_line(lineb,packetb,packet_decoder,channel.B)
+			process_line(lineb,packetb,packet_decoder,channel_B)
 			lineb=fileb.readline()
 			ib+=1
 			if ib % 1000000 == 0:
@@ -656,3 +634,20 @@ if __name__=="__main__":
 
 	x=emdi_decoder("/mnt/data/david/p1.csv")
 	parse_text('/mnt/data/david/emdia','/mnt/data/david/emdib',x)
+
+
+
+#def line2msg(string):
+#	l = string[:-1].split(':')
+#	data = {}
+#
+#	for i in range(0,len(l),2):
+#		key = l[i]
+#		if key in data:
+#			data[key].append(l[i+1])
+#		else:
+#			data[key] = [l[i+1]]
+#
+#	d1 = {k+'.'+str(i):data[k][i] for k in data if len(data[k])>1 for i in range(len(data[k]))}
+#	d1.update({k:data[k][0] for k in data if len(data[k])==1})
+#	return d1
