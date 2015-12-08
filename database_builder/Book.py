@@ -93,6 +93,7 @@ class Book:
 		self.uid = uid
 		self.date = date
 		self.levels = levels
+		self.ll=3+self.levels*6
 
 		if mode=='level_3':
 			self.book = ({}, {})
@@ -109,7 +110,11 @@ class Book:
 		self.header += bid+bidv+nbid+ask+askv+nask
 		self.output = []
 		self.valid = True
-		self.mode= mode
+		if mode=="level_3":
+			self.mode=3
+		else:
+			self.mode=2
+
 		self.channel_id = channel_id
 		self.ofile=ofile
 		self.nb_write=0
@@ -132,9 +137,9 @@ class Book:
 
 	# Clear the book
 	def clear(self,recv,exch):
-		if self.mode=='level_2':
+		if self.mode==2:
 			self.book = ([],[])
-		elif self.mode=='level_3':
+		elif self.mode==3:
 			self.book = ({},{})
 			self.store_update("C",recv,exch)
 		self.valid = True
@@ -149,7 +154,7 @@ class Book:
 		# check we're not processing twice the same order
 		if oid not in self.book[side][price]:
 			self.book[side][price][oid] = (recv,exch,qty)
-			if self.mode=='level_3':
+			if self.mode==3:
 				self.store_update("A",recv,exch)
 			return True
 		else:
@@ -172,7 +177,7 @@ class Book:
 				self.book[side][newprice] = {}
 			# add the new order
 			self.book[side][newprice][newoid] = (recv,exch,newqty)
-			if self.mode=='level_3':
+			if self.mode==3:
 				self.store_update("L",recv,exch)
 			return True
 		else:
@@ -186,7 +191,7 @@ class Book:
 		# check if price level and order id exist
 		if order.price in self.book[side] and order.oid in self.book[side][order.price]:
 			self.book[side][order.price][oid] = (recv,exch,newqty) 
-			if self.mode=='level_3':
+			if self.mode==3:
 				self.store_update("M",recv,exch)
 			return True
 		else:
@@ -200,7 +205,7 @@ class Book:
 			# if price level is empty
 			if not self.book[side][price]:
 				del self.book[side][price]
-			if self.mode=='level_3':
+			if self.mode==3:
 				self.store_update("D",recv,exch)
 			return True
 		# if order exists and price is not provided
@@ -210,7 +215,7 @@ class Book:
 					del self.book[side][p][oid]
 					if not self.book[side][p]: # price level empty ?
 						del self.book[side][p]
-					if self.mode=='level_3':
+					if self.mode==3:
 						self.store_update("D",exch,recv)
 					return True
 		return False # if we're here, it means no order has been deleted
@@ -274,7 +279,7 @@ class Book:
 		do_update=True
 		for s in [0,1]:
 			# Eurex
-			if self.mode=="level_3":
+			if self.mode==3:
 				# count number of prices available on each side
 				count = min(self.levels, len(self.book[s]))
 				# get the ordered list of prices
@@ -284,24 +289,20 @@ class Book:
 					for o in self.book[s][p]]) 
 					for p in prices]
 				list_len = [len(self.book[s][p]) for p in prices]
+				r += prices + list_qty + list_len
 			# CME/CBOT/Nymex, Kospi, Eurex EMDI
-			elif self.mode=="level_2":
+			elif self.mode==2:
 				count = min(self.levels, len(self.book[s]))
-				prices = [item[0] for item in self.book[s][0:count]] \
-						+[np.nan]*(self.levels-count)
+				nanl = [np.nan]*(self.levels-count)
+				r+= \
+					[item[0] for item in self.book[s][0:count]]+nanl +\
+					[item[1] for item in self.book[s][0:count]]+nanl +\
+					[item[2] for item in self.book[s][0:count]]+nanl
 
-				list_qty = [item[1] for item in self.book[s][0:count]] \
-						+[np.nan]*(self.levels-count)
-
-				list_len = [item[2] for item in self.book[s][0:count]] \
-						+[np.nan]*(self.levels-count)
-
-			r += prices + list_qty + list_len
 		
 		# do update only if there is a change in the top levels
-		ll=3+self.levels*6
 		if len(self.output)==0 or (len(self.output) and 
-				self.output[-1][3:ll]!=r[3:ll]):
+				self.output[-1][3:self.ll]!=r[3:self.ll]):
 			self.output.append(r)
 			if self.ofile and len(self.output)==self.min_output_size:
 				self.write_output()
