@@ -225,9 +225,7 @@ class Book:
 	# ===============
 
 	def replace_book(self,bid,ask,bidv,askv,nbid,nask,recv,exch):
-		self.book = ([], [])
-		self.book[0] = [ (bid[i],bidv[i],nbid[i]) for i in range(5) ]
-		self.book[1] = [ (ask[i],askv[i],nask[i]) for i in range(5) ]
+		self.book = (list(zip(bid,bidv,nbid)),list(zip(ask,askv,nask)))
 		self.valid=True
 		self.store_update("Q",recv,exch)
 		return True

@@ -161,9 +161,9 @@ cat ${new_qtg} ${invalid_qtg} | sort | uniq -u >> ${dbprocessed}
 rm -f ${new_qtg} ${invalid_qtg}
 
 # Launch the parallel jobs
-#cat ${parjobfile} | ${gnupar} -j ${nbcores} &> /dev/null
-#cat ${parjobfile} | ${gnupar} -j 12 &> /dev/null
-#rm -f ${parjobfile} 
+cat ${parjobfile} | ${gnupar} -j ${nbcores} &> /dev/null
+cat ${parjobfile} | ${gnupar} -j 12 &> /dev/null
+rm -f ${parjobfile} 
 
 # -----------------------
 #    LIQUID PCAP FILES
@@ -178,11 +178,11 @@ rm -f ${new_qtg} ${invalid_qtg}
 # find produced files | extract symbol name and date in 2 columns |
 # remove _ | create a csv files with date,symbol,symbol,symbol,...
 # for each date we obtain the list of available symbols in the database
-#find ${dbdir} -name '*.bz2' |\
-#${gnupar} basename {} .csv.bz2 |\
-#awk -F '_' '{print $1,$2}' |\
+find ${dbdir} -name '*.bz2' |\
+${gnupar} basename {} .csv.bz2 |\
+awk -F '_' '{print $1,$2}' |\
 
-#/home/dbellot/recherche/tickdatabase/database_builder/symbol_per_day.py > ${symbol_per_day_file}
+/home/dbellot/recherche/tickdatabase/database_builder/symbol_per_day.py > ${symbol_per_day_file}
 
 # Run daily statistic on each symbol
 # TODO
