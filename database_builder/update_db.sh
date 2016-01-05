@@ -6,6 +6,17 @@ if [[ $# -ne 1 ]]; then
 	exit 1
 fi
 
+# prevent running 2 instances of the update_db program
+while [ $(pgrep update_db.sh|wc -l) -ge 3 ]
+do
+	sleep 10
+done
+# for those wondering why -ge 3, it's because $(...) forks the shell
+# so if another update_db is running, we will have 3 instances of it
+# at the time of the pgrep: this script, the fork of it in between $(...)
+# and the other one, the one we want to detect. If this script is alone, then
+# only 2 processes will exist.
+
 # ---------------
 #    Functions
 # ---------------
@@ -156,14 +167,14 @@ do
 	fi
 done < "${new_qtg}"
 
+# Launch the parallel jobs
+#cat ${parjobfile} | ${gnupar} -j ${nbcores} &> /dev/null
+cat ${parjobfile} | ${gnupar} -j 12 &> /dev/null
+rm -f ${parjobfile} 
+
 # Update the list of processed for only valid files
 cat ${new_qtg} ${invalid_qtg} | sort | uniq -u >> ${dbprocessed}
 rm -f ${new_qtg} ${invalid_qtg}
-
-# Launch the parallel jobs
-cat ${parjobfile} | ${gnupar} -j ${nbcores} &> /dev/null
-cat ${parjobfile} | ${gnupar} -j 12 &> /dev/null
-rm -f ${parjobfile} 
 
 # -----------------------
 #    LIQUID PCAP FILES
@@ -172,17 +183,3 @@ rm -f ${parjobfile}
 # ----------------------------
 #    STATISTICS AND REPORTS
 # ----------------------------
-
-# Find available days for each symbol in QTG database
-
-# find produced files | extract symbol name and date in 2 columns |
-# remove _ | create a csv files with date,symbol,symbol,symbol,...
-# for each date we obtain the list of available symbols in the database
-find ${dbdir} -name '*.bz2' |\
-${gnupar} basename {} .csv.bz2 |\
-awk -F '_' '{print $1,$2}' |\
-
-/home/dbellot/recherche/tickdatabase/database_builder/symbol_per_day.py > ${symbol_per_day_file}
-
-# Run daily statistic on each symbol
-# TODO

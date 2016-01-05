@@ -35,7 +35,7 @@ def main():
 	parser.add_argument("ifname",help="input filename",type=str)
 	args = parser.parse_args()
 
-	# Open loggin
+	# Open logging
 	logging.basicConfig(filename=args.log,level=logging.DEBUG)
 
 	# Run decoding
@@ -72,7 +72,11 @@ def main():
 			pass
 
 		if len(books[uid].output)>0:
-			x = DataFrame(books[uid].output,columns=books[uid].header)
+			try:
+				x = DataFrame(books[uid].output,columns=books[uid].header)
+			except AssertionError:
+				logging.error("Error while converting books to dataframe. uid=",uid," file=",args.ifname)
+				continue
 		else:
 			x = DataFrame([ [np.nan]*len(books[uid].header) ],columns=books[uid].header)
 		prodname = df[df['#instuid']==uid].iat[0,3]

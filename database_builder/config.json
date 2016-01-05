@@ -13,6 +13,12 @@
 	"qtg_src_dir" : "/mnt/data/qtg",
 	"qtg_instrument_db" : "/mnt/data/qtg/instRefdataCoh.csv",
 
+	"instdb" :
+	{
+		"qtg" : "/mnt/data/qtg/instRefdataCoh.csv",
+		"liquid": ""
+	},
+
 	"decoder":
 	{
 		"BSXCBTMA1" : [{ "from": 0,	"to":201312,	"code": "not_valid"},
