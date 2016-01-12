@@ -2,12 +2,28 @@
 
 if [[ $# -ne 1 ]]; then
 	echo "Error: missing argument"
+	echo "Usage: qtg_update_db.sh <JSON config file>"
 	exit 1
 fi
+
+# prevent running 2 instances of the qtg_update_db program
+while [ $(pgrep qtg_update_db.sh|wc -l) -ge 3 ]
+do
+	sleep 10
+done
+# for those wondering why -ge 3, it's because $(...) forks the shell
+# so if another qtg_update_db is running, we will have 3 instances of it
+# at the time of the pgrep: this script, the fork of it in between $(...)
+# and the other one, the one we want to detect. If this script is alone, then
+# only 2 processes will exist.
 
 # ---------------
 #    Functions
 # ---------------
+
+function launch_qtg_jobs {
+cat $1 | $2 -j $3 &> /dev/null
+}
 
 function qtg_exchange {
 echo $(basename $1 | awk -F '.' '{print $1}')
@@ -71,27 +87,6 @@ function is_database_builder_in_path {
 which database_builder.py &> /dev/null ; echo $?
 }
 
-function symbol_per_day {
-/bin/env python3 -c '
-import sys
-x={}
-
-for line in sys.stdin:
-	line=line.split()
-	symbol=line[0]
-	date=line[1]
-
-	if date not in x:
-		x[date]=list()
-	x[date].append(symbol)
-
-dates=sorted(x.keys())
-for d in dates:
-	print("{0},".format(d),end="")
-	print(",".join(sorted(x[d])))
-'
-}
-
 # ---------------------------
 #    Setup main parameters
 # ---------------------------
@@ -101,19 +96,19 @@ if [ ! -e ${jsonconf} ]; then
 	exit 1
 fi
 
+# Extract config from JSON file
 rootdir=$(get_json_val ${jsonconf} "rootdir")
 tmpdir=$(get_json_val ${jsonconf} "tmpdir")
 level=$(get_json_val ${jsonconf} "level")
 dbdir=$(get_json_val ${jsonconf} "dbdir")
 dbprocessed=$(get_json_val ${jsonconf} "dbprocessed")
 unwanted=$(get_json_val ${jsonconf} "unwanted")
-symbol_per_day_file=$(get_json_val ${jsonconf} "symbol_per_day_file")
 qtg_src_dir=$(get_json_val ${jsonconf} "qtg_src_dir")
-
+qtg_instrument_db=$(get_json_val ${jsonconf} "qtg_instrument_db")
 timestamp=$(date --utc --rfc-3339='ns' | tr ' .:+-' '_')
 gnupar=$(which parallel)
-parjobfile=/tmp/gnupar_job_file.sh
-nbcores=$(($(nproc)-2)) # get all the cores minus 2
+parjobfile=$(get_json_val ${jsonconf} "parjobfile")
+nbcores=$(get_json_val ${jsonconf} "nbcores")
 
 # Check if db file exists
 if [ ! -e ${dbprocessed} ]; then
@@ -154,6 +149,8 @@ sort ${all_qtg} ${dbprocessed} ${unwanted} | uniq -u > ${new_qtg}
 rm -f ${all_qtg}
 
 rm -f ${parjobfile}
+touch ${parjobfile}
+
 while read line
 do
 	# Look for a decoder and discard invalid files
@@ -162,7 +159,7 @@ do
 		outputdir=${dbdir}/qtg/$(qtg_exchange ${line})/$(month ${line})
 		mkdir -p ${outputdir} # -p create dirs all the way long and does not fail if dir exists
 		# write the command line to process this file
-		echo ${database_builder} -l 5 -o ${outputdir} -d ${dec} -f csv.bz2 -i ${dbdir}/qtg/instRefdataCoh.csv -g ${dbdir}/qtg/qtg.log ${line} >> ${parjobfile}
+		echo ${database_builder} -l 5 -o ${outputdir} -d ${dec} -f csv.bz2 -i ${qtg_instrument_db} -g ${dbdir}/qtg/qtg.log ${line} >> ${parjobfile}
 	else
 		# store invalid files here
 		echo $line >> ${invalid_qtg}
@@ -172,12 +169,11 @@ done < "${new_qtg}"
 # Launch the parallel jobs
 #cat ${parjobfile} | ${gnupar} -j ${nbcores} &> /dev/null
 cat ${parjobfile} | ${gnupar} -j 12 &> /dev/null
+rm -f ${parjobfile} 
 
 # Update the list of processed for only valid files
 cat ${new_qtg} ${invalid_qtg} | sort | uniq -u >> ${dbprocessed}
-
-rm -f ${parjobfile} 
-rm -f ${new_qtg}
+rm -f ${new_qtg} ${invalid_qtg}
 
 # -----------------------
 #    LIQUID PCAP FILES
@@ -186,16 +182,3 @@ rm -f ${new_qtg}
 # ----------------------------
 #    STATISTICS AND REPORTS
 # ----------------------------
-
-# Find available days for each symbol in QTG database
-
-# find produced files | extract symbol name and date in 2 columns |
-# remove _ | create a csv files with date,symbol,symbol,symbol,...
-# for each date we obtain the list of available symbols in the database
-find ${dbdir} -name '*.bz2' |\
-${gnupar} basename {} .csv.bz2 |\
-awk -F '_' '{print $1,$2}' |\
-symbol_per_day > ${symbol_per_day_file}
-
-# Run daily statistic on each symbol
-# TODO

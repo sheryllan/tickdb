@@ -1,10 +1,11 @@
 import string
 
+import sys
+import numpy as np
 from datetime import datetime
 from math import floor
 from decimal import *
-import numpy as np
-import h5py as h
+from pandas import *
 from enum import IntEnum
 
 # ====================
@@ -12,6 +13,7 @@ from enum import IntEnum
 # ====================
 
 # keys in book output are
+# level 3:
 #	A: Order Add
 #	D: Order Delete
 #	M: Order Modify no priority change
@@ -20,6 +22,15 @@ from enum import IntEnum
 #	S: Execution summary (Eurex)
 #	C: Book Cleared
 #	Q: Quote
+#
+# Eurex EMDI level 2:
+# A: add level
+# V: change volume in a level
+# D: delete level
+# H: delete from level 1 to level l included
+# F: delete from level l to the end
+# O: overlay = change price of a level
+
 
 class Precision(IntEnum):
 	sec  =1e0
@@ -41,16 +52,6 @@ def tots(t,precision=Precision.micro):
 	# the number of nanoseconds since the beginning of the day
 	#return (dt.hour,dt.minute,dt.second,aftervirgule,delta)
 	return (dt.hour,dt.minute,dt.second,aftervirgule)
-
-# Output:
-# A : add
-# D : delete
-# M : modify same priority
-# L : modify loss of priority
-# T : trade execution
-# S : execution summary
-# Q : quote (Kospi)
-# C : clear book
 
 class Order:
 	def __init__(self,_uid,_oid,_side,_price,_recv,_exch,_qty):
@@ -78,20 +79,26 @@ class Book:
 	# book[side][level] = (price,qty,order_count)
 	#       ^      ^                  ^
 	#       |      |                  |
-	#     tuple  dict               # of orders
+	#     tuple  list               # of orders
 	#
 	# price is a Decimal
 	#
 	# mode:
 	#	level_3 : publish all the updates at the time of the update (ex.: Eurex EOBI)
 	#	level_2 : oid is never used throughout the program, only price levels (ex.: CME, EMDI)
+	#
+	# channel_id is used for CME/CBOT only
 
-	def __init__(self, uid, date, levels, mode='level_3'):
+	def __init__(self, uid, date, levels, mode='level_3', channel_id=-1, ofile=None, min_output_size=10000):
 		self.uid = uid
 		self.date = date
 		self.levels = levels
+		self.ll=3+self.levels*6
 
-		self.book = ({}, {})
+		if mode=='level_3':
+			self.book = ({}, {})
+		else:
+			self.book = ([], [])
 		#self.header = ["otype","h","min","sec","us","recv","exch"]
 		self.header = ["otype","recv","exch"]
 		bid =  ["bid{}".format(i)  for i in range(1,levels+1)]
@@ -103,7 +110,15 @@ class Book:
 		self.header += bid+bidv+nbid+ask+askv+nask
 		self.output = []
 		self.valid = True
-		self.mode= mode
+		if mode=="level_3":
+			self.mode=3
+		else:
+			self.mode=2
+
+		self.channel_id = channel_id
+		self.ofile=ofile
+		self.nb_write=0
+		self.min_output_size = min_output_size
 
 	# ===============
 	# Level 3 methods
@@ -122,10 +137,12 @@ class Book:
 
 	# Clear the book
 	def clear(self,recv,exch):
-		self.book = ({}, {})
-		self.valid = True
-		if self.mode=='level_3':
+		if self.mode==2:
+			self.book = ([],[])
+		elif self.mode==3:
+			self.book = ({},{})
 			self.store_update("C",recv,exch)
+		self.valid = True
 		return True
 
 	# Add a new order
@@ -137,7 +154,7 @@ class Book:
 		# check we're not processing twice the same order
 		if oid not in self.book[side][price]:
 			self.book[side][price][oid] = (recv,exch,qty)
-			if self.mode=='level_3':
+			if self.mode==3:
 				self.store_update("A",recv,exch)
 			return True
 		else:
@@ -160,7 +177,7 @@ class Book:
 				self.book[side][newprice] = {}
 			# add the new order
 			self.book[side][newprice][newoid] = (recv,exch,newqty)
-			if self.mode=='level_3':
+			if self.mode==3:
 				self.store_update("L",recv,exch)
 			return True
 		else:
@@ -174,7 +191,7 @@ class Book:
 		# check if price level and order id exist
 		if order.price in self.book[side] and order.oid in self.book[side][order.price]:
 			self.book[side][order.price][oid] = (recv,exch,newqty) 
-			if self.mode=='level_3':
+			if self.mode==3:
 				self.store_update("M",recv,exch)
 			return True
 		else:
@@ -188,7 +205,7 @@ class Book:
 			# if price level is empty
 			if not self.book[side][price]:
 				del self.book[side][price]
-			if self.mode=='level_3':
+			if self.mode==3:
 				self.store_update("D",recv,exch)
 			return True
 		# if order exists and price is not provided
@@ -198,7 +215,7 @@ class Book:
 					del self.book[side][p][oid]
 					if not self.book[side][p]: # price level empty ?
 						del self.book[side][p]
-					if self.mode=='level_3':
+					if self.mode==3:
 						self.store_update("D",exch,recv)
 					return True
 		return False # if we're here, it means no order has been deleted
@@ -207,36 +224,32 @@ class Book:
 	# Level 2 methods
 	# ===============
 
-	def add_level(self,level,side,qty,price,ord_cnt):
-		#print("A",side,level,self.book[side])
-		# if level exists then push all sub levels by one
-		if level in self.book[side]:
-			for i in range(max(self.book[side]),level-1,-1):
-				if i in self.book[side]: # this should be true all the time
-					self.book[side][i+1]=self.book[side][i]
-				else:
-					return False
-		self.book[side][level] = (price,qty,ord_cnt)
+	def replace_book(self,bid,ask,bidv,askv,nbid,nask,recv,exch):
+		self.book = (list(zip(bid,bidv,nbid)),list(zip(ask,askv,nask)))
+		self.valid=True
+		self.store_update("Q",recv,exch)
 		return True
 
-	def amend_level(self,level,side,qty,price,ord_cnt):
-		#print("M",side,level,self.book[side])
-		if level not in self.book[side]:
-			return False
+	def add_level(self,level,side,qty,price,ord_cnt):
+		if level<=len(self.book[side]):
+			self.book[side].insert(level, (price,qty,ord_cnt) )
+			return True
 		else:
+			return False
+
+	def amend_level(self,level,side,qty,price,ord_cnt):
+		if level < len(self.book[side]):
 			self.book[side][level] = (price,qty,ord_cnt)
 			return True
+		else:
+			return False
 
 	def delete_level(self,level,side):
-		#print("D",side,level,self.book[side])
-		if level not in self.book[side]:
-			return False
-		else:
-			M = max(self.book[side])
-			for i in range(level+1,M+1):
-				self.book[side][i-1]=self.book[side][i]
-			del self.book[side][M]
+		if level < len(self.book[side]):
+			self.book[side].pop(level)
 			return True
+		else:
+			return False
 
 	# =================
 	# Reporting methods
@@ -246,21 +259,12 @@ class Book:
 		#return [otype] + list(tots(exch)) + [recv,exch]
 		return [otype,recv,exch]
 
-	def report_trade(self,price,qty,recv,exch,side=0):
-		if self.mode=="level_3":
-			self.output.append(
-				self.output_head("T",recv,exch)
-				+[price,qty]
-				+([np.nan]*(4*self.levels-2)))
-			return True
-		elif self.mode=="level_2":
-			self.output.append(
-				self.output_head("T",recv,exch)
-				+[price,qty,side]
-				+([np.nan]*(4*self.levels-3)))
-			return True
-		else:
-			return False
+	def report_trade(self,price,qty,recv,exch,side=0,nb_orders=0,aggrtime=0,nb_buy=0,nb_sell=0):
+		self.output.append(
+			self.output_head("T",recv,exch)
+			+[price,qty,side,nb_orders,aggrtime,nb_buy,nb_sell]
+			+([np.nan]*(4*self.levels-7)))
+		return True
 
 	def exec_summary(self,price,qty,recv,exch):
 		self.output.append(
@@ -270,9 +274,10 @@ class Book:
 
 	def store_update(self,otype,recv,exch):
 		r = self.output_head(otype,recv,exch)
+		do_update=True
 		for s in [0,1]:
 			# Eurex
-			if self.mode=="level_3":
+			if self.mode==3:
 				# count number of prices available on each side
 				count = min(self.levels, len(self.book[s]))
 				# get the ordered list of prices
@@ -282,20 +287,30 @@ class Book:
 					for o in self.book[s][p]]) 
 					for p in prices]
 				list_len = [len(self.book[s][p]) for p in prices]
-			# CME/CBOT
-			elif self.mode=="level_2":
+				r += prices + list_qty + list_len
+			# CME/CBOT/Nymex, Kospi, Eurex EMDI
+			elif self.mode==2:
 				count = min(self.levels, len(self.book[s]))
-				# keys = sorted(self.book[s].keys())[0:count]
-				prices   = [self.book[s][i][0] for i in range(count)]
-				list_qty = [self.book[s][i][1] for i in range(count)]
-				list_len = [self.book[s][i][2] for i in range(count)]
+				nanl = [np.nan]*(self.levels-count)
+				r+= \
+					[item[0] for item in self.book[s][0:count]]+nanl +\
+					[item[1] for item in self.book[s][0:count]]+nanl +\
+					[item[2] for item in self.book[s][0:count]]+nanl
 
-			# complete with nan if necessary
-			if count < self.levels:
-				prices += [np.nan]*(self.levels-count)
-				list_qty += [np.nan]*(self.levels-count)
-				list_len += [np.nan]*(self.levels-count)
+		
+		# do update only if there is a change in the top levels
+		if len(self.output)==0 or (len(self.output) and 
+				self.output[-1][3:self.ll]!=r[3:self.ll]):
+			self.output.append(r)
+			if self.ofile and len(self.output)==self.min_output_size:
+				self.write_output()
 
-			r += prices + list_qty + list_len
-
-		self.output.append(r)
+	def write_output(self):
+		x=DataFrame(self.output, columns=self.header)
+		# write in CSV form
+		# adding header only if it's the first time we write in the file
+		x.to_csv(self.ofile, na_rep="NA", index=False,index_label=False,
+				header=self.nb_write==0)
+		self.ofile.flush() # push data into file (to make its size changes)
+		self.nb_write += 1
+		self.output = [] # clean up the big list to make it fast again
