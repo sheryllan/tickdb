@@ -509,13 +509,19 @@ def process_line(line,packet,packet_decoder, chan):
 		else:
 			packet.append(line)
 
+def read_in_chunks(file_object, chunk_size=65536):
+	while True:
+		data = file_object.read(chunk_size)
+		if not data:
+			break
+		yield data
 
 def parse_text(namea,nameb,packet_decoder):
 	""" Parse 2 files for channel A and B of FAST packet and stop when data
 	are exhausted on both channels
 	"""
-	filea=open(namea)
-	fileb=open(nameb)
+	filea=open(namea,buffering=1<<27)
+	fileb=open(nameb,buffering=1<<27)
 	linea=filea.readline()
 	lineb=fileb.readline()
 	packeta=[]

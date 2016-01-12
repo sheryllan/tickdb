@@ -3,20 +3,26 @@
 	"tmpdir" : "/tmp",
 	"parjobfile" : "/tmp/gnupar_job_file.sh",
 	"level": 5,
-	"nbcores": 20,
+	"nbcores": 24,
 
 	"dbdir" :       "/mnt/data/database",
 	"dbprocessed" : "/mnt/data/database/processed_files.db",
 	"unwanted" :    "/mnt/data/database/unwanted_files.db",
-	"symbol_per_day_file" : "/mnt/data/database/symbol_per_day.db",
 
 	"qtg_src_dir" : "/mnt/data/qtg",
 	"qtg_instrument_db" : "/mnt/data/qtg/instRefdataCoh.csv",
 
+	"liquid_capture":
+	{
+		"src_dir" : "/mnt/data/rawdata",
+		"dbprocessed" : "/mnt/data/database/liquid_capture_processed_files.db",
+		"dbdir" : "/mnt/data/database/liquid_capture"
+	},
+
 	"instdb" :
 	{
 		"qtg" : "/mnt/data/qtg/instRefdataCoh.csv",
-		"liquid": ""
+		"liquid_capture": "/mnt/data/database/liquid_capture_inst_db.csv"
 	},
 
 	"decoder":

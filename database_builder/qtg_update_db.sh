@@ -2,17 +2,17 @@
 
 if [[ $# -ne 1 ]]; then
 	echo "Error: missing argument"
-	echo "Usage: update_db.sh <JSON config file>"
+	echo "Usage: qtg_update_db.sh <JSON config file>"
 	exit 1
 fi
 
-# prevent running 2 instances of the update_db program
-while [ $(pgrep update_db.sh|wc -l) -ge 3 ]
+# prevent running 2 instances of the qtg_update_db program
+while [ $(pgrep qtg_update_db.sh|wc -l) -ge 3 ]
 do
 	sleep 10
 done
 # for those wondering why -ge 3, it's because $(...) forks the shell
-# so if another update_db is running, we will have 3 instances of it
+# so if another qtg_update_db is running, we will have 3 instances of it
 # at the time of the pgrep: this script, the fork of it in between $(...)
 # and the other one, the one we want to detect. If this script is alone, then
 # only 2 processes will exist.
@@ -103,7 +103,6 @@ level=$(get_json_val ${jsonconf} "level")
 dbdir=$(get_json_val ${jsonconf} "dbdir")
 dbprocessed=$(get_json_val ${jsonconf} "dbprocessed")
 unwanted=$(get_json_val ${jsonconf} "unwanted")
-symbol_per_day_file=$(get_json_val ${jsonconf} "symbol_per_day_file")
 qtg_src_dir=$(get_json_val ${jsonconf} "qtg_src_dir")
 qtg_instrument_db=$(get_json_val ${jsonconf} "qtg_instrument_db")
 timestamp=$(date --utc --rfc-3339='ns' | tr ' .:+-' '_')
