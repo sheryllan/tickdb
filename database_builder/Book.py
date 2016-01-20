@@ -309,8 +309,10 @@ class Book:
 		x=DataFrame(self.output, columns=self.header)
 		# write in CSV form
 		# adding header only if it's the first time we write in the file
-		x.to_csv(self.ofile, na_rep="NA", index=False,index_label=False,
+		f = open(self.ofile,'a')
+		x.to_csv(f, na_rep="NA", index=False,index_label=False,
 				header=self.nb_write==0)
-		self.ofile.flush() # push data into file (to make its size changes)
+		f.flush()
+		f.close()
 		self.nb_write += 1
 		self.output = [] # clean up the big list to make it fast again
