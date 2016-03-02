@@ -19,7 +19,8 @@
 		"BSXCBT3MA1": [{ "from": 0,	"to":0,		"code": "qtg_mdp3"}],
 		"BSXEURMA1" : [{ "from": 0,	"to":0,		"code": "qtg_eobi"}],
 		"BSXCME3MA1": [{ "from": 0,	"to":0,		"code": "qtg_mdp3"}],
-		"BSBUSKMA1" : [{ "from": 0,     "to":0,		"code": "qtg_kospi"}]
+		"BSBUSKMA1" : [{ "from": 0,     "to":0,		"code": "qtg_kospi"}],
+		"BSXASXMA1" : [{ "from": 0,     "to":0,		"code": "qtg_asx"}]
 	},
 
 	"liquid_capture":

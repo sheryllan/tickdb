@@ -84,19 +84,19 @@ if [ ! -e ${jsonconf} ]; then
 fi
 
 # Extract config from JSON file
-rootdir=          $(jshon -e 'rootdir'              -u < ${jsonconf})
-tmpdir=           $(jshon -e 'tmpdir'               -u < ${jsonconf})
-level=            $(jshon -e 'level'                -u < ${jsonconf})
-dbdir=            $(jshon -e 'qtg' -e 'dbdir'       -u < ${jsonconf})
-dbprocessed=      $(jshon -e 'qtg' -e 'dbprocessed' -u < ${jsonconf})
-unwanted=         $(jshon -e 'qtg' -e 'unwanted'    -u < ${jsonconf})
-qtg_src_dir=      $(jshon -e 'qtg' -e 'src_dir'     -u < ${jsonconf})
+rootdir=$(jshon -e 'rootdir'              -u < ${jsonconf})
+tmpdir=$(jshon -e 'tmpdir'               -u < ${jsonconf})
+level=$(jshon -e 'level'                -u < ${jsonconf})
+dbdir=$(jshon -e 'qtg' -e 'dbdir'       -u < ${jsonconf})
+dbprocessed=$(jshon -e 'qtg' -e 'dbprocessed' -u < ${jsonconf})
+unwanted=$(jshon -e 'qtg' -e 'unwanted'    -u < ${jsonconf})
+qtg_src_dir=$(jshon -e 'qtg' -e 'src_dir'     -u < ${jsonconf})
 qtg_instrument_db=$(jshon -e 'qtg' -e 'instdb'      -u < ${jsonconf})
 
 timestamp=$(date --utc --rfc-3339='ns' | tr ' .:+-' '_')
 gnupar=$(which parallel)
 parjobfile=$(jshon -e 'parjobfile' -u < ${jsonconf})
-nbcores=   $(jshon -e 'nbcores'    -u < ${jsonconf})
+nbcores=$(jshon -e 'nbcores'    -u < ${jsonconf})
 
 # Check if db file exists
 if [ ! -e ${dbprocessed} ]; then
@@ -162,11 +162,3 @@ rm -f ${parjobfile}
 # Update the list of processed for only valid files
 cat ${new_qtg} ${invalid_qtg} | sort | uniq -u >> ${dbprocessed}
 rm -f ${new_qtg} ${invalid_qtg}
-
-# -----------------------
-#    LIQUID PCAP FILES
-# -----------------------
-
-# ----------------------------
-#    STATISTICS AND REPORTS
-# ----------------------------
