@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import getopt
 import uuid
 import os
 import tarfile
@@ -20,24 +21,34 @@ from copy import deepcopy
 # Hence the following variables to replace Enum's
 # State constant
 state_init = 0
-state_reading_datagram=1
-state_wait_for_snapshot=2
 
 # RDD
-state_snapshot_cycle = 3
-state_product_cycle = 4
+state_snapshot_cycle = 1
+state_product_cycle = 2
 
 # EMDI
-state_incremental = 5
-state_snapshot = 6
+state_incremental = 3
+state_snapshot = 4
+
+DI = ['DepthIncremental',
+		'ComplexInstrumentUpdate',
+		'CrossRequest',
+		'QuoteRequest',
+		'InstrumentStateChange',
+		'ProductStateChange',
+		'MassInstrumentStateChange',
+		'TopOfBookImplied']
 
 # return val of key in list
 # or NA if not found
-def val(_list,key,start=0):
+def val(_list,key,start=0,default=float('nan'),typ=''):
 	try:
-		return _list[_list.index(key,start)+1]
+		if typ=='':
+			return _list[_list.index(key,start)+1]
+		else:
+			return typ(_list[_list.index(key,start)+1]) # convert to type 'typ'
 	except:
-		return 'NA'
+		return default
 
 # return index of key in list
 # or 999999 if not found
@@ -57,7 +68,7 @@ class generic_decoder:
 	def __init__(self):
 		self.packetseqnum = {}
 		self.queue = {}
-		self.max_queue=40
+		self.max_queue=100
 		self.nb_packet=0
 
 	# This function is called at the end of the decoding
@@ -68,14 +79,13 @@ class generic_decoder:
 	# of a UDP datagram except the first 2
 	def process_messages(self,packet,found_gap):
 		self.nb_packet+=1
-		print(packet[0][3],",",packet[1][2],",",packet[1][4])
+		print(packet[0][3],",",val(packet[1],"SenderCompID"),
+				val(packet[1],"PacketSeqNum"))
 
 	def search_new_psn(self,scid):
 		minpsn = sys.maxsize
 		for p in self.queue[scid]:
-			psn = int(p[1][4]) # PacketSeqNum
-			print(psn)
-			sys.exit(1)
+			psn = int(val(p[1],"PacketSeqNum")) # PacketSeqNum
 			if psn < minpsn:
 				minpsn = psn
 
@@ -105,7 +115,7 @@ class generic_decoder:
 			i=0
 			while i<len(self.queue[scid]):
 				p = self.queue[scid][i]
-				new_psn = int(p[1][4]) # PacketSeqNum
+				new_psn = int(val(p[1],"PacketSeqNum"))
 				cont = self.contiguity(scid,new_psn)
 				if cont == 0:
 					self.packetseqnum[scid] = new_psn
@@ -118,39 +128,37 @@ class generic_decoder:
 	# Process a UDP datagram and re-order them if needed
 	# When in a child class, the process message of the child is called
 	def process_udp_datagram(self,packet):
-		try:
-			scid = packet[0][3] + packet[1][3] # dport + SenderCompID
-		except:
-			print(packet)
-			sys.exit(1)
-		new_psn = int(packet[1][4]) # PacketSeqNum
+		dport = packet[0][3]
+		scid = val(packet[1],"SenderCompID")
+		new_psn = int(val(packet[1],"PacketSeqNum"))
+		KEY = dport + scid
 		
 		# check datagram contiguity
-		cont = self.contiguity(scid,new_psn)
+		cont = self.contiguity(KEY,new_psn)
 		if cont == 0: # on time
-			self.packetseqnum[scid] = new_psn
+			self.packetseqnum[KEY] = new_psn
 			self.process_messages(packet,False) # process packet
-			if len(self.queue[scid])>0: # process queue if any
-				self.process_queue(scid)
+			if len(self.queue[KEY])>0: # process queue if any
+				self.process_queue(KEY)
 		elif cont== 1: # too early
-			psn_in_queue= (int(x[1][4]) for x in self.queue[scid]) # x[1][4] PacketSeqNum
+			psn_in_queue= (int(val(x[1],"PacketSeqNum")) for x in self.queue[KEY])
 			if new_psn not in psn_in_queue:
-				self.queue[scid].append(deepcopy(packet)) # bufferise packet
+				self.queue[KEY].append(deepcopy(packet)) # bufferise packet
 
 		# gap in data
-		if len(self.queue[scid])==self.max_queue:
+		if len(self.queue[KEY])==self.max_queue:
 			min_psn = sys.maxsize # find packet with smallest psn
 			min_i = 0
-			for i in range(0,len(self.queue[scid])):
-				psn = int(self.queue[scid][i][1][4]) # PacketSeqNum
+			for i in range(0,len(self.queue[KEY])):
+				psn = int(val(self.queue[KEY][i][1],"PacketSeqNum"))
 				if psn < min_psn:
 					min_psn=psn
 					min_i=i
 			# and restart from there
-			self.packetseqnum[scid] = min_psn
-			self.process_messages(self.queue[scid][min_i],True)
-			del self.queue[scid][min_i]
-			self.process_queue(scid)
+			self.packetseqnum[KEY] = min_psn
+			self.process_messages(self.queue[KEY][min_i],True)
+			del self.queue[KEY][min_i]
+			self.process_queue(KEY)
 
 #################################################################
 # RDD DECODER
@@ -158,27 +166,28 @@ class generic_decoder:
 #################################################################
 
 def product_complex(it):
-	if it=='1':
+	it = int(it)
+	if it==0:
 		return 'Simple Instrument'
-	elif it=='2':
+	elif it==1:
 		return 'Standard Option Strategy'
-	elif it=='3':
+	elif it==2:
 		return 'Non-Standard Option Strategy'
-	elif it=='4':
+	elif it==3:
 		return 'Volatility Strategy'
-	elif it=='5':
+	elif it==4:
 		return 'Future Spread'
-	elif it=='6':
+	elif it==5:
 		return 'Inter-Product Spread'
-	elif it=='7':
+	elif it==6:
 		return 'Standard Futures Strategy'
-	elif it=='8':
+	elif it==7:
 		return 'Pack and Bundle'
-	elif it=='9':
+	elif it==8:
 		return 'Strip'
 
 class rdd_decoder(generic_decoder):
-	def __init__(self):
+	def __init__(self,output_dir, date):
 		generic_decoder.__init__(self)
 		self.state = state_init
 		self.msgseqnum = -1
@@ -189,11 +198,12 @@ class rdd_decoder(generic_decoder):
 			'MarketSegmentDesc','MarketSegmentSymbol','Currency',
 			'MarketSegmentStatus','PartitionID',
 			'UnderlyingSecurityExchange','UnderlyingSymbol','UnderlyingSecurityID']
-		self.inst_fields=['product', 'SecurityID','SecurityType', 'SecuritySubType', 
+		self.inst_fields=['product', 'SecurityID','SecurityType', 
 			'ProductComplex', 'MaturityDate', 'MaturityMonthYear',
 			'StrikePrice', 'PricePrecision', 'ContractMultiplier',
 			'PutOrCall', 'ExerciseStyle', 'SettlMethod', 'SecurityDesc',
 			'MinPriceIncrement', 'MinPriceIncrementAmount','SecurityStatus']
+		self.ofname = outputdir+"/"+"Eurex_products_db_"+date+".csv"
 
 	def create_product(self,msg):
 		pid=val(msg,'MarketSegmentID')
@@ -210,26 +220,45 @@ class rdd_decoder(generic_decoder):
 			self.inst[uid]['product'] = self.current_pid
 			# Retrieve instrument info
 			self.inst[uid]['SecurityID'] = uid
-			self.inst[uid]['SecurityType']=val(msg,'SecurityType')
-			self.inst[uid]['SecuritySubType']=val(msg,'SecuritySubType')
+			st = val(msg,'SecurityType')
+			if st=='0':
+				self.inst[uid]['SecurityType']= 'O' # options
+			elif st=='1':
+				self.inst[uid]['SecurityType']= 'F' # futures
+			else:
+				self.inst[uid]['SecurityType']= 'C' # complex instrument
 			self.inst[uid]['ProductComplex']=product_complex(val(msg,'ProductComplex'))
 			self.inst[uid]['MaturityDate']=val(msg,'MaturityDate')
 			self.inst[uid]['MaturityMonthYear']=val(msg,'MaturityMonthYear')
 			self.inst[uid]['StrikePrice']=val(msg,'StrikePrice')
 			self.inst[uid]['PricePrecision']=val(msg,'PricePrecision')
 			self.inst[uid]['ContractMultiplier']=val(msg,'ContractMultiplier')
-			self.inst[uid]['PutOrCall']=val(msg,'PutOrCall')
-			self.inst[uid]['ExerciseStyle']=val(msg,'ExerciseStyle')
-			self.inst[uid]['SettlMethod']=val(msg,'SettlMethod')
+			poc = val(msg,'PutOrCall')
+			if st=='0':
+				if poc=='0':
+					self.inst[uid]['PutOrCall']='P'
+				elif poc=='1':
+					self.inst[uid]['PutOrCall']='C'
+			exs = val(msg,'ExerciseStyle')
+			if exs=='0':
+				self.inst[uid]['ExerciseStyle']='EU'
+			elif exs=='1':
+				self.inst[uid]['ExerciseStyle']='US'
+			sem = val(msg,'SettlMethod')
+			if sem=='0':
+				self.inst[uid]['SettlMethod']='Cash'
+			elif sem=='1':
+				self.inst[uid]['SettlMethod']='Physical'
 			self.inst[uid]['SecurityDesc']=val(msg,'SecurityDesc')
 			self.inst[uid]['MinPriceIncrement']=val(msg,'MinPriceIncrement')
 			self.inst[uid]['MinPriceIncrementAmount']=val(msg,'MinPriceIncrementAmount')
 			self.inst[uid]['SecurityStatus']=val(msg,'SecurityStatus')
 
 	def output(self):
-		print(','.join(self.product_fields),end='') # header product
-		print(',',end='')
-		print(','.join(self.inst_fields)) # header instrument
+		f = open(self.ofname,'w')
+		print(','.join(self.product_fields),end='',file=f) # header product
+		print(',',end='',file=f)
+		print(','.join(self.inst_fields),file=f) # header instrument
 
 		for i in self.inst:
 			p = self.inst[i]['product']
@@ -237,40 +266,38 @@ class rdd_decoder(generic_decoder):
 			print(','.join(
 				(str(self.product[p][x]) if x!='MarketSegmentDesc'
 					else '"'+str(self.product[p][x])+'"')
-				for x in self.product_fields),end='')
-			print(',',end='')
+				for x in self.product_fields),end='',file=f)
+			print(',',end='',file=f)
 			# print instrument data
-			print(','.join(str(self.inst[i][x]) for x in self.inst_fields))
+			print(','.join(str(self.inst[i].get(x,'')) for x in self.inst_fields),file=f)
+
+		f.close()
 
 	def process_messages(self,packet,found_gap):
 		for i in range(2,len(packet)): # useful messages start at packet[2]
 			# Run FSA
 			if self.state == state_init: # Wait for a snapshot to start
 				if packet[i][0]=='MarketDataReport':
-					if val(packet[i],'MDReportEvent')=='1':
-						self.state = state_snapshot_cycle
+					if int(val(packet[i],'MDReportEvent'))==0:
+						self.state = state_snapshot_cycle # enter snapshot
 			# Read all snapshot messages
 			elif self.state == state_snapshot_cycle:
 				if found_gap:
 					self.state = state_init
 				elif packet[i][0]=='MarketDataReport':
-					mdreportevent = val(packet[i],'MDReportEvent')
-					if mdreportevent!='0' and mdreportevent!='1':
-						self.state = state_init
-				elif packet[i][0]=='ProductSnapshot':
-					self.state = state_product_cycle
+					if int(val(packet[i],'MDReportEvent'))==1:
+						self.state = state_init # end of snapshot
+				else:
 					msgseqnum = int(val(packet[i],'MsgSeqNum'))
+					# check contiguity
 					if self.msgseqnum==-1 or self.msgseqnum==(msgseqnum-1):
 						self.msgseqnum = msgseqnum
-						self.create_product(packet[i])
-			# Read all snapshot messages for one product
-			elif self.state == state_product_cycle:
-				if found_gap:
-					self.state = state_snapshot_cycle
-				elif packet[i][0]=='InstrumentSnapshot':
-					self.create_inst(packet[i])
-				elif packet[i][0]=='ProductSnapshot':
-					self.create_product(packet[i])
+						if packet[i][0]=='ProductSnapshot':
+							self.create_product(packet[i]) # create new product
+						elif packet[i][0]=='InstrumentSnapshot':
+							self.create_inst(packet[i]) # add new instrument
+					else: # stop processing and wait for the next
+						self.state = state_init
 
 ######################################################################################
 # Product represents a product in the Eurex FAST sense, that is it is made of many
@@ -286,6 +313,14 @@ class Product:
 		self.queue = []
 		self.inst = {}
 		self.inst_init = set()
+		self.first_inst = -1
+
+	# reset a product when a gap has been detected
+	def reset(self):
+		self.state = state_init
+		self.msn = -1
+		self.inst_init = set()
+		self.first_inst = -1
 
 	# True if we received all initial book for this product
 	def snapshot_complete(self):
@@ -293,15 +328,17 @@ class Product:
 
 	# Decode and initialize instruments' books
 	def process_prod_snapshot(self,msg,recv):
+		print("calling process_prod_snapshot")
 		# all the i_<var> points to one field in the message
 		# there are also used in the function vali to start searching
 		# from them and not from the beginning to speed up the decoding
 		i_lastmsn=vali(msg,'LastMsgSeqNumProcessed')
 		self.msn = int(msg[i_lastmsn])
 		i_uid=vali(msg,'SecurityID',i_lastmsn)
-		if msg[i_uid] in self.inst_init: # check if uid already done
-			return True
-		else:
+		uid = msg[i_uid]
+		if msg[i_uid] not in self.inst: # ignore instruments which are not in the database
+			return
+		if msg[i_uid] not in self.inst_init: # check if uid already done
 			self.inst_init.add(msg[i_uid])
 
 		i_prodcomplex=vali(msg,'ProductComplex',i_uid)
@@ -311,11 +348,11 @@ class Product:
 
 		for i in range(N): # process each entry for instrument uid
 			i_entrytype = vali(msg,'MDEntryType',I)
-			I = i_entrytype+1 # I points at the next key (...:key:value:...) in the list
+			I = i_entrytype+1 # I points at the next key (...:key:value:next key:...) in the list
 			i_next_entrytype = vali(msg,'MDEntryType',I)-1 # point to the next MDEntryType key
 			if msg[i_entrytype]=='0' or msg[i_entrytype]=='1': # add bid or ask level
 				i_mdbooktype = vali(msg,'MDBookType',I)
-				if i_mdbooktype < i_next_entrytype and msg[i_mdbooktype]=='2': # price depth
+				if i_mdbooktype < i_next_entrytype and msg[i_mdbooktype]=='1': # price depth
 					i_mdentrypx  =vali(msg,'MDEntryPx',I) # get values
 					i_mdentrysize=vali(msg,'MDEntrySize',I)
 					i_nborders   =vali(msg,'NumberOfOrders',I)
@@ -323,28 +360,26 @@ class Product:
 					i_mdentrytime=vali(msg,'MDEntryTime',I)
 					# check they belong to the current MDSshGrp starting at i_entrytype
 					# and ending right before i_next_entrytype
-					side  = msg[i_entrytype]
-					price = msg[i_mdentrypx] if i_mdentrypx<i_next_entrytype else 'NA'
-					size  = msg[i_mdentrysize] if i_mdentrysize<i_next_entrytype else 'NA'
-					nbo   = msg[i_nborders] if i_nborders<i_next_entrytype else 'NA'
-					level = msg[i_mdpricelvl] if i_mdpricelvl<i_next_entrytype else 'NA'
-					ts    = msg[i_mdentrytime] if i_mdentrytime<i_next_entrytype else 'NA'
+					side  = int(msg[i_entrytype])
+					price = Decimal(msg[i_mdentrypx]) if i_mdentrypx<i_next_entrytype else float('nan')
+					size  = int(msg[i_mdentrysize]) if i_mdentrysize<i_next_entrytype else float('nan')
+					nbo   = int(msg[i_nborders])    if i_nborders<i_next_entrytype    else float('nan')
+					level = int(msg[i_mdpricelvl])  if i_mdpricelvl<i_next_entrytype  else float('nan')
+					ts    = int(msg[i_mdentrytime]) if i_mdentrytime<i_next_entrytype else float('nan')
 					# And do an update of the order book
-					self.inst[uid].add_level(int(level),int(side),int(size),
-							Decimal(price),int(nbo))
-					self.inst[uid].store_update("A",recv,int(ts))
-			elif msg[i_entrytype]=='J': # clear book
-				i_mdentrytime=vali(msg,'MDEntryTime',I)
-				ts    = msg[i_mdentrytime] if i_mdentrytime<i_next_entrytype else 'NA'
-				inst[uid].clear(recv,int(ts))
+					self.inst[uid].add_level(level-1,side,size,price,nbo)
+					self.inst[uid].store_update("Q",recv,ts)
+			elif msg[i_entrytype]=='3': # clear book
+				i_mdentrytime = vali(msg,'MDEntryTime',I)
+				ts = int(msg[i_mdentrytime]) if i_mdentrytime<i_next_entrytype else float('nan')
+				self.inst[uid].clear(recv,ts)
 
 			I = i_next_entrytype # jump to the next MDEntryType
-
-		return True
 
 	# Process queue of Depth Incremental messages. It is used during when waiting for the
 	# snapshot completion or if there is a gap
 	def process_inc_queue(self,recv):
+		print("calling process_inc_queue")
 		processed=True
 		# Fixed point algorithm to process each element in the queue
 		while processed:
@@ -352,7 +387,14 @@ class Product:
 			i=0
 			n = len(self.queue)
 			while i < n:
-				if self.process_inc(self.queue[i],recv):
+				if self.queue[i][0] == 'DepthIncremental':
+					status = self.process_inc(self.queue[i],recv)
+				elif self.queue[i][0] in DI:
+					status = self.process_non_inc(self.queue[i])
+				else:
+					status = False
+
+				if status:
 					del self.queue[i]
 					n=n-1
 					processed=True
@@ -365,95 +407,103 @@ class Product:
 	# as given by generic_decoder. So a gap will cause the product to go
 	# back in snapshot mode immediately
 	def process_inc(self,msg,recv):
+		print("calling process_inc")
 		msn = int(val(msg,'MsgSeqNum'))
 		if msn<=self.msn: # already processed
+			print("too late")
 			return True
 		elif msn > self.msn+1: # too early
+			print("wrong seq")
 			return False
-		# else msn==self.msn+1, process it
-		N = int(val(msg,'NoMDEntries'))
+		print('process_inc: msn is good',self.msn,'->',msn)
+		self.msn = msn # else msn==self.msn+1, process it
+		try:
+			N = int(val(msg,'NoMDEntries'))
+		except ValueError:
+			print(recv)
+			print(msg)
+			sys.exit(1)
+		I=0
+		print("mdentries=",N)
 		for i in range(N):
-			i_upd_act=ival(msg,'MDUpdateAction')
-			I=i_upd_act+1
-			i_next_upd_act=ival(msg,'MDUpdateAction',i_upd_act)
-			entry_type=val(msg,'MDEntryType',I)
-			if int(entry_type) < 2: # bid or ask order
-				uid=val(msg,'SecurityID',I)
+			i_upd_act=vali(msg,'MDUpdateAction',I) # beginning of msg in msg
+			I=i_upd_act+1 # where to start to search for following fields
+			i_next_upd_act=vali(msg,'MDUpdateAction',i_upd_act) # where to end
+			print("i=",i,"i_upd_act=",i_upd_act,"i_next_upd_act=",i_next_upd_act,"I=",I)
+			uid=val(msg,'SecurityID',I)
+			if uid not in self.inst: # do not process unused instruments
+				continue
+
+			entry_type=int(val(msg,'MDEntryType',I))
+			print('uid=',uid,'entry_type=',entry_type,end=' ')
+			qty = val(msg,'MDEntrySize',I,float('nan'),int)
+			exch  = int(val(msg,'MDEntryTime',I))
+			if entry_type < 2: # bid or ask order
 				price = Decimal(val(msg,'MDEntryPx',I))
-				qty   = int(val(msg,'MDEntrySize',I))
-				nbo   = int(ival(msg,'NumberOfOrders',I))
-				level = int(val(msg,'MDPriceLevel',I))
-				exch  = int(ival(msg,'MDEntryTime',I))
+				nbo = val(msg,'NumberOfOrders',I,float('nan'),int)
+				level = int(val(msg,'MDPriceLevel',I))-1 # Book.py takes levels from 0, Eurex from 1
 				action  = int(msg[i_upd_act])
+				print(price,nbo,level,'action=',action)
 				if action==0: # new level
-					self.inst[uid].add_level(level,int(entry_type),qty,price,nbo)
+					self.inst[uid].add_level(level,entry_type,qty,price,nbo)
 					self.inst[uid].store_update("A",recv,exch)
 				elif action==1: # change volume in a level
-					self.inst[uid].amend_level(level,int(entry_type),qty,price,nbo)
+					self.inst[uid].amend_level(level,entry_type,qty,price,nbo)
 					self.inst[uid].store_update("V",recv,exch)
 				elif action==2: # delete a price level
-					self.inst[uid].delete_level(level,int(entry_type))
+					self.inst[uid].delete_level(level,entry_type)
 					self.inst[uid].store_update("D",recv,exch)
 				elif action==3: # delete from 1 to level
-					for i in range(1,level+1):
-						self.inst[uid].delete_level(1,int(entry_type))
+					self.inst[uid].delete_to_level(level,entry_type)
 					self.inst[uid].store_update("H",recv,exch)
 				elif action==4: # delete from level to end
-					for i in range(level,self.inst[uid].levels+1):
-						self.inst[uid].delete_level(level,int(entry_type))
+					self.inst[uid].delete_from_level(level,entry_type)
 					self.inst[uid].store_update("F",recv,exch)
 				elif action==5: # change price of a level
-					self.inst[uid].delete_level(level,int(entry_type))
-					self.inst[uid].add_level(level,int(entry_type),qty,price,nbo)
+					self.inst[uid].amend_level(level,entry_type,qty,price,nbo)
 					self.inst[uid].store_update("O",recv,exch)
-			elif entry_type == '2': # trade
-				self.inst[uid].report_trade(
-					Decimal(val(msg,'MDEntryPx',I)),
-					int(val(msg,'MDEntrySize',I)),
-					recv, int(val(msg,'MDEntryTime',I)),
-					int(val(msg,'AggressorSide',I)),
-					int(val(msg,'NumberOfOrders',I)),
-					int(val(msg,'AggressorTimestamp',I)),
-					int(val(msg,'NumberOfBuyOrders',I)),
-					int(val(msg,'NumberOfSellOrders',I)))
-			elif entry_type == '3': # clear book
-				self.inst[uid].clear(recv,int(val(msg,'MDEntryTime',I)))
+			elif entry_type == 2: # trade
+				print("trade",uid)
+				self.inst[uid].report_trade(val(msg,'MDEntryPx',I,float('nan'),Decimal), qty, recv, exch,
+					val(msg,'AggressorSide',I,float('nan'),int),
+					val(msg,'NumberOfOrders',I,float('nan'),int),
+					val(msg,'AggressorTimestamp',I,float('nan'),int),
+					val(msg,'NumberOfBuyOrders',I,float('nan'),int),
+					val(msg,'NumberOfSellOrders',I,float('nan'),int))
+			elif entry_type == 3: # clear book
+				print('clear book')
+				self.inst[uid].clear(recv,exch)
 				self.inst[uid].store_update("C",recv,exch)
 		return True
 
 	def process_non_inc(self,msg):
+		print("calling process_non_inc")
 		msn = int(val(msg,'MsgSeqNum'))
 		if msn<=self.msn: # already processed
 			return True
 		elif msn > self.msn+1: # too early
 			return False
 		else: # msn==self.msn+1
+			self.msn = msn
 			return True
 
 ######################################################################################
-# Implements the EMDI decoder
+# the EMDI decoder
 ######################################################################################
 
 class emdi_decoder(generic_decoder):
 	def __init__(self,instfile,date,outputdir='./'):
 		generic_decoder.__init__(self)
-
-		emdi_date = dateutil.parser.parse("{}-{}-{}".format(date[0:4],date[4:6],date[6:8]))
 		self.prod = {}
-		self.DI = ['DepthIncremental',
-					'ComplexInstrumentUpdate',
-					'CrossRequest',
-					'QuoteRequest',
-					'InstrumentStateChange',
-					'ProductStateChange',
-					'MassInstrumentStateChange',
-					'TopOfBookImplied']
+
 
 		# Read the products' database and instantiate all the
 		# products and instruments
+		emdi_date = dateutil.parser.parse("{}-{}-{}".format(date[0:4],date[4:6],date[6:8]))
 		for row in csv.DictReader(open(instfile)):
 			# take only active (==0) simple instruments (<2)
-			if int(row['SecurityType'])<2 and int(row['SecurityStatus'])==0:
+			st = row['SecurityType']
+			if (st=='O' or st=='F') and int(row['SecurityStatus'])==0:
 			# check date <= maturity
 				maturity = dateutil.parser.parse("{}-{}-{}".format(
 					row['MaturityDate'][0:4],
@@ -465,9 +515,9 @@ class emdi_decoder(generic_decoder):
 						self.prod[pid] = Product()
 					uid = row['SecurityID']
 					# make file name
-					filename =( outputdir+row['MarketSegment']+row['MaturityMonthYear']
+					filename =( outputdir+'/'+row['MarketSegment']+row['MaturityMonthYear']
 							+'-'+row['StrikePrice']+'-'
-							+ ('Put' if row['PutOrCall']=='0' else 'Call')
+							+ ('Put' if row['PutOrCall']=='P' else 'Call')
 							+'_'+date+'.csv')
 					# create Order Book for each instrument
 					self.prod[pid].inst[uid] = Book(uid,date,5,"level_2",ofile=filename)
@@ -479,44 +529,58 @@ class emdi_decoder(generic_decoder):
 				self.prod[p].inst[u].write_output()
 
 	def process_messages(self,packet,found_gap):
-		recv = packet[0][1] # UDP receive timestamps
-		exch = packet[1][8] # SendingTime
+		recv = int(packet[0][1]) # UDP receive timestamps
+		exch = int(val(packet[1],"SendingTime"))
 		for i in range(2,len(packet)):
 			pid = val(packet[i],'MarketSegmentID') # get product id 
-			if pid not in self.prod:
+			if pid not in self.prod: # filter out products
 				continue
-			print("prod ",pid," ",recv," ",exch, "# packets=",len(packet)-2)
 			prod = self.prod[pid]
+			print("prod",pid,recv,exch,"len=",len(packet)-2)
+
 			# Run FSA (states=init, snapshot, incremental)
 			if prod.state == state_init:
+				print("init : packet[0]=",packet[i][0],"=")
 				if packet[i][0]=='DepthSnapshot': # start snapshot
 					prod.process_prod_snapshot(packet[i],recv)
 					prod.state = state_snapshot
-					print("prod ",pid," init->snapshot")
-				elif packet[i][0] in self.DI: # save message in queue
+					prod.first_inst = val(packet[i],'SecurityID')
+					print("prod",pid,"init->snapshot",recv)
+				elif packet[i][0] in DI: # save message in queue
 					prod.queue.append(packet[i])
-					print("prod ",pid," saving inc while in init")
+					print("prod",pid,"saving inc while in init",recv)
 			elif prod.state == state_snapshot:
 				if packet[i][0]=='DepthSnapshot': # continue snapshot
-					if not prod.process_prod_snapshot(packet[i],recv):
-						print("prod ",pid," wrong seq snapshot->init")
-						prod.state = state_init
-					elif prod.snapshot_complete(): # product complete ?
+					if (len(prod.inst)==len(prod.inst_init) or # check for end of snapshot
+							val(packet[i],'SecurityID')==prod.first_inst):
+						print("end of snapshot",pid)
+						print("len=",len(prod.inst),len(prod.inst_init))
+						print(val(packet[i],'SecurityID'), prod.first_inst)
 						prod.process_inc_queue(recv) # process queued msg
-						prod.state=product_incremental # go to incremental
-						print("prod ",pid," complete snapshot->incremental")
-				elif packet[i][0] in self.DI: # save msg in queue
+						prod.state=state_incremental # go to incremental
+						prod.first_inst = -1
+						print("prod",pid,"complete snapshot->incremental",recv)
+					else:
+						prod.process_prod_snapshot(packet[i],recv)
+						print("we have",len(prod.inst_init),"instruments over",len(prod.inst))
+						print("prod",pid,"process snapshot",recv)
+				elif packet[i][0] in DI: # save msg in queue
 					prod.queue.append(packet[i])
-					print("prod ",pid," saving inc while in snapshot")
+					print("prod",pid,"saving inc while in snapshot",recv)
 			elif prod.state == state_incremental:
 				if packet[i][0]=='DepthIncremental':
+					print('found incremental')
 					if not prod.process_inc(packet[i],recv):
-						prod.state = state_init
-						print("prod ",pid," wrong seq with DI incremental->init")
-				elif packet[i][0] in self.DI:
+						prod.reset()
+						print("prod",pid,"wrong seq with DI incremental->init",recv)
+					else:
+						print("prod",pid,"in seq",prod.msn,recv)
+				elif packet[i][0] in DI:
 					if not prod.process_non_inc(packet[i]):
-						prod.state = state_init
-						print("prod ",pid," wrong seq with nonDI incremental->init")
+						prod.reset()
+						print("prod",pid,"wrong seq with nonDI incremental->init",recv)
+					else:
+						print("prod",pid,"in seq",prod.msn,recv)
 
 ######################################################################################
 
@@ -549,6 +613,7 @@ def parse_text(namea,nameb,packet_decoder):
 		read = False
 
 		# channel A
+		#print("----- channel A -----")
 		line = filea.readline()
 		if line:
 			read = True
@@ -562,6 +627,7 @@ def parse_text(namea,nameb,packet_decoder):
 				packeta.append(line.split(':'))
 
 		# channel B
+		#print("----- channel B -----")
 		line = fileb.readline()
 		if line:
 			read = True
@@ -582,111 +648,64 @@ def parse_text(namea,nameb,packet_decoder):
 	# finish output
 	packet_decoder.output()
 
-if __name__=="__main__":
-#	parser = argparse.ArgumentParser(__file__)
-#	parser.add_argument("--verbose","-v", help="verbose mode", type=bool, default=False)
-#	parser.add_argument("tarfile",help="input tar file name",type=str)
-#	args = parser.parse_args()
+######################################################################################
 
-#	x=rdd_decoder()
-#	parse_text('/mnt/data/david/RDDa','/mnt/data/david/RDDb',x)
+def usage():
+	print("Usage: eurex_EMDI_decoder.py [options] <channel_a> <channel_b>",file=sys.stderr)
+	print("-h,--help print help",file=sys.stderr)
+	print("-d,--decoder either rdd or emdi",file=sys.stderr)
+	print("-p,--product product file when using emdi decoder",file=sys.stderr)
+	print("-o,--output outputdir",file=sys.stderr)
+	print("-t,--date date of the files to process",file=sys.stderr)
+	print("\nproduct is only required by the emdi decoder",file=sys.stderr)
 
-	x=emdi_decoder("prod.csv","20150924")
-	parse_text('/mnt/data/david/EMDIa','/mnt/data/david/EMDIb',x)
+def main(argv):
+	# Get options
+	try:
+		opts, args = getopt.getopt(argv,"hd:p:o:t:", ["help","decoder=","product=","output=","date="])
+	except getopt.GetoptError:
+		usage()
+		sys.exit(1)
 
-#######################################################################################
-#def line2msg(string):
-#	l = string[:-1].split(':')
-#	data = {}
-#
-#	for i in range(0,len(l),2):
-#		key = l[i]
-#		if key in data:
-#			data[key].append(l[i+1])
-#		else:
-#			data[key] = [l[i+1]]
-#
-#	d1 = {k+'.'+str(i):data[k][i] for k in data if len(data[k])>1 for i in range(len(data[k]))}
-#	d1.update({k:data[k][0] for k in data if len(data[k])==1})
-#	return d1
+	for opt, arg in opts:
+		if opt in ("-h","--help"):
+			usage()
+			sys.exit(0)
+		elif opt in ("-d","--decoder"):
+			decoder = arg
+		elif opt in ("-p","--product"):
+			product = arg
+		elif opt in ("-o","--output"):
+			output_dir = arg
+		elif opt in ("-t","--date"):
+			date = arg
 
-def unpack_tar_file(tfile,tmpdir='/tmp'):
-	if os.path.exists(tfile) and os.path.isfile(tfile) and tarfile.is_tarfile(tfile):
-		# make a uniquely named temp directory
-		uniqdir = tmpdir+'/'+str(uuid.uuid4())
-		os.mkdir(uniqdir)
+	# Test options
+	if 'decoder' not in locals():
+		print("decoder not specified",file=sys.stderr)
+		usage()
+		sys.exit(1)
+	if 'output_dir' not in locals():
+		print("output dir not specified",file=sys.stderr)
+		usage()
+		sys.exit(1)
+	if 'date' not in locals():
+		print("date not specified",file=sys.stderr)
+		usage()
+		sys.exit(1)
 
-		print("unpacking tar file "+tfile+" in dir "+uniqdir)
-		print("starting at ", datetime.now())
-
-		# extract files
-		t = tarfile.open(tfile)
-		t.extractall(uniqdir)
-		t.close()
-
-		print("done at ", datetime.now())
-	
-		return uniqdir
-
-def which(program):
-	""" Find executable path """
-	def is_exe(fpath):
-		return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
-
-	fpath, fname = os.path.split(program)
-	if fpath:
-		if is_exe(program):
-			return program
+	# Run decoder
+	if decoder == 'rdd':
+		x = rdd_decoder(output_dir, date)
+	elif decoder == 'emdi':
+		x = emdi_decoder(product, date, output_dir)
+	elif decoded == 'generic':
+		x = generic_decoder()
 	else:
-		for path in os.environ["PATH"].split(os.pathsep):
-			path = path.strip('"')
-			exe_file = os.path.join(path, program)
-			if is_exe(exe_file):
-				return exe_file
-	return None
+		print("decoder",decoder,"is not valid",file=sys.stderr)
+		sys.exit(1)
 
-def decode_emdi_pcap_data(tarfile,prefix,tmpdir='/tmp'):
-	# unpack tar file to /tmp
-	print(datetime.now(), " unpacking tar file ", tarfile)
-	emdi_dir = unpack_tar_file(tarfile)
-	#emdi_dir=tmpdir
-	print(datetime.now(), " emdi dir: ",emdi_dir)
+	parse_text(args[0],args[1], x)
 
-	# get pcap files list
-	filesa=''
-	filesb=''
-	for f in sorted(os.listdir(emdi_dir+'/emdi-a')):
-		filesa += ' ' + emdi_dir+'/emdi-a/'+f
-	for f in sorted(os.listdir(emdi_dir+'/emdi-b')):
-		filesb += ' ' + emdi_dir+'/emdi-b/'+f
-
-	# result files
-	outputa = tmpdir+'/'+prefix+'_a_'+uuid.uuid4().hex
-	outputb = tmpdir+'/'+prefix+'_b_'+uuid.uuid4().hex
-
-	print("Results are in "+outputa+" and "+outputb)
-
-	# generate command
-	nbcpu = str(os.cpu_count())
-	parallela=(which("parallel") + " -j " + nbcpu
-				+ ' --keep-order pcapread -f compact '+prefix+' {} ::: ' 
-				+ filesa
-				+ ' > ' + outputa)
-	parallelb=(which("parallel") + " -j " + nbcpu
-				+ ' --keep-order pcapread -f compact '+prefix+' {} ::: ' 
-				+ filesb
-				+ ' > ' + outputb)
-
-	# run command
-	print("start pcap on channel A decoding at ", datetime.now())
-	os.system(parallela)
-	print("start pcap on channel B decoding at ", datetime.now())
-	os.system(parallelb)
-	print("done at ",datetime.now())
-	print("output files are ",outputa, " " ,outputb)
-
-	# remove untar'red pcap files
-	shutil.rmtree(emdi_dir,True)
-
-	return (outputa,outputb)
-
+if __name__=="__main__":
+	main(sys.argv[1:])
