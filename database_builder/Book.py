@@ -207,7 +207,7 @@ class Book:
 				self.store_update("D",recv,exch)
 			return True
 		# if order exists and price is not provided
-		elif price==-1: 
+		elif price==-1 and side!=-1: 
 			for p in self.book[side]:
 				if oid in self.book[side][p]:
 					del self.book[side][p][oid]
@@ -216,6 +216,17 @@ class Book:
 					if self.mode==3:
 						self.store_update("D",exch,recv)
 					return True
+		elif price==-1 and side==-1:
+			for side in [0,1]:
+				for p in self.book[side]:
+					if oid in self.book[side][p]:
+						del self.book[side][p][oid]
+						if not self.book[side][p]: # price level empty ?
+							del self.book[side][p]
+						if self.mode==3:
+							self.store_update("D",exch,recv)
+						return True
+
 		return False # if we're here, it means no order has been deleted
 
 	# ===============
@@ -298,7 +309,9 @@ class Book:
 					for o in self.book[s][p]]) 
 					for p in prices]
 				list_len = [len(self.book[s][p]) for p in prices]
-				r += prices + list_qty + list_len
+
+				nanl = [np.nan]*(self.levels-count)
+				r += prices + nanl + list_qty + nanl + list_len + nanl
 			# CME/CBOT/Nymex, Kospi, Eurex EMDI
 			elif self.mode==2:
 				count = min(self.levels, len(self.book[s]))
