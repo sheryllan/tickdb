@@ -68,7 +68,7 @@ class generic_decoder:
 	def __init__(self):
 		self.packetseqnum = {}
 		self.queue = {}
-		self.max_queue=100
+		self.max_queue=5
 		self.nb_packet=0
 
 	# This function is called at the end of the decoding
@@ -79,12 +79,12 @@ class generic_decoder:
 	# of a UDP datagram except the first 2
 	def process_messages(self,packet,found_gap):
 		self.nb_packet+=1
-		print(packet[0][3],",",val(packet[1],"SenderCompID"),
+		print("process_messages: ",packet[0][3].rstrip(),val(packet[1],"SenderCompID"),
 				val(packet[1],"PacketSeqNum"))
 
-	def search_new_psn(self,scid):
+	def search_new_psn(self,KEY):
 		minpsn = sys.maxsize
-		for p in self.queue[scid]:
+		for p in self.queue[KEY]:
 			psn = int(val(p[1],"PacketSeqNum")) # PacketSeqNum
 			if psn < minpsn:
 				minpsn = psn
@@ -92,13 +92,13 @@ class generic_decoder:
 		return minpsn-1
 
 	# Check contiguity of UDP datagram
-	def contiguity(self,scid,new_psn):
-		if scid not in self.packetseqnum: # new scid
-			self.packetseqnum[scid] = new_psn # create structures
-			self.queue[scid] = []
+	def contiguity(self,KEY,new_psn):
+		if KEY not in self.packetseqnum: # new KEY
+			self.packetseqnum[KEY] = new_psn # create structures
+			self.queue[KEY] = []
 			return 0
 		else:
-			last_psn= self.packetseqnum[scid]
+			last_psn= self.packetseqnum[KEY]
 			if new_psn == (last_psn+1):
 				return 0 # on time
 			elif new_psn > (last_psn+1):
@@ -108,45 +108,55 @@ class generic_decoder:
 
 	# Process a queue of UDP datagram in case of a out-of-order
 	# packets
-	def process_queue(self,scid):
+	def process_queue(self,KEY):
 		processed=1
 		while processed>0:
 			processed=0
 			i=0
-			while i<len(self.queue[scid]):
-				p = self.queue[scid][i]
+			while i<len(self.queue[KEY]):
+				p = self.queue[KEY][i]
 				new_psn = int(val(p[1],"PacketSeqNum"))
-				cont = self.contiguity(scid,new_psn)
+				cont = self.contiguity(KEY,new_psn)
 				if cont == 0:
-					self.packetseqnum[scid] = new_psn
+					self.packetseqnum[KEY] = new_psn
 					self.process_messages(p,False)
-					del self.queue[scid][i]
+					del self.queue[KEY][i]
 					processed+=1
+				elif cont == -1: # too late
+					del self.queue[KEY][i]
 				else:
 					i+=1
 	
 	# Process a UDP datagram and re-order them if needed
 	# When in a child class, the process message of the child is called
 	def process_udp_datagram(self,packet):
-		dport = packet[0][3]
+		ip = packet[0][2]
+		dport = packet[0][3].rstrip()
 		scid = val(packet[1],"SenderCompID")
+		KEY = ip+'_'+dport+'_'+scid
+
 		new_psn = int(val(packet[1],"PacketSeqNum"))
-		KEY = dport + scid
 		
 		# check datagram contiguity
 		cont = self.contiguity(KEY,new_psn)
 		if cont == 0: # on time
+			print("generic: on time key=", KEY,'psn=',self.packetseqnum[KEY],
+					'new_psn=',new_psn,'timestamp=', packet[0][1])
 			self.packetseqnum[KEY] = new_psn
 			self.process_messages(packet,False) # process packet
 			if len(self.queue[KEY])>0: # process queue if any
 				self.process_queue(KEY)
-		elif cont== 1: # too early
-			psn_in_queue= (int(val(x[1],"PacketSeqNum")) for x in self.queue[KEY])
-			if new_psn not in psn_in_queue:
-				self.queue[KEY].append(deepcopy(packet)) # bufferise packet
+		elif cont == 1: # too early
+			print("generic: too early key=", KEY,'psn=',self.packetseqnum[KEY],
+					'new_psn=',new_psn,'timestamp=', packet[0][1])
+			self.queue[KEY].append(deepcopy(packet)) # bufferise packet
+		#else:
+			print("generic: too late key=", KEY,'psn=',self.packetseqnum[KEY],
+					'new_psn=',new_psn,'timestamp=', packet[0][1])
 
 		# gap in data
 		if len(self.queue[KEY])==self.max_queue:
+			print("reach max queue: processing with gap")
 			min_psn = sys.maxsize # find packet with smallest psn
 			min_i = 0
 			for i in range(0,len(self.queue[KEY])):
@@ -155,10 +165,12 @@ class generic_decoder:
 					min_psn=psn
 					min_i=i
 			# and restart from there
+			print("restart at min_psn=",min_psn)
 			self.packetseqnum[KEY] = min_psn
 			self.process_messages(self.queue[KEY][min_i],True)
 			del self.queue[KEY][min_i]
-			self.process_queue(KEY)
+			if len(self.queue[KEY])>0:
+				self.process_queue(KEY)
 
 #################################################################
 # RDD DECODER
@@ -203,7 +215,7 @@ class rdd_decoder(generic_decoder):
 			'StrikePrice', 'PricePrecision', 'ContractMultiplier',
 			'PutOrCall', 'ExerciseStyle', 'SettlMethod', 'SecurityDesc',
 			'MinPriceIncrement', 'MinPriceIncrementAmount','SecurityStatus']
-		self.ofname = outputdir+"/"+"Eurex_products_db_"+date+".csv"
+		self.ofname = output_dir+"/"+"Eurex_products_db_"+date+".csv"
 
 	def create_product(self,msg):
 		pid=val(msg,'MarketSegmentID')
@@ -280,6 +292,7 @@ class rdd_decoder(generic_decoder):
 				if packet[i][0]=='MarketDataReport':
 					if int(val(packet[i],'MDReportEvent'))==0:
 						self.state = state_snapshot_cycle # enter snapshot
+						print("rdd: init -> snapshot_cycle",packet[0][1])
 			# Read all snapshot messages
 			elif self.state == state_snapshot_cycle:
 				if found_gap:
@@ -287,17 +300,31 @@ class rdd_decoder(generic_decoder):
 				elif packet[i][0]=='MarketDataReport':
 					if int(val(packet[i],'MDReportEvent'))==1:
 						self.state = state_init # end of snapshot
+						print("rdd: END snapshot_cycle -> init",packet[0][1])
 				else:
-					msgseqnum = int(val(packet[i],'MsgSeqNum'))
-					# check contiguity
-					if self.msgseqnum==-1 or self.msgseqnum==(msgseqnum-1):
-						self.msgseqnum = msgseqnum
-						if packet[i][0]=='ProductSnapshot':
-							self.create_product(packet[i]) # create new product
-						elif packet[i][0]=='InstrumentSnapshot':
-							self.create_inst(packet[i]) # add new instrument
-					else: # stop processing and wait for the next
-						self.state = state_init
+					if packet[i][0]=='ProductSnapshot':
+						self.create_product(packet[i]) # create new product
+						print("rdd: create product","len=",len(self.product))
+					elif packet[i][0]=='InstrumentSnapshot':
+						self.create_inst(packet[i]) # add new instrument
+						print("rdd: create inst len=",len(self.inst))
+
+					#msgseqnum = int(val(packet[i],'MsgSeqNum'))
+					#print("rdd: process msg",self.msgseqnum, msgseqnum,packet[i][0])
+					## check contiguity
+					#if self.msgseqnum==-1 or (self.msgseqnum+1)==msgseqnum:
+					#	self.msgseqnum = msgseqnum
+					#	if packet[i][0]=='ProductSnapshot':
+					#		self.create_product(packet[i]) # create new product
+					#		print("rdd: create product","len=",len(self.product))
+					#	elif packet[i][0]=='InstrumentSnapshot':
+					#		self.create_inst(packet[i]) # add new instrument
+					#		print("rdd: create inst len=",len(self.inst))
+					#elif self.msgseqnum >= msgseqnum: # too late=duplicate from channel B in general
+					#	print("rdd: duplicate")
+					#else: # gap
+					#	self.state = state_init
+					#	print("rdd: BUG snapshot_cycle -> init")
 
 ######################################################################################
 # Product represents a product in the Eurex FAST sense, that is it is made of many
@@ -438,7 +465,7 @@ class Product:
 			print('uid=',uid,'entry_type=',entry_type,end=' ')
 			qty = val(msg,'MDEntrySize',I,float('nan'),int)
 			exch  = int(val(msg,'MDEntryTime',I))
-			if entry_type < 2: # bid or ask order
+			if entry_type < 3: # bid or ask order
 				price = Decimal(val(msg,'MDEntryPx',I))
 				nbo = val(msg,'NumberOfOrders',I,float('nan'),int)
 				level = int(val(msg,'MDPriceLevel',I))-1 # Book.py takes levels from 0, Eurex from 1
@@ -613,28 +640,30 @@ def parse_text(namea,nameb,packet_decoder):
 		read = False
 
 		# channel A
-		#print("----- channel A -----")
 		line = filea.readline()
 		if line:
 			read = True
 			ia+=1
 			if line[0:3]=='UDP' and len(packeta)>0: # check for new UDP datagram
 				if len(packeta)>1: #some packets are empty !!!
+					print("----- channel A -----")
 					packet_decoder.process_udp_datagram(packeta)
+					print("----- end of channel A -----")
 				packeta.clear()
 			# don't store empty lines 
 			if line[0]!='\n' and line[0]!=' ' and line[0]!='':
 				packeta.append(line.split(':'))
 
 		# channel B
-		#print("----- channel B -----")
 		line = fileb.readline()
 		if line:
 			read = True
 			ib+=1
 			if line[0:3]=='UDP' and len(packetb)>0: # check for new UDP datagram
 				if len(packetb)>1: #some packets are empty !!!
+					print("----- channel B -----")
 					packet_decoder.process_udp_datagram(packetb)
+					print("----- end of channel B -----")
 				packetb.clear()
 			# don't store empty lines 
 			if line[0]!='\n' and line[0]!=' ' and line[0]!='':
@@ -699,7 +728,7 @@ def main(argv):
 		x = rdd_decoder(output_dir, date)
 	elif decoder == 'emdi':
 		x = emdi_decoder(product, date, output_dir)
-	elif decoded == 'generic':
+	elif decoder == 'generic':
 		x = generic_decoder()
 	else:
 		print("decoder",decoder,"is not valid",file=sys.stderr)

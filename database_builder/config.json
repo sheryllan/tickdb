@@ -34,7 +34,7 @@
 
 	"qtg":
 	{
-		"dbdir" :       "/mnt/data/database",
+		"dbdir" :       "/mnt/data/database/qtg",
 		"dbprocessed" : "/mnt/data/database/processed_files.db",
 		"src_dir" : 	"/mnt/data/qtg",
 		"unwanted" :    "/mnt/data/database/unwanted_files.db",
