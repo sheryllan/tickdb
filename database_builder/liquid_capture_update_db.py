@@ -10,6 +10,52 @@ import time,os,argparse,sys
 import json
 import re
 import subprocess
+import csv
+
+# clean up bad characters in Reference files
+def filtchar(x):
+	a=bytearray(range(0,256))
+	b=bytearray(b'xxxxxxxxxx\nxxxxxxxxxxxxxxxxxxxxx !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\x7fxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
+	t=bytes.maketrans(a,b)
+	return x.translate(t)
+
+def merge_first_fields(l,hdrsize):
+	d = len(l)-hdrsize # how many fields to merge at the front of the list
+	# merge and add the rest of the list. LISP ??? :-D
+	return [",".join(l[0:d+1])]+l[d+1:len(l)]
+
+def process_ref_data(rawdata_dir,ref_data_file):
+	# find all ref data files in the raw data repository
+	ref_files=[]
+	for root,dirs,files in os.walk(rawdata_dir):
+		for f in files:
+			if f.endswith(".csv") and 'ReferenceData' in f:
+				ref_files.append(os.path.join(root,f))
+
+	# read all the files
+	ref_data={}
+	hdrsize = 0
+	for f in ref_files:
+		with open(f,'rb') as rf:
+			# read entire file
+			for line in rf:
+				# remove bad chars, convert to str, split to csv elements
+				l = filtchar(line).decode('utf-8').rstrip(',\n').split(',')
+				# get header size
+				if l[0]=='ProductID':
+					hdrsize=len(l)
+				# some lines have a product ID with commas
+				if hdrsize>0 and len(l)>hdrsize:
+					l = merge_first_fields(l,hdrsize)
+				# get Product Id (sometimes ProductID have commas in their name)
+				ref_data[l[0]] = l # store line, replacing each elmt with its last version
+	
+	# write output to CSV file
+	with open(ref_data_file,'w') as f:
+		writer=csv.writer(f)
+		writer.writerow(ref_data['ProductID']) # write header
+		del ref_data['ProductID']
+		writer.writerows([ref_data[k] for k in ref_data]) # dump the rest of the file
 
 def find_files(rawdata_dir,processed_files):
 	# read list of already processed files
@@ -94,6 +140,7 @@ def main(argv):
 			rawdata_dir = cfg['liquid_capture']['src_dir']
 			processed_files = cfg['liquid_capture']['dbprocessed']
 			dbdir = cfg['liquid_capture']['dbdir']
+			ref_data_file = cfg['liquid_capture']['instdb']
 			tmpdir = cfg['tmpdir']
 			nbcores = cfg['nbcores']
 			gnupar = os.popen("which parallel").read().strip()
@@ -148,6 +195,9 @@ def main(argv):
 			pf = open(processed_files,'a')
 			pf.write('\n'.join(files_to_process))
 			pf.close()
+
+			# 9- update reference data
+			process_ref_data(rawdata_dir,ref_data_file)
 
 	finally:
 		os.unlink("/tmp/mypid.pid")
