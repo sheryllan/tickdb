@@ -84,7 +84,6 @@ if [ ! -e ${jsonconf} ]; then
 fi
 
 # Extract config from JSON file
-rootdir=$(jshon -e 'rootdir'              -u < ${jsonconf})
 tmpdir=$(jshon -e 'tmpdir'               -u < ${jsonconf})
 level=$(jshon -e 'level'                -u < ${jsonconf})
 dbdir=$(jshon -e 'qtg' -e 'dbdir'       -u < ${jsonconf})
@@ -144,10 +143,10 @@ do
 	# Look for a decoder and discard invalid files
 	dec=$(qtg_find_decoder ${jsonconf} ${line})
 	if [ "$dec" != "not_valid" ]; then
-		outputdir=${dbdir}/qtg/$(qtg_exchange ${line})/$(month ${line})
+		outputdir=${dbdir}/$(qtg_exchange ${line})/$(month ${line})
 		mkdir -p ${outputdir} # -p create dirs all the way long and does not fail if dir exists
 		# write the command line to process this file
-		echo ${database_builder} -l 5 -o ${outputdir} -d ${dec} -f csv.bz2 -i ${qtg_instrument_db} -g ${dbdir}/qtg/qtg.log ${line} >> ${parjobfile}
+		echo ${database_builder} -l 5 -o ${outputdir} -d ${dec} -f csv.bz2 -i ${qtg_instrument_db} -g ${dbdir}/qtg.log ${line} >> ${parjobfile}
 	else
 		# store invalid files here
 		echo $line >> ${invalid_qtg}

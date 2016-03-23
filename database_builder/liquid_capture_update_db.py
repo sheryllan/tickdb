@@ -39,6 +39,8 @@ def process_ref_data(rawdata_dir,ref_data_file):
 		with open(f,'rb') as rf:
 			# read entire file
 			for line in rf:
+				# remove white spaces first
+				line = line.replace(b' ',b'')
 				# remove bad chars, convert to str, split to csv elements
 				l = filtchar(line).decode('utf-8').rstrip(',\n').split(',')
 				# get header size
