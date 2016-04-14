@@ -29,7 +29,8 @@
 		"dbprocessed" : "/mnt/data/database/liquid_capture_processed_files.db",
 		"src_dir" : 	"/mnt/data/rawdata",
 		"unwanted" :    "",
-		"instdb": 		"/mnt/data/database/liquid_capture_inst_db.csv"
+		"instdb": 		"/mnt/data/database/liquid_capture_inst_db.csv",
+		"daily_db":	"/mnt/data/database/liquid_capture_daily_db.csv"
 	},
 
 	"qtg":
@@ -38,6 +39,7 @@
 		"dbprocessed" : "/mnt/data/database/qtg_processed_files.db",
 		"src_dir" : 	"/mnt/data/qtg",
 		"unwanted" :    "/mnt/data/database/unwanted_files.db",
-		"instdb" : 		"/mnt/data/qtg/instRefdataCoh.csv"
+		"instdb" : 		"/mnt/data/qtg/instRefdataCoh.csv",
+		"daily_db":	"/mnt/data/database/qtg_daily_db.csv"
 	}
 }
