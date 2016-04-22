@@ -73,8 +73,8 @@ has_consistent_books_prices <- function(x)
 {
 	if(class(x)=="data.frame" & nrow(x)>0)
 	{
-		bid = as.matrix(x[ , grep("bid[0-9]",names(x))]) # get bid prices
-		ask = as.matrix(x[ , grep("ask[0-9]",names(x))]) # get ask prices
+		bid = as.matrix(x[ , grep("^bid[0-9]",names(x))]) # get bid prices
+		ask = as.matrix(x[ , grep("^ask[0-9]",names(x))]) # get ask prices
 
 		# a valid book has at least one value
 		valid_bid_rows = which(rowAnys(!is.na(bid)))
@@ -91,7 +91,7 @@ has_consistent_books_prices <- function(x)
 		{
 			dask <- rowDiffs(ask, rows = valid_ask_rows)
 			# diffs must all be negative or NA for ask
-			test_ask = all(rowAlls(dask < 0 | is.na(dask)))
+			test_ask = all(rowAlls(dask > 0 | is.na(dask)))
 		}
 		else test_ask = T # no books at all are consistent books anyway
 

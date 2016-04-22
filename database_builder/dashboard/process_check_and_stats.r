@@ -152,8 +152,13 @@ process_daily <- function(config,provider)
 		{
 			check = list()
 
-			# read one day of data
-			df <- fread(paste("bzip2 -cd",file),verbose=F,showProgress=F,data.table=F)
+			# Read CSV header
+			cols <- names(fread(paste("bzip2 -cd",file,"|head -1"),verbose=F,showProgress=F,data.table=F))
+			pr <- grep("bid[^v]|ask[^v]|strike",names(cols),value=T) # get price columns and number of orders
+			# Read one day of data, forcing all prices nb orders to be double
+			# nb orders are in double because for many exchange we only have NAs
+			df <- fread(paste("bzip2 -cd",file),verbose=F,showProgress=F,data.table=F,
+						colClasses=list(numeric=pr))
 			nb_NA_timestamps = nrow(df)
 			df <- df[!is.na(df$recv) & !is.na(df$exch),] # remove line with NA timestamps
 			nb_NA_timestamps = nb_NA_timestamps - nrow(df)
