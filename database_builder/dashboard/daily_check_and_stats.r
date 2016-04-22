@@ -1,18 +1,12 @@
-if(!exists(named.list,mode="function"))
+if(!exists("named.list",mode="function"))
 	named.list <- function(...) 
 	{  
 		    setNames( list(...) , as.character( match.call()[-1]) ) 
 	}
 
-# Test if there are data available
-has_data <- function(x)
-{
-	return( (class(x)=="numeric" & length(x)>0) | (class(x)=="data.frame" & nrow(x)>0) )
-}
-
 # Test if timestamps are increasing non-monotonically
 # return true any timestamps go back in time
-has_nonmonotonic_timestamps <- function(x)
+has_monotonic_timestamps <- function(x)
 {
 	if(class(x)=="numeric")
 		ts = x
@@ -20,9 +14,13 @@ has_nonmonotonic_timestamps <- function(x)
 		ts = x$recv
 	else return(F)
 
-	d = diff(ts)
-	test = d < 0
-	return ( sum(test) > 0)
+	ts = ts[!is.na(ts)]
+	if(length(ts)>1)
+	{
+		test = diff(ts[!is.na(ts)]) < 0 # test if any timestamp goes back in time
+		return ( sum(test) == 0) # there should be none
+	}
+	else return(T) # one of zero timestamps is monotonic
 }
 
 # Check if there are zero timestamps
@@ -35,8 +33,13 @@ has_only_non_zero_timestamps <- function(x)
 		ts = x$recv
 	else return(F)
 
-	test = ts==0
-	return(sum(test) > 0)
+	ts = ts[!is.na(ts)]
+	if(length(ts)>0)
+	{
+		test = ts==0 # test if any timestamp is zero
+		return ( sum(test) == 0) # there should be none
+	}
+	else return(F)
 }
 
 # Check if order books are crossed ask < bid 
@@ -46,7 +49,7 @@ has_no_crossed_books <- function(x)
 	if(class(x)=="data.frame" && "bid1" %in% names(x) && "ask1" %in% names(x))
 	{
 		test = x$ask1 <= x$bid1
-		return(sum(test)>0)
+		return(sum(test,na.rm=T)>0)
 	}
 	else return(F)
 }
@@ -60,28 +63,37 @@ has_no_zero_or_neg_qty <- function(x)
 		vol_names=grep("bidv|askv",names(x)) # get volume column names
 		vol = as.matrix(x[ , vol_names]) # extract volume as a matrix
 		
-		return(sum(vol <= 0) == 0)
+		return(sum(!is.na(vol) & vol <= 0 ) == 0)
 	}
 	else return(F)
 }
 
 # Check if the prices are sorted in the right order for every book
-are_all_books_price_consistent <- function(x)
+has_consistent_books_prices <- function(x)
 {
-	if(class(x)=="data.frame")
+	if(class(x)=="data.frame" & nrow(x)>0)
 	{
 		bid = as.matrix(x[ , grep("bid[0-9]",names(x))]) # get bid prices
 		ask = as.matrix(x[ , grep("ask[0-9]",names(x))]) # get ask prices
 
-		all(rowAlls(d > 0 | is.na(d)))
+		# a valid book has at least one value
+		valid_bid_rows = which(rowAnys(!is.na(bid)))
+		valid_ask_rows = which(rowAnys(!is.na(ask)))
+		if(length(valid_bid_rows)>0)
+		{
+			dbid <- rowDiffs(bid, rows = valid_bid_rows)
+			# diffs must all be negative or NA for bid
+			test_bid = all(rowAlls(dbid < 0 | is.na(dbid)))
+		}
+		else test_bid = T # no books at all are consistent books anyway
 
-		dbid = rowDiffs(bid)
-		dask = rowDiffs(ask)
-
-		# diffs must all be negative or NA for bid
-		test_bid = all(rowAlls(dbid < 0 | is.na(dbid)))
-		# diffs must all be negative or NA for ask
-		test_ask = all(rowAlls(dbid > 0 | is.na(dbid)))
+		if(length(valid_ask_rows)>0)
+		{
+			dask <- rowDiffs(ask, rows = valid_ask_rows)
+			# diffs must all be negative or NA for ask
+			test_ask = all(rowAlls(dask < 0 | is.na(dask)))
+		}
+		else test_ask = T # no books at all are consistent books anyway
 
 		# 1. take the diffs between each level (dbid, dask)
 		#    missing values give NA
@@ -97,9 +109,9 @@ are_all_books_price_consistent <- function(x)
 }
 
 # test if trades all have valid prices and volumes (>0)
-have_valid_trades <- function(x)
+has_valid_trades <- function(x)
 {
-	if(class(x)=="data.frame")
+	if(class(x)=="data.frame" & nrow(x) >= 0)
 	{
 		# columns 4 and 5 are always price and quantity.
 		# columns 6 to 10 are not always used depending on what the
@@ -108,7 +120,7 @@ have_valid_trades <- function(x)
 
 		price <- x[,4]
 		qty <- x[,5]
-		return(all(price >0 & qty > 0))
+		return(all(sum(is.na(price))==0 & sum(is.na(qty))==0 & price >0 & qty > 0))
 	}
 	else return(F)
 }
@@ -139,51 +151,65 @@ have_valid_trades <- function(x)
 test_and_stats_on_trades <- function(x)
 {
 	idx = which(x$otype=='T') # get trade indices
-	if(idx[1]==1) # avoid problems with the following idx-1 expressions ;-)
-		idx = idx[2:length(idx)]
-
-	# get prices and volumes
-	trade_price = x[idx , 4] 
-	trade_qty   = x[idx , 5] 
-	trade_time  = x[idx,"recv"]
-	time_quote_before_trade = x[idx-1,"recv"]
-
-	bid = x[idx-1, 'bid1']
-	ask = x[idx-1, 'ask1']
-	bidv= x[idx-1, 'bidv1']
-	askv= x[idx-1, 'askv1']
 
 	# stats
 	nb_trades = length(idx)
 	nb_quotes = sum(x$otype!='T' & x$otype!='S')
 	ratio_trades_quotes = nb_trades/nb_quotes
 
-	avg_trade_vol = mean(trade_qty)
-	avg_trade_price = mean(trade_price)
-	avg_weighted_trade_price = sum(trade_price*trade_qty)/sum(trade_qty)
+	if(length(idx)>0)
+	{
+		if(idx[1]==1) # avoid problems with the following idx-1 expressions ;-)
+			idx = idx[2:length(idx)]
 
-	avg_time = mean(diff(trade_time))
-	m=normalmixEM(x,k=2,arbmean=T,maxit=5000,fast=T,arbvar=T)
-	at = sort(m$mu)
-	min_avg_time = at[1]
-	max_avg_time = at[2]
-	avg_time_quote_to_next_trade = mean(trade_time-time_quote_before_trade)
+		# get prices and volumes
+		trade_price = x[idx , 4] 
+		trade_qty   = x[idx , 5] 
+		trade_time  = x[idx,"recv"]
+		time_quote_before_trade = x[idx-1,"recv"]
+
+		bid = x[idx-1, 'bid1']
+		ask = x[idx-1, 'ask1']
+		bidv= x[idx-1, 'bidv1']
+		askv= x[idx-1, 'askv1']
+
+		# more stats
+		avg_trade_vol = mean(trade_qty)
+		avg_trade_price = mean(trade_price)
+		avg_weighted_trade_price = sum(as.numeric(trade_price)*as.numeric(trade_qty))/sum(trade_qty)
+
+		if(length(trade_time)>1)
+		{
+			z=diff(trade_time)
+			q=quantile(z,seq(0,1,0.01))
+			z = as.numeric(z[z<q[101]]) # remove values when there is an interruption in the trading session 
+			avg_time_between_trade_millisecs <- mean(z)/1e6  # in milliseconds
+			avg_time_quote_to_next_trade_millisecs <- mean(trade_time-time_quote_before_trade)/1e6
+		}
+		else {
+			avg_time_between_trade_millisecs <- NA
+			avg_time_quote_to_next_trade_millisecs <- NA
+		}
 	
-	
-	# test if trades' prices are equal to either the bid or ask prices
-	test_price = trade_price == bid | trade_price == ask
-	# test if trades' qties are less or equal than the top of the book volume
-	test_qty   = trade_qty <= bidv | trade_qty <= askv
+		# test if trades' prices are equal to either the bid or ask prices
+		test_price = trade_price == bid | trade_price == ask
+		# test if trades' qties are less or equal than the top of the book volume
+		test_qty   = trade_qty <= bidv | trade_qty <= askv
 
-	# test if trades reconcile
-	test_trade = test_price & test_qty
-	ratio_rec_trades = sum(test_trade)/length(idx)
+		# test if trades reconcile
+		test_trade = test_price & test_qty
+		ratio_rec_trades = sum(test_trade)/length(idx)
 
 
-	named.list(nb_trades,nb_quotes,ratio_trades_quotes,
-			   avg_trade_vol,avg_trade_price,avg_weighted_trade_price,
-			   avg_time, min_avg_time,max_avg_time,avg_time_quote_to_next_trade,
-			   ratio_rec_trades)
+		named.list(nb_trades,nb_quotes,ratio_trades_quotes,
+				   avg_trade_vol,avg_trade_price,avg_weighted_trade_price,
+				   avg_time_between_trade_millisecs, avg_time_quote_to_next_trade_millisecs,
+				   ratio_rec_trades)
+	}
+	else list(nb_trades=nb_trades,nb_quotes=nb_quotes,ratio_trades_quotes=ratio_trades_quotes,
+				   avg_trade_vol=NA,avg_trade_price=NA,avg_weighted_trade_price=NA,
+				   avg_time_between_trade_millisecs=NA, avg_time_quote_to_next_trade_millisecs=NA,
+				   ratio_rec_trades=1)
 }
 
 guess_ticksize=function(df)
@@ -231,5 +257,5 @@ stats_on_quotes <- function(x,quotes,trades)
 	   avg_delta_tick_between_midprice_changes,quotes_per_second,trades_per_second,
 	   quotes_per_minute,trades_per_minutes,avg_bid_ask_spread)
 
-	list(result, vg_time_between_quotes)
+	list(result, avg_time_between_quotes)
 }

@@ -4,6 +4,7 @@
 	"parjobfile" : "/tmp/gnupar_job_file.sh",
 	"level": 5,
 	"nbcores": 24,
+	"shinyappdir" : "/home/dbellot/recherche/tickdatabase/database_builder/dashboard",
 
 	"decoder":
 	{
