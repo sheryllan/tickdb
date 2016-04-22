@@ -177,28 +177,29 @@ server <- function(input, output, session)
 		if(!is.null(input$graph.type))
 		{
 			# Plot each type of graph successively
-			color <- 2
 			yaxis <- -1
-			ltype <- 1
+			color <- 2
 			for(typ in input$graph.type)
 			{
+				ltype <- 1
 				par(new=T)
 				# draw frame for the graph
 				plot(1,type='n',axes=F,xlab='',ylab='',
 					 xlim=c(min(d$date),max(d$date)),ylim=c(mins[typ],maxs[typ]))
+				print(color)
 				axis(at=pretty(d[,typ]),side=2,col=color,line=yaxis)
 				# extract data and plot for each instrument
 				d_ply(d, .(prod,type,exp),
 					function(x)
 					{
 						lines(x$date, x[,typ], col=color, lty=ltype)
-						ltype<<-ltype+1
 						legd <<- rbind.fill(legd,
 							data.frame(text=str_c(str_replace_all(typ,"_"," "),
 									  " ","PROD.",x$type[1],".",x$prod[1],".",x$exp[1]),
 									   lty=ltype, col=color))
+						ltype <<- ltype+1
 					})
-				color <- color + 1
+				color <- color+1
 				yaxis <- yaxis+1
 			}
 			par(new=T)
