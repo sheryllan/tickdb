@@ -89,7 +89,7 @@ class Book:
 	#
 	# channel_id is used for CME/CBOT only
 
-	def __init__(self, uid, date, levels, mode='level_3', channel_id=-1, ofile=None, min_output_size=10000):
+	def __init__(self, uid, date, levels, mode='level_3', channel_id=-1, ofile=None):
 		self.uid = uid
 		self.date = date
 		self.levels = levels
@@ -117,8 +117,6 @@ class Book:
 
 		self.channel_id = channel_id
 		self.ofile=ofile
-		self.nb_write=0
-		self.min_output_size = min_output_size
 
 	# ===============
 	# Level 3 methods
@@ -209,7 +207,7 @@ class Book:
 				self.store_update("D",recv,exch)
 			return True
 		# if order exists and price is not provided
-		elif price==-1: 
+		elif price==-1 and side!=-1: 
 			for p in self.book[side]:
 				if oid in self.book[side][p]:
 					del self.book[side][p][oid]
@@ -218,6 +216,17 @@ class Book:
 					if self.mode==3:
 						self.store_update("D",exch,recv)
 					return True
+		elif price==-1 and side==-1:
+			for side in [0,1]:
+				for p in self.book[side]:
+					if oid in self.book[side][p]:
+						del self.book[side][p][oid]
+						if not self.book[side][p]: # price level empty ?
+							del self.book[side][p]
+						if self.mode==3:
+							self.store_update("D",exch,recv)
+						return True
+
 		return False # if we're here, it means no order has been deleted
 
 	# ===============
@@ -231,11 +240,8 @@ class Book:
 		return True
 
 	def add_level(self,level,side,qty,price,ord_cnt):
-		if level<=len(self.book[side]):
-			self.book[side].insert(level, (price,qty,ord_cnt) )
-			return True
-		else:
-			return False
+		self.book[side].insert(level, (price,qty,ord_cnt) )
+		return True
 
 	def amend_level(self,level,side,qty,price,ord_cnt):
 		if level < len(self.book[side]):
@@ -247,6 +253,22 @@ class Book:
 	def delete_level(self,level,side):
 		if level < len(self.book[side]):
 			self.book[side].pop(level)
+			return True
+		else:
+			return False
+	
+	def delete_from_level(self,level,side):
+		if level < len(self.book[side]):
+			for i in range(level,len(self.book[side])):
+				self.book[side].pop(level)
+			return True
+		else:
+			return False
+
+	def delete_to_level(self,level,side):
+		if level < len(self.book[side]):
+			for i in range(level+1):# level+1 because level starts at 0 in Book.py
+				self.book[side].pop(0)
 			return True
 		else:
 			return False
@@ -263,14 +285,14 @@ class Book:
 		self.output.append(
 			self.output_head("T",recv,exch)
 			+[price,qty,side,nb_orders,aggrtime,nb_buy,nb_sell]
-			+([np.nan]*(4*self.levels-7)))
+			+([np.nan]*(6*self.levels-7)))
 		return True
 
 	def exec_summary(self,price,qty,recv,exch):
 		self.output.append(
 			self.output_head("S",recv,exch)
 			+ [price, qty]
-			+ ([np.nan]*(4*self.levels-2)))
+			+ ([np.nan]*(6*self.levels-2)))
 
 	def store_update(self,otype,recv,exch):
 		r = self.output_head(otype,recv,exch)
@@ -287,7 +309,9 @@ class Book:
 					for o in self.book[s][p]]) 
 					for p in prices]
 				list_len = [len(self.book[s][p]) for p in prices]
-				r += prices + list_qty + list_len
+
+				nanl = [np.nan]*(self.levels-count)
+				r += prices + nanl + list_qty + nanl + list_len + nanl
 			# CME/CBOT/Nymex, Kospi, Eurex EMDI
 			elif self.mode==2:
 				count = min(self.levels, len(self.book[s]))
@@ -296,21 +320,15 @@ class Book:
 					[item[0] for item in self.book[s][0:count]]+nanl +\
 					[item[1] for item in self.book[s][0:count]]+nanl +\
 					[item[2] for item in self.book[s][0:count]]+nanl
-
 		
 		# do update only if there is a change in the top levels
 		if len(self.output)==0 or (len(self.output) and 
 				self.output[-1][3:self.ll]!=r[3:self.ll]):
 			self.output.append(r)
-			if self.ofile and len(self.output)==self.min_output_size:
-				self.write_output()
 
 	def write_output(self):
-		x=DataFrame(self.output, columns=self.header)
-		# write in CSV form
-		# adding header only if it's the first time we write in the file
-		x.to_csv(self.ofile, na_rep="NA", index=False,index_label=False,
-				header=self.nb_write==0)
-		self.ofile.flush() # push data into file (to make its size changes)
-		self.nb_write += 1
-		self.output = [] # clean up the big list to make it fast again
+		if len(self.output): # only write files with data
+			x=DataFrame(self.output, columns=self.header)
+			f = open(self.ofile,'w')
+			x.to_csv(f, na_rep="NA", index=False,index_label=False, header=True)
+			f.close()

@@ -15,6 +15,7 @@ from qtg_EOBI_file_decoder import *
 from qtg_CME_file_decoder import *
 from qtg_MDP3_file_decoder import *
 from qtg_KOSPI_file_decoder import *
+from qtg_ASX_file_decoder import *
 
 def grep(pattern, list):
 	expr = re.compile(pattern)
@@ -28,7 +29,7 @@ def main():
 	parser = argparse.ArgumentParser(__file__,description="order book parser")
 	parser.add_argument("--levels", "-l", help="max OB levels", type=int,default=5)
 	parser.add_argument("--odir",   "-o", help="output directory",type=str,default=".")
-	parser.add_argument("--decoder","-d", help="decoder type: qtg_eobi,qtg_cme,qtg_emdi,qtg_mdp3,qtg_kospi,pcap_eobi,pcap_emdi",type=str,default="qtg_eobi")
+	parser.add_argument("--decoder","-d", help="decoder type: qtg_eobi,qtg_cme,qtg_emdi,qtg_mdp3,qtg_kospi,qtg_asx",type=str,default="qtg_eobi")
 	parser.add_argument("--format",   "-f", help="output file format: csv, csv.xz, csv.bz2",type=str,default="csv")
 	parser.add_argument("--insdb",  "-i", help="Instrument database",type=str,default="/mnt/data/qtg/instRefdataCoh.csv")
 	parser.add_argument("--log",    "-g", help="loggin file",type=str,default="./obp.log")
@@ -60,10 +61,8 @@ def main():
 		books,symbols = decode_qtg_MDP3(fi,args.levels,date)
 	elif args.decoder=="qtg_kospi":
 		books,symbols = decode_qtg_KOSPI(fi,args.levels,date)
-	elif args.decoder=="pcap_eobi":
-		books,symbols = decode_pcap_EOBI(fi,args.levels,date)
-	elif args.decode=="pcap_emdi":
-		books,symbols = decode_pcap_EMDI(fi,args.levels,date)
+	elif args.decoder=="qtg_asx":
+		books,symbols = decode_qtg_ASX(fi,args.levels,date)
 
 	# Write files
 	df = read_csv(args.insdb)

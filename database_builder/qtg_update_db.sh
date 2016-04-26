@@ -33,19 +33,6 @@ function month {
 echo $(basename $(dirname $1))
 }
 
-# print the value of a single key from a JSON file
-# argv[1] = JSON file
-# argv[2] = key
-# behaviour is undefined is the value associated to the key is complex
-function get_json_val {
-/bin/env python3 -c '
-import sys,os,json
-
-j=json.load(open(sys.argv[1]))
-print(j[sys.argv[2]])
-' $1 $2
-}
-
 # this function analyses the file name and validate it
 # by returning a decoder for it
 # if the file is invalid for any reason, then "not_valid" is returned
@@ -97,18 +84,18 @@ if [ ! -e ${jsonconf} ]; then
 fi
 
 # Extract config from JSON file
-rootdir=$(get_json_val ${jsonconf} "rootdir")
-tmpdir=$(get_json_val ${jsonconf} "tmpdir")
-level=$(get_json_val ${jsonconf} "level")
-dbdir=$(get_json_val ${jsonconf} "dbdir")
-dbprocessed=$(get_json_val ${jsonconf} "dbprocessed")
-unwanted=$(get_json_val ${jsonconf} "unwanted")
-qtg_src_dir=$(get_json_val ${jsonconf} "qtg_src_dir")
-qtg_instrument_db=$(get_json_val ${jsonconf} "qtg_instrument_db")
+tmpdir=$(jshon -e 'tmpdir'               -u < ${jsonconf})
+level=$(jshon -e 'level'                -u < ${jsonconf})
+dbdir=$(jshon -e 'qtg' -e 'dbdir'       -u < ${jsonconf})
+dbprocessed=$(jshon -e 'qtg' -e 'dbprocessed' -u < ${jsonconf})
+unwanted=$(jshon -e 'qtg' -e 'unwanted'    -u < ${jsonconf})
+qtg_src_dir=$(jshon -e 'qtg' -e 'src_dir'     -u < ${jsonconf})
+qtg_instrument_db=$(jshon -e 'qtg' -e 'instdb'      -u < ${jsonconf})
+
 timestamp=$(date --utc --rfc-3339='ns' | tr ' .:+-' '_')
 gnupar=$(which parallel)
-parjobfile=$(get_json_val ${jsonconf} "parjobfile")
-nbcores=$(get_json_val ${jsonconf} "nbcores")
+parjobfile=$(jshon -e 'parjobfile' -u < ${jsonconf})
+nbcores=$(jshon -e 'nbcores'    -u < ${jsonconf})
 
 # Check if db file exists
 if [ ! -e ${dbprocessed} ]; then
@@ -156,10 +143,10 @@ do
 	# Look for a decoder and discard invalid files
 	dec=$(qtg_find_decoder ${jsonconf} ${line})
 	if [ "$dec" != "not_valid" ]; then
-		outputdir=${dbdir}/qtg/$(qtg_exchange ${line})/$(month ${line})
+		outputdir=${dbdir}/$(qtg_exchange ${line})/$(month ${line})
 		mkdir -p ${outputdir} # -p create dirs all the way long and does not fail if dir exists
 		# write the command line to process this file
-		echo ${database_builder} -l 5 -o ${outputdir} -d ${dec} -f csv.bz2 -i ${qtg_instrument_db} -g ${dbdir}/qtg/qtg.log ${line} >> ${parjobfile}
+		echo ${database_builder} -l 5 -o ${outputdir} -d ${dec} -f csv.bz2 -i ${qtg_instrument_db} -g ${dbdir}/qtg.log ${line} >> ${parjobfile}
 	else
 		# store invalid files here
 		echo $line >> ${invalid_qtg}
@@ -174,11 +161,3 @@ rm -f ${parjobfile}
 # Update the list of processed for only valid files
 cat ${new_qtg} ${invalid_qtg} | sort | uniq -u >> ${dbprocessed}
 rm -f ${new_qtg} ${invalid_qtg}
-
-# -----------------------
-#    LIQUID PCAP FILES
-# -----------------------
-
-# ----------------------------
-#    STATISTICS AND REPORTS
-# ----------------------------

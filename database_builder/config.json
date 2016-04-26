@@ -4,26 +4,7 @@
 	"parjobfile" : "/tmp/gnupar_job_file.sh",
 	"level": 5,
 	"nbcores": 24,
-
-	"dbdir" :       "/mnt/data/database",
-	"dbprocessed" : "/mnt/data/database/processed_files.db",
-	"unwanted" :    "/mnt/data/database/unwanted_files.db",
-
-	"qtg_src_dir" : "/mnt/data/qtg",
-	"qtg_instrument_db" : "/mnt/data/qtg/instRefdataCoh.csv",
-
-	"liquid_capture":
-	{
-		"src_dir" : "/mnt/data/rawdata",
-		"dbprocessed" : "/mnt/data/database/liquid_capture_processed_files.db",
-		"dbdir" : "/mnt/data/database/liquid_capture"
-	},
-
-	"instdb" :
-	{
-		"qtg" : "/mnt/data/qtg/instRefdataCoh.csv",
-		"liquid_capture": "/mnt/data/database/liquid_capture_inst_db.csv"
-	},
+	"shinyappdir" : "/home/dbellot/recherche/tickdatabase/database_builder/dashboard",
 
 	"decoder":
 	{
@@ -39,6 +20,27 @@
 		"BSXCBT3MA1": [{ "from": 0,	"to":0,		"code": "qtg_mdp3"}],
 		"BSXEURMA1" : [{ "from": 0,	"to":0,		"code": "qtg_eobi"}],
 		"BSXCME3MA1": [{ "from": 0,	"to":0,		"code": "qtg_mdp3"}],
-		"BSBUSKMA1" : [{ "from": 0,     "to":0,		"code": "qtg_kospi"}]
+		"BSBUSKMA1" : [{ "from": 0,     "to":0,		"code": "qtg_kospi"}],
+		"BSXASXMA1" : [{ "from": 0,     "to":0,		"code": "qtg_asx"}]
+	},
+
+	"liquid_capture":
+	{
+		"dbdir" : 		"/mnt/data/database/liquid_capture",
+		"dbprocessed" : "/mnt/data/database/liquid_capture_processed_files.db",
+		"src_dir" : 	"/mnt/data/rawdata",
+		"unwanted" :    "",
+		"instdb": 		"/mnt/data/database/liquid_capture_inst_db.csv",
+		"daily_db":	"/mnt/data/database/liquid_capture_daily_db.csv"
+	},
+
+	"qtg":
+	{
+		"dbdir" :       "/mnt/data/database/qtg",
+		"dbprocessed" : "/mnt/data/database/qtg_processed_files.db",
+		"src_dir" : 	"/mnt/data/qtg",
+		"unwanted" :    "/mnt/data/database/unwanted_files.db",
+		"instdb" : 		"/mnt/data/qtg/instRefdataCoh.csv",
+		"daily_db":	"/mnt/data/database/qtg_daily_db.csv"
 	}
 }
