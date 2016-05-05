@@ -31,7 +31,8 @@
 		"src_dir" : 	"/mnt/data/rawdata",
 		"unwanted" :    "",
 		"instdb": 		"/mnt/data/database/liquid_capture_inst_db.csv",
-		"daily_db":	"/mnt/data/database/liquid_capture_daily_db.csv"
+		"daily_db":	"/mnt/data/database/liquid_capture_daily_db.csv",
+		"prefix" : ["Eurex_mdrec-", "SGX-TNG-Price-Server-Appliance-", "TNG-HKFE-QTG-Shim-"]
 	},
 
 	"qtg":

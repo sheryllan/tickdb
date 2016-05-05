@@ -68,7 +68,7 @@ def find_files(rawdata_dir,processed_files):
 	raw_files=[]
 	for root,dirs,files in os.walk(rawdata_dir):
 		for f in files:
-			if f.endswith(".csv"):
+			if f.endswith(".csv"): # Reactor writes uncompressed csv files
 				raw_files.append(os.path.join(root,f))
 
 	# extract the new files which have never been processed before
@@ -93,19 +93,19 @@ def create_month_directories(dbdir,rawfiles):
 def create_dict_of_files(rawfiles):
 	D = {}
 	for f in rawfiles:
-		# decompose file name
-		# example: A50-F-APR2016-20160317-072908.csv ->
-		# x[0] = A50 x[1] = F x[2] = APR2016 x[3] = 20160317 x[4] = 072908 x[5]=csv
-		x = re.findall(r"[\w']+", os.path.basename(f))
-		if x[0] != 'ReferenceData':
-			# make a name without the timestamp (like x[4]=072908)
-			short_name = os.path.join(os.path.dirname(f), x[0]+'-'+x[1]+'-'+x[2]+'-'+x[3])
-	
-			# Store the result in a tuple
-			if short_name not in D:
-				D[short_name] = [int(x[4])]
-			else:
-				D[short_name].append(int(x[4]))
+		# decompose file name to extract the prefix only
+		# the timestamp is always the last field
+		# example: <some exchange/appliance>-A50-F-APR2016-20160317-072908.csv ->
+		x = os.path.basename(f).split('.')[0].split('-') # remove .csv and decompose
+		timestamp = int(x[len(x)-1]) # extract timestamp
+		x.pop() # remove timestamp
+		short_name = os.path.join(os.path.dirname(f),'-'.join(x)) # recompose filename
+
+		# Store the result in a tuple
+		if short_name not in D:
+			D[short_name] = [timestamp]
+		else:
+			D[short_name].append(timestamp)
 
 	# sort each sub list to be sure we concat files chronologically
 	for k in D:
@@ -143,6 +143,7 @@ def main(argv):
 			processed_files = cfg['liquid_capture']['dbprocessed']
 			dbdir = cfg['liquid_capture']['dbdir']
 			ref_data_file = cfg['liquid_capture']['instdb']
+			prefix = cfg['liquid_capture']['prefix']
 			tmpdir = cfg['tmpdir']
 			nbcores = cfg['nbcores']
 			gnupar = os.popen("which parallel").read().strip()
@@ -163,11 +164,11 @@ def main(argv):
 
 			# 4- Create directories if they don't exist
 			create_month_directories(dbdir,files_to_process)
-
+	
 			# 5- Create dict of files to process: we can have several for the same instrument
 			# in the same day (when the capture device crashes for example)
 			dfiles = create_dict_of_files(files_to_process)
-
+	
 			# 6- Generate job files
 			jobfile=[]
 			j=''
@@ -181,26 +182,42 @@ def main(argv):
 					j = 'bzip2 -c -9 '+x+'-'+format(dfiles[x][0],'06d')+'.csv'
 				
 				# get month of the file
-				month = re.findall(r"[\w']+",os.path.basename(x))[3][:-2]
-				# add destination
-				j = j+' > '+ os.path.join(dbdir,month,os.path.basename(x))+'.csv.bz2'
+				month = os.path.basename(os.path.dirname(x))[:-2]
+				# make a clean destination file name, removing the exchange_appliance name
+				destination = os.path.join(dbdir,month,os.path.basename(x))+'.csv.bz2'
+				for pr in prefix:
+					destination = destination.replace(pr,'')
+				j = j+' > '+ destination
 				# add job to job list
 				jobfile.append(j)
 
 			# 7- pipe jobs to GNU parallel
-			#proc = subprocess.Popen([gnupar,'-j',str(nbcores),' &>/dev/null'],stdin=subprocess.PIPE)
 			proc = subprocess.Popen([gnupar,'-j',str(nbcores)],stdin=subprocess.PIPE)
 			proc.communicate('\n'.join(jobfile).encode())
 			proc.wait()
+  
+   			# 8- update reference data
+			process_ref_data(rawdata_dir,ref_data_file)
+   
+	   		# 9- compress the processed files
+	   		# note: these files will not appear in the next round because we filter out
+	   		# everything but those ending with .csv
+			x=["sudo","-b","-n",gnupar,'-j',str(nbcores),'xz','-9',':::']
+			x.extend(files_to_process)
+			proc = subprocess.Popen(x,stdin=subprocess.PIPE)
+			proc.wait()
 
-			# 8- update processed_files
+			# NOTE: the rawdata files are written by user rsprod.dev without write permission to the group dev
+			# In /etc/sudoers I added the following lines:
+			# Cmnd_Alias COMPRESSION = /usr/bin/xz, /usr/local/bin/parallel
+			# %dev ALL=NOPASSWD: COMPRESSION
+			# to allow members of the group dev (like my own user) to run sudo xz
+
+   			# 10- update list of processed_files
 			pf = open(processed_files,'a')
 			pf.write('\n'.join(files_to_process))
 			pf.close()
-
-			# 9- update reference data
-			process_ref_data(rawdata_dir,ref_data_file)
-
+ 
 	finally:
 		os.unlink("/tmp/mypid.pid")
 
