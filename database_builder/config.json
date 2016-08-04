@@ -32,7 +32,7 @@
 		"unwanted" :    "",
 		"instdb": 		"/mnt/data/database/liquid_capture_inst_db.csv",
 		"daily_db":	"/mnt/data/database/liquid_capture_daily_db.csv",
-		"prefix" : ["Eurex_mdrec-", "SGX-TNG-Price-Server-Appliance-", "TNG-HKFE-QTG-Shim-"]
+		"prefix" : ["Eurex_mdrec-", "TNG-HKFE-QTG-Shim-", "SGX-TNG-Price-Server-Appliance-LCF60-","OSE-QTG-Shim-"]
 	},
 
 	"qtg":

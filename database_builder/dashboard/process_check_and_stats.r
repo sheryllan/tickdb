@@ -10,7 +10,7 @@ suppressMessages(library(doMC))
 suppressMessages(library(stringr))
 suppressMessages(library(RPostgreSQL))
 
-registerDoMC(cores=24)
+registerDoMC(cores=16)
 
 
 # include daily_check source file
@@ -86,7 +86,7 @@ get_trading_session <- function(provider,filename,session)
 	{
 		l <- unlist(str_split(basename(filename),"[-.]")) # decompose file name
 		date <- l[4]
-		x <- session[grep(paste0("PROD.",l[2],".",l[1]), session$productid), ]
+		x <- session[grep(paste0("PROD\\.",l[2],"\\.",l[1],"$"), session$productid), ]
 	}
 	else if(provider=='qtg')
 	{
@@ -145,6 +145,7 @@ process_daily <- function(config,provider)
 	trading_time <- get_session_data(config,provider)
 
 	# process each file in parallel
+	printf("processing %d files\n",length(new_files))
 	result <- foreach(file=new_files,.combine=rbind,.errorhandling="remove") %dopar%
 	{
 		session <- get_trading_session(provider,file,trading_time) # get session time
@@ -154,13 +155,13 @@ process_daily <- function(config,provider)
 
 			# Read CSV header
 			cols <- names(fread(paste("bzip2 -cd",file,"|head -1"),verbose=F,showProgress=F,data.table=F))
-			pr <- grep("bid[^v]|ask[^v]|strike",names(cols),value=T) # get price columns and number of orders
+			pr <- grep("bid[^v]|ask[^v]|strike",cols,value=T) # get price columns and number of orders
 			# Read one day of data, forcing all prices nb orders to be double
 			# nb orders are in double because for many exchange we only have NAs
-			df <- fread(paste("bzip2 -cd",file),verbose=F,showProgress=F,data.table=F,
-						colClasses=list(numeric=pr))
+			df<-fread(paste("bzip2 -cd",file),verbose=F,showProgress=F,data.table=F,colClasses=list(numeric=pr))
 			nb_NA_timestamps = nrow(df)
-			df <- df[!is.na(df$recv) & !is.na(df$exch),] # remove line with NA timestamps
+			# remove line with NA timestamps
+			df <- df[!is.na(df$recv) & !is.na(df$exch) & !rowAnys(df==999999999998,na.rm=T),]
 			nb_NA_timestamps = nb_NA_timestamps - nrow(df)
 			df <- df[ df$recv>=session["start"] & df$recv<=session["end"] , ] # restrict to trading session
 			if(nrow(df)>0)
@@ -188,6 +189,8 @@ process_daily <- function(config,provider)
 		}
 		else printf("%s failed\n",file)
 	}
+
+	printf("result has %d entries\n",nrow(result))
 
 	return(result)
 }

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.5
 
 # IMPORTANT: this code is only a translation of the previous code written in bash and awk
 # As the project is becoming more complex, I implemented it again in Python.
@@ -51,6 +51,8 @@ def process_ref_data(rawdata_dir,ref_data_file):
 					l = merge_first_fields(l,hdrsize)
 				# get Product Id (sometimes ProductID have commas in their name)
 				ref_data[l[0]] = l # store line, replacing each elmt with its last version
+
+	return ref_files
 	
 	# write output to CSV file
 	with open(ref_data_file,'w') as f:
@@ -197,13 +199,14 @@ def main(argv):
 			proc.wait()
   
    			# 8- update reference data
-			process_ref_data(rawdata_dir,ref_data_file)
+			ref_files = process_ref_data(rawdata_dir,ref_data_file)
    
 	   		# 9- compress the processed files
 	   		# note: these files will not appear in the next round because we filter out
 	   		# everything but those ending with .csv
 			x=["sudo","-b","-n",gnupar,'-j',str(nbcores),'xz','-9',':::']
 			x.extend(files_to_process)
+			x.extend(ref_files)
 			proc = subprocess.Popen(x,stdin=subprocess.PIPE)
 			proc.wait()
 
