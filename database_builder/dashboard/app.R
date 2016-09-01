@@ -39,6 +39,7 @@ read_daily_db <- function(provider)
 	# decompose filenames into products, types and dates
 	p = ldply(str_split(basename(x$files),"[-.]"),
 			  function(r) c(prod=r[[1]],type=r[[2]],exp=r[[3]],date=r[[4]]))
+	p$date = as.Date(p$date,"%Y%m%d")
 
 	# Put results in global variables
 	dailydb <<- cbind(p,x)
@@ -48,8 +49,7 @@ read_daily_db <- function(provider)
 select_table <- function(d,input)
 {
 	# select date range
-	days = as.Date(d$date,"%Y%m%d")
-	d <- d[ days>=input$status.date.range[1] & days<=input$status.date.range[2], ]
+	d <- d[ d$date>=input$status.date.range[1] & d$date<=input$status.date.range[2], ]
 
 	# select type of products
 	d <- d[ d$type %in% input$liquid_product_type , ]
@@ -81,6 +81,16 @@ server <- function(input, output, session)
 		read_daily_db(input$provider)
 		invalidateLater(1800000,session)
 		HTML(paste("<font color=\"#3090C7\">","Last DB update at ", last_update_time,"</font>"))
+	})
+
+	# Update date slide range
+	output$status.date.range.ui <- renderUI({
+		minval=min(dailydb$date)
+		maxval=max(dailydb$date)
+		sliderInput("status.date.range","Date Range",
+					min=minval, max=maxval,
+					value=c(minval,maxval),
+					step=1)
 	})
 
 	# Update product list widget
@@ -168,7 +178,6 @@ server <- function(input, output, session)
 		d <- select_table(d,input)
 		mins <- sapply(d[,5:ncol(d)],function(x) min(x,na.rm=T)) # used to calibrate graphs
 		maxs <- sapply(d[,5:ncol(d)],function(x) max(x,na.rm=T))
-		d$date <- as.Date(d$date,"%Y%m%d")
 
 		# Get list of graph types
 		plot(1,type='n',axes=F,xlab='dates',ylab='', xlim=c(min(d$date), max(d$date)),yaxt='n')
@@ -186,7 +195,6 @@ server <- function(input, output, session)
 				# draw frame for the graph
 				plot(1,type='n',axes=F,xlab='',ylab='',
 					 xlim=c(min(d$date),max(d$date)),ylim=c(mins[typ],maxs[typ]))
-				print(color)
 				axis(at=pretty(d[,typ]),side=2,col=color,line=yaxis)
 				# extract data and plot for each instrument
 				d_ply(d, .(prod,type,exp),
@@ -227,10 +235,7 @@ ui <- fluidPage(
 			 	radioButtons("provider","Providers",
 					list("Liquid"="liquid_capture","QTG"="qtg"),
 					selected="liquid_capture"),
-				sliderInput("status.date.range","Date Range",
-					min=as.Date("2014-01-01"),max=as.Date("2016-04-12"),
-					value=c(as.Date("2014-01-01"),as.Date("2016-04-12")),
-					step=1),
+			 	uiOutput("status.date.range.ui"), 
 				checkboxGroupInput("liquid_product_type","Type of Product",
 					list("Options"="O","Futures"="F"),selected=c("F","O")),
 				uiOutput("status.prod"),

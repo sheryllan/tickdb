@@ -26,12 +26,14 @@
 
 	"liquid_capture":
 	{
-		"dbdir" : 		"/mnt/data/database/liquid_capture",
-		"dbprocessed" : "/mnt/data/database/liquid_capture_processed_files.db",
 		"src_dir" : 	"/mnt/data/rawdata",
-		"unwanted" :    "",
+		"dbdir" : 		"/mnt/data/database/liquid_capture",
 		"instdb": 		"/mnt/data/database/liquid_capture_inst_db.csv",
-		"daily_db":	"/mnt/data/database/liquid_capture_daily_db.csv"
+		"daily_db":	    "/mnt/data/database/liquid_capture_daily_db.csv",
+		"prefix" :      ["Eurex_mdrec-", "TNG-HKFE-QTG-Shim-", "SGX-TNG-Price-Server-Appliance-LCF60-","OSE-QTG-Shim-",
+						"TNG-JPX-QTG-Shim-","HKFE_Shim-"],
+		"owner" :       "dbellot",
+		"group" :       "dev"
 	},
 
 	"qtg":
