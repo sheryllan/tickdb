@@ -48,7 +48,7 @@ has_no_crossed_books <- function(x)
 {
 	if(class(x)=="data.frame" && "bid1" %in% names(x) && "ask1" %in% names(x))
 	{
-		test = x$ask1 <= x$bid1
+		test = x$ask1 >= x$bid1
 		return(sum(test,na.rm=T)>0)
 	}
 	else return(F)

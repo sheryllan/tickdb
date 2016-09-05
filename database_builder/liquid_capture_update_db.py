@@ -149,6 +149,7 @@ def copy_liquid_capture_to_db(config_file):
         results = Parallel(n_jobs=-1)(delayed(os.system)(f) for f in job)# run // jobs
         for k in D: # finally change owners of each new file
             os.chown(k,uid,gid)
+            os.chmod(k,0o640) # and also set correct permissions
 
 def generate_reference_data(config_file):
     """ generate reference data main file from all the reference files """
@@ -160,7 +161,7 @@ def generate_reference_data(config_file):
                     raw_files.append(os.path.join(root,f))
         return raw_files
 
-    def load_and_merge_ref_files(raw_files, target_file):
+    def load_and_merge_ref_files(raw_files, target_file,uid,gid):
         header=['ProductID','Product','Type','Exchange','Currency','Underlying','ExpiryDate',
                 'Strike','PutOrCall','ExerciseStyle','MinPriceIncrement','MinPriceIncrementAmount',
                 'SecurityDesc','PremiumDecimalPlace','SecurityID','UnderlyingSecurityID',
@@ -204,6 +205,8 @@ def generate_reference_data(config_file):
         ref=pandas.concat(ref) # make a big data.frame
         ref=ref.drop_duplicates() # remove duplicate lines
         ref.to_csv(target_file,na_rep='NA',columns=header,header=header,index=False)
+        os.chown(target_file,uid,gid)
+        os.chmod(target_file,0o640)
 
     # main program
     with open(config_file) as cfg_file:
@@ -211,8 +214,13 @@ def generate_reference_data(config_file):
         rawdata_dir = cfg['liquid_capture']['src_dir']
         dbdir =       cfg['liquid_capture']['dbdir']
         target_file = cfg['liquid_capture']['instdb']
+        owner =       cfg['liquid_capture']['owner']
+        group =       cfg['liquid_capture']['group']
+
+        uid = pwd.getpwnam(owner).pw_uid
+        gid = grp.getgrnam(group).gr_gid
         raw_files = find_files(rawdata_dir) # find all files in raw data
-        load_and_merge_ref_files(raw_files,target_file) # create a single data.frame of all the ref data files
+        load_and_merge_ref_files(raw_files,target_file,uid,gid) # create a single data.frame of all the ref data files
 
 if __name__=="__main__":
     # Get arguments or print usage
@@ -226,8 +234,8 @@ if __name__=="__main__":
         sys.exit(1)
 
     ensure_i_am_alone() # wait for previous scripts to finish
-    #compression_job(config_file) # Run compression jobs
+    compression_job(config_file) # Run compression jobs
     copy_liquid_capture_to_db(config_file) # update the db with the new files
-    #generate_reference_data(config_file) # update the reference data files
+    generate_reference_data(config_file) # update the reference data files
 
     os.unlink("/tmp/mypid.pid")
