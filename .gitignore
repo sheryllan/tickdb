@@ -1,0 +1,14 @@
+!/.gitignore
+CMakeCache.txt
+CMakeFiles
+Makefile
+config.h
+install_manifest.txt
+libalpha00.a
+libalphaframework.a
+strat
+temp
+cmake_install.cmake
+cmake_uninstall.cmake
+1
+.*
