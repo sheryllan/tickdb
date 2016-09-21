@@ -12,7 +12,6 @@ suppressMessages(library(RPostgreSQL))
 
 registerDoMC(cores=16)
 
-
 # include daily_check source file
 source("daily_check_and_stats.r")
 

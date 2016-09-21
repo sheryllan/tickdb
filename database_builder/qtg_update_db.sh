@@ -84,18 +84,30 @@ if [ ! -e ${jsonconf} ]; then
 fi
 
 # Extract config from JSON file
-tmpdir=$(/usr/local/bin/jshon -e 'tmpdir'               -u < ${jsonconf})
-level=$(/usr/local/bin/jshon -e 'level'                -u < ${jsonconf})
-dbdir=$(/usr/local/bin/jshon -e 'qtg' -e 'dbdir'       -u < ${jsonconf})
-dbprocessed=$(/usr/local/bin/jshon -e 'qtg' -e 'dbprocessed' -u < ${jsonconf})
-unwanted=$(/usr/local/bin/jshon -e 'qtg' -e 'unwanted'    -u < ${jsonconf})
-qtg_src_dir=$(/usr/local/bin/jshon -e 'qtg' -e 'src_dir'     -u < ${jsonconf})
-qtg_instrument_db=$(/usr/local/bin/jshon -e 'qtg' -e 'instdb'      -u < ${jsonconf})
+JSHON=$(which jshon)
+if [ $? -eq 1 ]; then
+	echo "Error: jshon not found"
+	echo $PATH
+	exit 1
+fi
+tmpdir=$(${JSHON} -e 'tmpdir'               -u < ${jsonconf})
+level=$(${JSHON} -e 'level'                -u < ${jsonconf})
+dbdir=$(${JSHON} -e 'qtg' -e 'dbdir'       -u < ${jsonconf})
+dbprocessed=$(${JSHON} -e 'qtg' -e 'dbprocessed' -u < ${jsonconf})
+unwanted=$(${JSHON} -e 'qtg' -e 'unwanted'    -u < ${jsonconf})
+qtg_src_dir=$(${JSHON} -e 'qtg' -e 'src_dir'     -u < ${jsonconf})
+qtg_instrument_db=$(${JSHON} -e 'qtg' -e 'instdb'      -u < ${jsonconf})
 
 timestamp=$(date --utc --rfc-3339='ns' | tr ' .:+-' '_')
+# Check if GNU parallel exists
 gnupar=$(which parallel)
-parjobfile=$(/usr/local/bin/jshon -e 'parjobfile' -u < ${jsonconf})
-nbcores=$(/usr/local/bin/jshon -e 'nbcores'    -u < ${jsonconf})
+if [ $? -eq 1 ]; then
+	echo "Error: GNU parallel not found"
+	exit 1
+fi
+
+parjobfile=$(${JSHON} -e 'parjobfile' -u < ${jsonconf})
+nbcores=$(${JSHON} -e 'nbcores'    -u < ${jsonconf})
 
 # Check if db file exists
 if [ ! -e ${dbprocessed} ]; then
@@ -107,11 +119,6 @@ if [ ! -e ${unwanted} ]; then
 	unwanted=""
 fi
 
-# Check if GNU parallel exists
-if [ ! -e ${gnupar} ]; then
-	echo "Error: GNU parallel not found"
-	exit 1
-fi
 
 # Check if database_builder exists
 if [ "$(is_database_builder_in_path)" = "1" ]; then
@@ -129,7 +136,7 @@ new_qtg=${tmpdir}/new_qtg_${timestamp}
 invalid_qtg=${tmpdir}/invalid_qtg_${timestamp}
 
 # get all qtg files
-find ${qtg_src_dir} -name '*.dat.gz' -type f > ${all_qtg}
+find ${qtg_src_dir}/ -name '*.dat.gz' > ${all_qtg} 2>/dev/null
 
 # find new files only
 sort ${all_qtg} ${dbprocessed} ${unwanted} | uniq -u > ${new_qtg}
