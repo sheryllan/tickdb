@@ -142,9 +142,9 @@ def copy_liquid_capture_to_db(config_file):
 
         raw_files = find_compressed_files(rawdata_dir) # find all files in raw data
         db_files = find_db_files(dbdir) # find all files in DB
-        D = create_dict_of_files(raw_files,db_files,prefix,dbdir) # make a diff a generate new files to process
-        job = create_recompress_job_list(D) # make a shell script
-        create_missing_dirs(D,uid,gid)
+        D = create_dict_of_files(raw_files,db_files,prefix,dbdir) # make a diff and find new files to process
+        job = create_recompress_job_list(D) # make a shell script of recompression jobs
+        create_missing_dirs(D,uid,gid) # add missing dir for a new month
         print("Running ",len(job)," jobs")
         results = Parallel(n_jobs=-1)(delayed(os.system)(f) for f in job)# run // jobs
         for k in D: # finally change owners of each new file
@@ -233,9 +233,13 @@ if __name__=="__main__":
         print("Error: json config file",config_file," does not exist",file=sys.stderr)
         sys.exit(1)
 
+    print("wait for lock")
     ensure_i_am_alone() # wait for previous scripts to finish
-    compression_job(config_file) # Run compression jobs
+    #print("compression")
+    #compression_job(config_file) # Run compression jobs
+    print("adding files to db")
     copy_liquid_capture_to_db(config_file) # update the db with the new files
-    generate_reference_data(config_file) # update the reference data files
+    #print("generate ref data")
+    #generate_reference_data(config_file) # update the reference data files
 
     os.unlink("/tmp/mypid.pid")
