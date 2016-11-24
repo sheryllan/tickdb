@@ -1,0 +1,3 @@
+PKG_CPPFLAGS=-I/home/dbellot/recherche/deltabook/Alpha_Framework
+PKG_CXXFLAGS=-std=c++11 -lboost_system -lboost_filesystem -lboost_date_time
+PKG_LIBS=-lboost_system -lboost_filesystem -lboost_date_time
