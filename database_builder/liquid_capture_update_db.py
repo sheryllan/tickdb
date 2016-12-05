@@ -13,6 +13,23 @@ so that the user doesn't have to intervene (and the user is me.... !)
 So I traded off speed for simplicity. But given the speed of the server itself, it doesn't make
 a bit difference in CPU and workload.
 """
+# Dummy way to see if the files can be compressed: check if their size is not growing anymore
+# for x seconds. The writer always finishes its job at some point. When all the files are
+# ready the function returns
+def monitor_raw_files(raw_files,delay=5):
+    fsize={}
+    no_growing_files = 0
+    for f in raw_files: # get initial sizes
+        fsize[f] = os.stat(f).st_size
+
+    while no_growing_files < len(raw_files):
+        time.sleep(delay)
+        for f in raw_files:
+            s = os.stat(f).st_size
+            if fsize[f] != s:
+                fsize[f] = s
+            else:
+                no_growing_files = no_growing_files + 1
 
 def ensure_i_am_alone():
     """ prevent running 2 instances of the update_db program """
@@ -36,24 +53,6 @@ def compression_job(config_file):
                     raw_files.append(os.path.join(root,f))
         return raw_files
 
-    # Dummy way to see if the files can be compressed: check if their size is not growing anymore
-    # for x seconds. The writer always finishes its job at some point. When all the files are
-    # ready the function returns
-    def monitor_raw_files(raw_files,delay=5):
-        fsize={}
-        no_growing_files = 0
-        for f in raw_files: # get initial sizes
-            fsize[f] = os.stat(f).st_size
-
-        while no_growing_files < len(raw_files):
-            time.sleep(delay)
-            for f in raw_files:
-                s = os.stat(f).st_size
-                if fsize[f] != s:
-                    fsize[f] = s
-                else:
-                    no_growing_files = no_growing_files + 1
-
     # run compression job
     if not os.path.isfile(config_file):
         return False
@@ -75,6 +74,7 @@ def copy_liquid_capture_to_db(config_file):
             for f in files:
                 if f.endswith(".csv.xz") and 'Reference' not in f:
                     raw_files.append(os.path.join(root,f))
+        monitor_raw_files(raw_files,5) # check if upload is done
         return raw_files
 
     def find_db_files(dbdir):
@@ -142,9 +142,9 @@ def copy_liquid_capture_to_db(config_file):
 
         raw_files = find_compressed_files(rawdata_dir) # find all files in raw data
         db_files = find_db_files(dbdir) # find all files in DB
-        D = create_dict_of_files(raw_files,db_files,prefix,dbdir) # make a diff a generate new files to process
-        job = create_recompress_job_list(D) # make a shell script
-        create_missing_dirs(D,uid,gid)
+        D = create_dict_of_files(raw_files,db_files,prefix,dbdir) # make a diff and find new files to process
+        job = create_recompress_job_list(D) # make a shell script of recompression jobs
+        create_missing_dirs(D,uid,gid) # add missing dir for a new month
         print("Running ",len(job)," jobs")
         results = Parallel(n_jobs=-1)(delayed(os.system)(f) for f in job)# run // jobs
         for k in D: # finally change owners of each new file
@@ -233,9 +233,13 @@ if __name__=="__main__":
         print("Error: json config file",config_file," does not exist",file=sys.stderr)
         sys.exit(1)
 
+    print("wait for lock")
     ensure_i_am_alone() # wait for previous scripts to finish
-    compression_job(config_file) # Run compression jobs
+    #print("compression")
+    #compression_job(config_file) # Run compression jobs
+    print("adding files to db")
     copy_liquid_capture_to_db(config_file) # update the db with the new files
-    generate_reference_data(config_file) # update the reference data files
+    #print("generate ref data")
+    #generate_reference_data(config_file) # update the reference data files
 
     os.unlink("/tmp/mypid.pid")

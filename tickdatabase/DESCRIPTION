@@ -1,0 +1,11 @@
+Package: tickdatabase
+Type: Package
+Title: LCM Tick Database in R
+Version: 0.3
+Date: $Date$
+Author: David Bellot
+Maintainer: David Bellot <dbellot@liquidcapital.com>
+Description: This package provides classes and functions to access the Liquid Capital Tick database
+License: (C) 2015,2016 Liquid Capital Markets Limited
+Imports: methods, Rcpp (>= 0.12.2)
+LinkingTo: Rcpp

@@ -1,0 +1,3 @@
+useDynLib(tickdatabase)
+exportPattern("^[[:alpha:]]+")
+import(methods, Rcpp)
