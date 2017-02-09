@@ -1,0 +1,2115 @@
+#LyX 2.1 created this file. For more info see http://www.lyx.org/
+\lyxformat 474
+\begin_document
+\begin_header
+\textclass article
+\begin_preamble
+
+\end_preamble
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_math auto
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize a4paper
+\use_geometry false
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+TickDB Server specifications
+\end_layout
+
+\begin_layout Author
+David Bellot
+\end_layout
+
+\begin_layout Date
+09/12/16
+\end_layout
+
+\begin_layout Section
+Introduction
+\end_layout
+
+\begin_layout Standard
+The current implementation of the Tick Database relies on a set of Python,
+ R and bash scripts and a simple C++ library.
+ Their operations are scheduled with cron on a daily basis.
+ The current version of this database is wobbly and prone to errors because
+ these scripts are only weakly coupled and the querying is not aligned to
+ data production and update.
+ Therefore it is for the time being impossible to query the database and
+ be sure the data are really up to date.
+\end_layout
+
+\begin_layout Standard
+The current state of the Tick DB is given in 
+\begin_inset Flex URL
+status open
+
+\begin_layout Plain Layout
+
+http://confluence.liquid-capital.liquidcap.com/display/DEV/TickDB+2.0
+\end_layout
+
+\end_inset
+
+ with details on its implementation and functionality.
+ It has two parts: one made of a collection of scripts to update and maintain
+ the database, and the other one is a C++ library, currently embedded in
+ the Alpha Framework version 1.x.
+\end_layout
+
+\begin_layout Standard
+The next step is to group all the data maintenance, update and querying
+ into a single application, written in C++, which will take care a updating
+ and delivering data on demand.
+ New functionalities are needed too, like network access, sampling data,
+ signaling clients when specific products are updated, logging and monitoring
+ of the state of the database.
+ More functionalities will be added in the future, using this new server,
+ like a GUI or a web access.
+\end_layout
+
+\begin_layout Standard
+Therefore what we want to achieve in the new version is:
+\end_layout
+
+\begin_layout Enumerate
+reliability of the update mechanism with synchronization of operations,
+ resiliency to crash and network failures and logging,
+\end_layout
+
+\begin_layout Enumerate
+speed-up the delivery of data and provide an easy access to C++, R and Python
+ (this 3 languages are mandatory),
+\end_layout
+
+\begin_layout Enumerate
+enhanced queries and sampling of the data
+\end_layout
+
+\begin_layout Section
+Main functions of the server
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Main-functions-of"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We need to implement the main three functions in the server.
+ The details are given in the following sections.
+ The main functions are:
+\end_layout
+
+\begin_layout Enumerate
+Data Update
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+monitor incoming files coming from all over the world at irregular intervals,
+\end_layout
+
+\begin_layout Enumerate
+update the tick data storage with the new files,
+\end_layout
+
+\begin_layout Enumerate
+update in memory and on disk the list of available instruments,
+\end_layout
+
+\begin_layout Enumerate
+update the instruments database by merging data from the reference files
+ sent by the exchange, Reactor and possible Bloomberg,
+\end_layout
+
+\begin_layout Enumerate
+provide statistics and logs regarding all the above operations,
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Data Query
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+query tick data on one or many instruments and make the data available to
+ another process as fast as possible, knowing the volume of data can exceed
+ several gigabytes,
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+tick data from the same exchange,
+\end_layout
+
+\begin_layout Enumerate
+tick data from multiple exchange,
+\end_layout
+
+\begin_layout Enumerate
+reduced tick data for a specific range of strikes for options
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+query sampled data and create a cache of the sampling if the data don't
+ exist yet,
+\end_layout
+
+\begin_layout Enumerate
+query instruments
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+basic queries about the content of the instruments database
+\end_layout
+
+\begin_layout Enumerate
+statistics about instruments
+\end_layout
+
+\end_deeper
+\end_deeper
+\begin_layout Enumerate
+Data Analysis
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+validate each data file according to a set of rules (run a R script) and
+ store data for inspection,
+\end_layout
+
+\begin_layout Enumerate
+compute daily statistics and generate daily reports,
+\end_layout
+
+\end_deeper
+\begin_layout Standard
+The three main functions need software to be developed (or adapted from
+ the existing code).
+ They have to be implemented in the order of this list.
+\end_layout
+
+\begin_layout Section
+Use cases and users
+\end_layout
+
+\begin_layout Standard
+We distinguish two types of users and both will have different needs:
+\end_layout
+
+\begin_layout Enumerate
+Simulation, alpha generation:
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+queries are on one exchange only, ticks from each instrument need to be
+ interleaved by receive time stamps to replay the data,
+\end_layout
+
+\begin_layout Enumerate
+the volume of data is huge and needs to be transferred as fast as possible
+ to the client application,
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Low frequency, market analysis:
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+queries can be on several exchanges, data may need to be synchronized on
+ the same time zone,
+\end_layout
+
+\begin_layout Enumerate
+the volume of data is low but the queries are likely to be done remotely
+\end_layout
+
+\end_deeper
+\begin_layout Section
+Functional Specifications
+\end_layout
+
+\begin_layout Standard
+In this section we describe the main functionalities of the application
+ and give directions on how to implement them and what are the expected
+ results.
+ The list of functions is the one briefly described in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Main-functions-of"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+All along this section, we will assume the application always have access
+ to a single JSON configuration file.
+ An example is given in the appendix.
+ The JSON configuration file format can be modified if needed to suit the
+ needs of the new version of this database.
+\end_layout
+
+\begin_layout Standard
+Because each section corresponds to a different and independent task, it
+ seems possible to implement each of them into a separate thread to allow
+ the database to update at any time and the users to query at any time.
+ Even if it seems a bit drastic, one has to bear in mind that most of the
+ users will be program for automated trading strategies and they can query
+ at any rate and any time of the day.
+\end_layout
+
+\begin_layout Subsection
+Data Update
+\end_layout
+
+\begin_layout Paragraph
+Monitor incoming files coming from all over the world at irregular intervals
+\end_layout
+
+\begin_layout Standard
+At any time during a 24 hours period, files can copied into the 
+\emph on
+raw data
+\emph default
+ repository (so far located on the quant server in /mnt/data/rawdata).
+ One directory per day is created and it contains 
+\series bold
+at least
+\series default
+ one file per instrument per 24 hours period.
+ The file name are formatted as: 
+\family typewriter
+<Appliance name>-<symbol>-<type>-[<expiry month>-]<creation time>.csv.xz
+\end_layout
+
+\begin_layout Standard
+It is up to the writer to compress them so they will always arrive compressed
+ with xz.
+ The format of the first field is unfortunately not fixed, but it is possible
+ to parse a file name backward and extract all the necessary information
+ without ambiguity.
+ A token decomposition should be sufficient, otherwise I advise to use 
+\family typewriter
+Boost::Spirit
+\family default
+.
+ The format decomposes as follow:
+\end_layout
+
+\begin_layout Itemize
+
+\family typewriter
+<Appliance name>
+\family default
+: the name of the Reactor's appliance which wrote the file.
+ The format is somehow free and 
+\end_layout
+
+\begin_layout Itemize
+<symbol>: the Reactor's symbol (which is usually a copy of the exchange
+ symbol).
+ It can be a string of numbers and capitalized letters as 
+\family typewriter
+[A-Z0-9]+
+\end_layout
+
+\begin_layout Itemize
+
+\family typewriter
+<type>
+\family default
+: a single letter defining the product.
+ It can be F (futures), O options, E (equity), S (strategy), C (currency).
+\end_layout
+
+\begin_layout Itemize
+
+\family typewriter
+[<expiry
+\begin_inset space ~
+\end_inset
+
+month>-]
+\family default
+: the expiry month if applicable (futures and options only).
+ It uses the Reactor format with 
+\family typewriter
+<3
+\begin_inset space ~
+\end_inset
+
+letters
+\begin_inset space ~
+\end_inset
+
+month><year>
+\family default
+ where 
+\family typewriter
+<3
+\begin_inset space ~
+\end_inset
+
+letters
+\begin_inset space ~
+\end_inset
+
+month>:=JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC
+\family default
+ 
+\end_layout
+
+\begin_layout Itemize
+
+\family typewriter
+<creation
+\begin_inset space ~
+\end_inset
+
+time>
+\family default
+: creation time of the file in format 
+\family typewriter
+<HH><MM><SS>
+\family default
+.
+ This time is very important because for each instrument, 
+\series bold
+we can have several files per day and they need to be concatenated in order
+ to obtain a proper TickDB file.
+\end_layout
+
+\begin_layout Standard
+At any time, using 
+\emph on
+inotify
+\emph default
+, the Linux kernel can warn a listening applications to a change in the
+ file system.
+ The server will receive such notifications and will start monitoring each
+ incoming files.
+ As soon as such a file has been closed by the remote writer, the server
+ will either keep it for further use or will start generating the final
+ file into the database.
+ Indeed, because each instrument can have several files, it is impossible
+ to know in advance how many of those files will arrive.
+ Moreover, the order of arrival is not known either.
+ However, they arrive in batch.
+ So whenever a new file arrive, I would wait 15 minutes to be sure the transfer
+ is done for all the files and start processing them.
+ A better solution can be designed here.
+\end_layout
+
+\begin_layout Paragraph
+Update the tick data storage with the new files
+\end_layout
+
+\begin_layout Standard
+The current database sorts files by month.
+ The sorting order can be different and we can organize them by day or by
+ exchange if needed.
+ The file name has a format similar to the original files:
+\family typewriter
+ <symbol>-<type>-[<expiry month>-]<creation time>.csv.<extension>
+\end_layout
+
+\begin_layout Standard
+The definition are the same as in the previous paragraph.
+ The 
+\emph on
+extension
+\emph default
+ is bz2 (bzip2) so far, but we aim at adding more compression scheme if
+ it can improve the speed.
+ We can also remove compression for the same reason.
+ The server will be responsible to deliver the data to all the applications,
+ so the compression scheme is local to the server now (unlike the current
+ implementation).
+\end_layout
+
+\begin_layout Standard
+The server will take the list of 
+\emph on
+raw 
+\emph default
+files from the previous step and concatenate them in the order of their
+ time stamp.
+ Then it will write the file to its final destination.
+\end_layout
+
+\begin_layout Paragraph
+Update in-memory and on disk the list of available instruments
+\end_layout
+
+\begin_layout Standard
+The database should keep a list of available instruments, identified by
+ their symbol, expiry, etc...
+ and linked to a unique file.
+ I propose we use a SQLite database here to simplify the queries and update.
+ Each time a file has been written and closed as described in the previous
+ paragraph, this small database file shall be updated.
+ If a query comes in, then the database will be able to serve it right away,
+ even if other files are still being processed.
+ The choice of SQLite is because it will allow us to design any type of
+ instruments and products queries and still keep a simple and editable way
+ of storing data.
+\end_layout
+
+\begin_layout Paragraph
+Update the instruments database by merging data from the reference files
+ sent by the exchange, Reactor and possible Bloomberg
+\end_layout
+
+\begin_layout Standard
+Everyday, the various data capture appliance will also send several 
+\emph on
+reference data
+\emph default
+ files.
+ These are CSV files and they are highly redundant on a daily basis because
+ the exchange keeps sending everyday the list of all existing contracts.
+ Every time the Linux 
+\emph on
+inotify 
+\emph default
+will send notification of a new 
+\emph on
+reference data
+\emph default
+ file, the server will update its 
+\emph on
+SQLite
+\emph default
+ database with the new data.
+ If possible, the server will query Reactor and Bloomberg to get extra informati
+on, like tick size, first notice day, etc...
+\end_layout
+
+\begin_layout Paragraph
+Provide statistics and logs regarding all the above operations
+\end_layout
+
+\begin_layout Standard
+Logs must be provided at each level, with accurate time stamps.
+ No specific format is required here.
+ We recommend using 
+\family typewriter
+Boost::Log
+\family default
+ (to avoid more dependencies) but any other library will work equally.
+\end_layout
+
+\begin_layout Subsection
+Data Query
+\end_layout
+
+\begin_layout Standard
+The Data Query function will take several forms and will imply writing operation
+s from time to time.
+ We make the difference between tick data and sampled data.
+ In the first case, the main problem will be to read and deliver huge amount
+ of data as fast as possible to the client.
+ In the second case, the problem will be to produce data on-demand and keep
+ them in an extra data storage.
+ The format of the sampled data database can be CVS files, SQLite or InfluxDB.
+ The sampled data are shorter time series than the tick data.
+ The sampling scheme is essentially time based so the interval between each
+ time stamps is fixed, thus making the structure very regular.
+\end_layout
+
+\begin_layout Standard
+The Data Query function is responsible of:
+\end_layout
+
+\begin_layout Enumerate
+answering the user's queries,
+\end_layout
+
+\begin_layout Enumerate
+converting time stamps to the time zone of the query.
+ Timestamps are all in UTC, but the user can ask data in local time of the
+ exchange,
+\end_layout
+
+\begin_layout Enumerate
+delivering the data by the most appropriate channel, either a shared memory
+ segment for tick data or using a socket for the sampled data.
+\end_layout
+
+\begin_layout Enumerate
+answering product queries
+\end_layout
+
+\begin_layout Standard
+The queries will be made through an API by sending json formatted queries
+ to the Tick DB server.
+ Answers will be formatted in JSON for products and sampled data, and as
+ 
+\family typewriter
+Boost::uBLAS 
+\family default
+matrices for shared memory segment.
+\end_layout
+
+\begin_layout Paragraph
+Query tick data on one or many instruments and make the data available to
+ another process as fast as possible
+\end_layout
+
+\begin_layout Standard
+The user asks for a sequence of days on a set of instruments.
+ The query can be done by instrument or by product and in the second case,
+ for futures and options, the contracts will be rolled based on the user's
+ specification.
+ Roll can be done on the expiry date or any other predefined date.
+ An offset can be subtracted from the date.
+ Roll can also be done on the volume.
+ 
+\end_layout
+
+\begin_layout Standard
+If the data comes from different exchange, a latency model will be applied
+ to replay the time series as accurately as possible.
+ If the user asks for options, the data set can be reduced to a range of
+ strikes to avoid sending too big a data set.
+\end_layout
+
+\begin_layout Standard
+The result is a linked list of objects, each one containing the times series
+ of order books of all the instruments, but an additional time series mixing
+ the data.
+ The code exists already and is in production.
+ The developer will be able to re-use this code.
+\end_layout
+
+\begin_layout Standard
+When the results is ready, it is made available to the client through a
+ segment of shared memory.
+\end_layout
+
+\begin_layout Paragraph
+query sampled data and create a cache of the sampling if the data don't
+ exist yet
+\end_layout
+
+\begin_layout Standard
+This is a complex task and will need to be done carefully.
+ A user can ask for a time series of sampled data.
+ The tick data are therefore extracted, and sampled at regular interval
+ of time.
+ The interval is left to the user.
+ Usually, the user will ask for a very long period of time, over several
+ months or years.
+ This is a very CPU intensive task and a very I/O intensive task, especially
+ for options.
+ In certain cases, it will be required to load dozens of gigabytes of data,
+ read and parse them.
+ Therefore, each query's result shall be stored in a new data storage, and
+ every time a query is done, the server will first check if the data have
+ been sampled already and will use this data first, before reading the tick
+ data storage to produce the new data.
+ The more this database will be used, the faster it will become.
+\end_layout
+
+\begin_layout Standard
+A preliminary study should be done to know which database engine should
+ be used to store the sampled data.
+ We propose either flat CSV files, SQLite again or Influx DB.
+ Depending on the load and the user's appetite for such a database, the
+ last option could be interesting.
+ Given the structured form of the data, the result can be delivered in a
+ CSV file (or a CSV string over a socket).
+\end_layout
+
+\begin_layout Paragraph
+Query instruments database
+\end_layout
+
+\begin_layout Standard
+The instrument database is in SQL format so any SQL query compatible with
+ the SQLite engine can be transmitted to the server.
+ Moreover, the Tick DB server will run daily statistics and validation and
+ the user can ask for such statistics on an instrument or product basis.
+ A preliminary version of the product already exists (and is called the
+ 
+\emph on
+dashboard
+\emph default
+).
+\end_layout
+
+\begin_layout Standard
+Recurrent queries can also be stored in the database engine for a client
+ to know when new data on a specific product are available.
+ This will be used by strategies which need to regularly update their parameters.
+\end_layout
+
+\begin_layout Subsection
+Data Analysis
+\end_layout
+
+\begin_layout Paragraph
+Validate each data file according to a set of rules (run a R script) and
+ store data for inspection
+\end_layout
+
+\begin_layout Standard
+The Tick DB server is responsible to run on every new file inserted in the
+ Tick DB a set of R scripts which will analyze the data and validate them
+ or detect errors.
+ Each script will return a result to the server and the server will maintain
+ a list of valid files that it can use for answering the data queries.
+\end_layout
+
+\begin_layout Paragraph
+Compute daily statistics and generate daily reports
+\end_layout
+
+\begin_layout Standard
+On top of the required data validation, the Tick DB Server will also run
+ a set of R scripts which compute statistics and various analysis about
+ volume, latency, volatility, liquidity, etc...
+ The result will be stored in a flexible way, so that one can add more statistic
+s if needed.
+ The server will answer queries to this statistics and deliver the results
+ by the usual way (socket, JSON).
+\end_layout
+
+\begin_layout Section
+Queries
+\end_layout
+
+\begin_layout Subsection
+Tick data queries
+\end_layout
+
+\begin_layout Standard
+The following queries apply to instrument.
+ For futures contracts, an instrument is defined by its underlying product
+ and expiry month.
+ It is unique from both the exchange and the TickDB point of view.
+ For options contracts, an instrument is defined by its underlying product
+ and expiry month.
+ It is unique from the TickDB point of view but not from the exchange point
+ of view because the exchange makes the difference between each strike,
+ puts and calls.
+\end_layout
+
+\begin_layout Enumerate
+all the ticks from date 
+\begin_inset Formula $d_{1}$
+\end_inset
+
+ to date 
+\begin_inset Formula $d_{2}$
+\end_inset
+
+ for 
+\begin_inset Formula $N$
+\end_inset
+
+ instruments, 
+\begin_inset Formula $N\geq1$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+all the ticks from date 
+\begin_inset Formula $d_{1}$
+\end_inset
+
+ over 
+\begin_inset Formula $x$
+\end_inset
+
+ days for 
+\begin_inset Formula $N$
+\end_inset
+
+ instruments, 
+\begin_inset Formula $N\geq1$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+all the ticks from date 
+\begin_inset Formula $d_{1}$
+\end_inset
+
+ over 
+\begin_inset Formula $x$
+\end_inset
+
+ business days
+\begin_inset Formula $N$
+\end_inset
+
+ instruments, 
+\begin_inset Formula $N\geq1$
+\end_inset
+
+.
+ Business days can be computed with QuantLib
+\end_layout
+
+\begin_layout Enumerate
+all the previous queries for options restricted to a strike range 
+\begin_inset Formula $[S_{1},S_{2}]$
+\end_inset
+
+, to a strikes list 
+\begin_inset Formula $\lbrace S_{1},\ldots,S_{K}\rbrace$
+\end_inset
+
+and to 
+\emph on
+call
+\emph default
+ or 
+\emph on
+put
+\end_layout
+
+\begin_layout Standard
+The following queries applies equivalently to products, that is we take
+ into account the rolling of the contracts at defined dates.
+\end_layout
+
+\begin_layout Enumerate
+all the ticks from date 
+\begin_inset Formula $d_{1}$
+\end_inset
+
+ to date 
+\begin_inset Formula $d_{2}$
+\end_inset
+
+ for 
+\begin_inset Formula $N$
+\end_inset
+
+ products, 
+\begin_inset Formula $N\geq1$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+all the ticks from date 
+\begin_inset Formula $d_{1}$
+\end_inset
+
+ over 
+\begin_inset Formula $x$
+\end_inset
+
+ days for 
+\begin_inset Formula $N$
+\end_inset
+
+ products, 
+\begin_inset Formula $N\geq1$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+all the ticks from date 
+\begin_inset Formula $d_{1}$
+\end_inset
+
+ over 
+\begin_inset Formula $x$
+\end_inset
+
+ business days
+\begin_inset Formula $N$
+\end_inset
+
+ products, 
+\begin_inset Formula $N\geq1$
+\end_inset
+
+.
+ Business days can be computed with QuantLib
+\end_layout
+
+\begin_layout Enumerate
+all the previous queries for options restricted to a strike range 
+\begin_inset Formula $[S_{1},S_{2}]$
+\end_inset
+
+, to a strikes list 
+\begin_inset Formula $\lbrace S_{1},\ldots,S_{K}\rbrace$
+\end_inset
+
+and to 
+\emph on
+call
+\emph default
+ or 
+\emph on
+put
+\end_layout
+
+\begin_layout Subsection
+Rolling out a contract
+\end_layout
+
+\begin_layout Standard
+A contract can be rolled out at a specific date given by a rule.
+ Most of the exchanges will send the expiry date of each instrument but
+ in many cases, we are interested in other types of date, like the first
+ notice date for commodities.
+ The queries for rolling out contracts are as follows:
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $roll\,date=expiry\,date-x\,days$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+\begin_inset Formula $roll\,date=expiry\,date-x\,business\,days$
+\end_inset
+
+, where business days can be obtained with QuantLib
+\end_layout
+
+\begin_layout Enumerate
+every other date available in the instrument database (like first notice
+ day), can be used to roll out a contract
+\end_layout
+
+\begin_layout Standard
+Because each tick data is associated with a UID, the result will automatically
+ switch to a new contract in the result.
+ The TickDB will therefore only need to make sure that the right contract
+ is used on the right day.
+\end_layout
+
+\begin_layout Subsection
+Instruments queries
+\end_layout
+
+\begin_layout Standard
+The SQL structure of the instruments database is to be made public, or at
+ least a view on it.
+ Therefore, any SQL query is acceptable.
+ It is up to the user to define its own query and send an SQL string to
+ the Tick DB Server.
+\end_layout
+
+\begin_layout Subsection
+Sampled data queries
+\end_layout
+
+\begin_layout Standard
+Queries can be made on instruments or products with the same format and
+ restrictions as the tick data queries.
+ The rolling of the contracts will be done exactly the same way.
+ However, the user can specify an sampling interval in the unit they want,
+ be it in the set of seconds, minutes, hours or days, or any combination
+ of them.
+ 
+\family typewriter
+Boost::DateTime
+\family default
+ shall be used to solve interval problems.
+\end_layout
+
+\begin_layout Standard
+The results can either be presented in the same data structure as the tick
+ data or sent in a CSV format (by file or socket).
+\end_layout
+
+\begin_layout Section
+Extension of the file format
+\end_layout
+
+\begin_layout Standard
+In its current form, the file format and the capture assume we capture data
+ locally to each exchange.
+ We can capture data in one exchange from another exchange, thus taking
+ into account the latency between the 2 exchanges.
+ Moreover, the timestamps are in UTC non daylight-saving.
+ We want to use atomic clock so a extra fields are needed to store time.
+ The current format is as follows:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Tabular
+<lyxtabular version="3" rows="12" columns="3">
+<features rotate="0" tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+Name
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+type
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+description
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+otype
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\emph on
+character
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+type of the tick data
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+recv
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+64 bits unsigned integer
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+receive time stamp as recorded by our clock
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+exch
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+64 bits unsigned integer
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+exchange time stamp given by the exchange
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $bid_{i}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+floating-point
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+5 levels of bid prices with 
+\begin_inset Formula $i=1,\ldots,5$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $bidv_{i}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+integer
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+5 levels of bid volumes with 
+\begin_inset Formula $i=1,\ldots,5$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $nbid_{i}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+integer
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+5 levels of number of orders on the bid with 
+\begin_inset Formula $i=1,\ldots,5$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $ask{}_{i}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+floating-point
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+5 levels of ask prices with 
+\begin_inset Formula $i=1,\ldots,5$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $askv_{i}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+integer
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+5 levels of ask volumes with 
+\begin_inset Formula $i=1,\ldots,5$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $nask{}_{i}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+integer
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+5 levels of number of orders on the ask with 
+\begin_inset Formula $i=1,\ldots,5$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+product
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+string
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+product name with strike and type for options
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+state
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+integer
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+state of the product (open, close, etc...)
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In the future file format, we will need extra fields for:
+\end_layout
+
+\begin_layout Itemize
+the atomic clock (to be specified)
+\end_layout
+
+\begin_layout Itemize
+the receive timestamp in the colocation and the remote receive timestamps
+ (if applicable)
+\end_layout
+
+\begin_layout Standard
+Moreove, the file names can be extended to include both the exchange name
+ and recording location.
+ For example: CME-EUREX-CL-F-DEC2016-20161212.csv.bz2 for CME crude oil captured
+ in EUREX (Frankfurt).
+\end_layout
+
+\begin_layout Section
+Data structure for tick data
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename mixed_series.fig
+	height 100theight%
+	rotateAngle 90
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Each CSV file is read and its content stored in a data structure similar
+ to the one in the blue box.
+ Each box (with dashed lines) is a matrix (as in boost::ublas::matrix<>)
+ and has an inner type set according to the type of data it stores (
+\family typewriter
+price_type
+\family default
+ for prices, 
+\family typewriter
+volume_type
+\family default
+ for volumes, etc...).
+ After reading the data we have as many 
+\emph on
+blue boxes
+\emph default
+ as we have instruments, which corresponds to the number of CSV files which
+ have been read too.
+ The row index and uid index will therefore build an history of all the
+ data from all the 
+\emph on
+blue boxes 
+\emph default
+into one single history, thus making a replay of the market possible.
+\end_layout
+
+\begin_layout Section
+Deliveries
+\end_layout
+
+\begin_layout Standard
+The implementation will be done in the following order:
+\end_layout
+
+\begin_layout Enumerate
+TickDB Server (1 day)
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+choice of the data format for each type of stored data
+\end_layout
+
+\begin_layout Enumerate
+choice of communication means (shared memory, socket, pipe, etc...)
+\end_layout
+
+\begin_layout Enumerate
+main architecture of the server taking into account the threads, logs, configura
+tion files, etc...
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Data format for the query and answer (0.5 day)
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+data structure and C++ classes for the tick data
+\end_layout
+
+\begin_layout Enumerate
+json format for the sampled data
+\end_layout
+
+\begin_layout Enumerate
+json format and CSV files for the instruments and statistics
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Data Update (1 week)
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Architecture of the Data Update
+\end_layout
+
+\begin_layout Enumerate
+C++ Implementation of the Data Update
+\end_layout
+
+\begin_layout Enumerate
+Regression tests against the current version of the database
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Data Query (1 week)
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Determination of the scope of possible queries for tick data
+\end_layout
+
+\begin_layout Enumerate
+Architecture of the Data Query.
+ It is advised to re-use part of the current library
+\end_layout
+
+\begin_layout Enumerate
+C++ Implementation within the server
+\end_layout
+
+\begin_layout Enumerate
+C++ Implementation of the API for clients
+\end_layout
+
+\begin_layout Enumerate
+Implementation of a test client in C++
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Data Analysis (3 days)
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Determination of the scope of possible queries
+\end_layout
+
+\begin_layout Enumerate
+Architecture
+\end_layout
+
+\begin_layout Enumerate
+Implementation in C++
+\end_layout
+
+\begin_layout Enumerate
+C++ Implementation of the API for clients
+\end_layout
+
+\begin_layout Enumerate
+Implementation of a test client in C++
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Data Query for sampled data (1.5 week)
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Format of the stored data
+\end_layout
+
+\begin_layout Enumerate
+Determination of the scope of queries
+\end_layout
+
+\begin_layout Enumerate
+Implementation of a Sampling Library in C++ based on the queries
+\end_layout
+
+\begin_layout Enumerate
+Implementation of the caching library
+\end_layout
+
+\begin_layout Enumerate
+Integration into the server
+\end_layout
+
+\begin_layout Enumerate
+Implementation of a C++ test client
+\end_layout
+
+\end_deeper
+\begin_layout Section
+Dependencies
+\end_layout
+
+\begin_layout Itemize
+Tools:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+C++
+\end_layout
+
+\begin_layout Itemize
+CMake
+\end_layout
+
+\begin_layout Itemize
+R
+\end_layout
+
+\begin_layout Itemize
+InfluxDB (maybe)
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Libraries:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Boost C++
+\end_layout
+
+\begin_layout Itemize
+SQLite
+\end_layout
+
+\begin_layout Itemize
+json C++ library
+\end_layout
+
+\begin_layout Itemize
+QuantLib
+\end_layout
+
+\end_deeper
+\begin_layout Section*
+Appendix
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename func of tick db server.fig
+	width 128col%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Overview of the system by functions and data repositories
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection*
+JSON configuration file example
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "language=HTML"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+{
+\end_layout
+
+\begin_layout Plain Layout
+
+	"rootdir": "/mnt/data",
+\end_layout
+
+\begin_layout Plain Layout
+
+	"tmpdir" : "/tmp",
+\end_layout
+
+\begin_layout Plain Layout
+
+	"parjobfile" : "/tmp/gnupar_job_file.sh",
+\end_layout
+
+\begin_layout Plain Layout
+
+	"level": 5,
+\end_layout
+
+\begin_layout Plain Layout
+
+	"nbcores": 24,
+\end_layout
+
+\begin_layout Plain Layout
+
+	"shinyappdir" : "/home/dbellot/recherche/tickdatabase/database_builder/dashboar
+d",
+\end_layout
+
+\begin_layout Plain Layout
+
+	"decoder":
+\end_layout
+
+\begin_layout Plain Layout
+
+	{
+\end_layout
+
+\begin_layout Plain Layout
+
+		"BSXCBTMA1" : [{ "from": 0, "to":201312, "code": "not_valid"},
+\end_layout
+
+\begin_layout Plain Layout
+
+						{ "from": 201401,"to":0, "code": "not_valid"}],
+\end_layout
+
+\begin_layout Plain Layout
+
+		"BSXCMEMA1" : [{ "from": 0, "to":201312, "code": "not_valid"},
+\end_layout
+
+\begin_layout Plain Layout
+
+						{ "from": 201401,"to":0, "code": "not_valid"}],
+\end_layout
+
+\begin_layout Plain Layout
+
+		"BSXNYMMA1" : [{ "from": 0, "to":201409, "code": "not_valid"},
+\end_layout
+
+\begin_layout Plain Layout
+
+						{ "from": 201410,"to":0, "code": "qtg_mdp3"}],
+\end_layout
+
+\begin_layout Plain Layout
+
+		"BSXCBT3MA1": [{ "from": 0, "to":0, "code": "qtg_mdp3"}],
+\end_layout
+
+\begin_layout Plain Layout
+
+		"BSXEURMA1" : [{ "from": 0, "to":0, "code": "qtg_eobi"}],
+\end_layout
+
+\begin_layout Plain Layout
+
+		"BSXCME3MA1": [{ "from": 0, "to":0, "code": "qtg_mdp3"}],
+\end_layout
+
+\begin_layout Plain Layout
+
+		"BSBUSKMA1" : [{ "from": 0, "to":0, "code": "qtg_kospi"}],
+\end_layout
+
+\begin_layout Plain Layout
+
+		"BSXASXMA1" : [{ "from": 0, "to":0, "code": "qtg_asx"}]
+\end_layout
+
+\begin_layout Plain Layout
+
+	},
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+	"liquid_capture":
+\end_layout
+
+\begin_layout Plain Layout
+
+	{
+\end_layout
+
+\begin_layout Plain Layout
+
+		"src_dir" : "/mnt/data/rawdata",
+\end_layout
+
+\begin_layout Plain Layout
+
+		"dbdir" : "/mnt/data/database/liquid_capture",
+\end_layout
+
+\begin_layout Plain Layout
+
+		"instdb": "/mnt/data/database/liquid_capture_inst_db.csv",
+\end_layout
+
+\begin_layout Plain Layout
+
+		"daily_db": "/mnt/data/database/liquid_capture_daily_db.csv",
+\end_layout
+
+\begin_layout Plain Layout
+
+		"prefix" : [ 
+\end_layout
+
+\begin_layout Plain Layout
+
+			"CME_Agri_price-",
+\end_layout
+
+\begin_layout Plain Layout
+
+			"CME_Index_price-",
+\end_layout
+
+\begin_layout Plain Layout
+
+			"CME_Kospi_price-",
+\end_layout
+
+\begin_layout Plain Layout
+
+			"CME_Metals_price-",
+\end_layout
+
+\begin_layout Plain Layout
+
+			"CME_Treasuries_price-",
+\end_layout
+
+\begin_layout Plain Layout
+
+			"CME_Crude_price-",
+\end_layout
+
+\begin_layout Plain Layout
+
+			"CME_mdrec-",
+\end_layout
+
+\begin_layout Plain Layout
+
+			"CNX_ETF_price-",
+\end_layout
+
+\begin_layout Plain Layout
+
+			"Eurex_mdrec-",
+\end_layout
+
+\begin_layout Plain Layout
+
+			"HKFE_Shim-",
+\end_layout
+
+\begin_layout Plain Layout
+
+			"ICE_crude_price-",
+\end_layout
+
+\begin_layout Plain Layout
+
+			"ICE_MFT_price-",
+\end_layout
+
+\begin_layout Plain Layout
+
+			"ICE_brent_future_price-",
+\end_layout
+
+\begin_layout Plain Layout
+
+			"ICE_fin_price-",
+\end_layout
+
+\begin_layout Plain Layout
+
+			"ICE_sugar_future_price-",
+\end_layout
+
+\begin_layout Plain Layout
+
+			"IDEM_Price-",
+\end_layout
+
+\begin_layout Plain Layout
+
+			"MEFF_Price-",
+\end_layout
+
+\begin_layout Plain Layout
+
+			"OSE-QTG-Shim-",
+\end_layout
+
+\begin_layout Plain Layout
+
+			"SGX-TNG-Price-Server-Appliance-LCF60-",
+\end_layout
+
+\begin_layout Plain Layout
+
+			"SIX_Price-",
+\end_layout
+
+\begin_layout Plain Layout
+
+			"TNG-HKFE-QTG-Shim-",
+\end_layout
+
+\begin_layout Plain Layout
+
+			"TNG-JPX-QTG-Shim-",
+\end_layout
+
+\begin_layout Plain Layout
+
+			"UTP_aex_price-",
+\end_layout
+
+\begin_layout Plain Layout
+
+			"UTP_cacind_price-",
+\end_layout
+
+\begin_layout Plain Layout
+
+			"UTP_grains_price-",
+\end_layout
+
+\begin_layout Plain Layout
+
+			"QH_ARCA-",
+\end_layout
+
+\begin_layout Plain Layout
+
+			"QH_PROD-"
+\end_layout
+
+\begin_layout Plain Layout
+
+			],
+\end_layout
+
+\begin_layout Plain Layout
+
+		"owner" : "dbellot",
+\end_layout
+
+\begin_layout Plain Layout
+
+	"group" : "dev"
+\end_layout
+
+\begin_layout Plain Layout
+
+	},
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+	"qtg":
+\end_layout
+
+\begin_layout Plain Layout
+
+	{
+\end_layout
+
+\begin_layout Plain Layout
+
+		"dbdir" : "/mnt/data/database/qtg",
+\end_layout
+
+\begin_layout Plain Layout
+
+		"dbprocessed" : "/mnt/data/database/qtg_processed_files.db",
+\end_layout
+
+\begin_layout Plain Layout
+
+		"src_dir" : "/mnt/data/qtg",
+\end_layout
+
+\begin_layout Plain Layout
+
+		"unwanted" : "/mnt/data/database/unwanted_files.db",
+\end_layout
+
+\begin_layout Plain Layout
+
+		"instdb" : "/mnt/data/qtg/instRefdataCoh.csv",
+\end_layout
+
+\begin_layout Plain Layout
+
+		"daily_db": "/mnt/data/database/qtg_daily_db.csv"
+\end_layout
+
+\begin_layout Plain Layout
+
+	}
+\end_layout
+
+\begin_layout Plain Layout
+
+}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document

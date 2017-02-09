@@ -32,6 +32,7 @@
 		"daily_db":	    "/mnt/data/database/liquid_capture_daily_db.csv",
 		"prefix" :      [	
 							"CME_Agri_price-",
+							"CME_Energy_price-",
 							"CME_Index_price-",
 							"CME_Kospi_price-",
 							"CME_Metals_price-",
@@ -41,6 +42,7 @@
 							"CNX_ETF_price-",
 							"Eurex_mdrec-",
 							"HKFE_Shim-",
+							"ICE_crude_price-",
 							"ICE_MFT_price-",
 							"ICE_brent_future_price-",
 							"ICE_fin_price-",
