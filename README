@@ -1,3 +1,4 @@
 database_builder : software to build and update the database from both liquid_capture and qtg sources
 libtickdb: C++ library to access TickDB
 tickdatabase: R package wrapping libtickdb to access TickDB from R
+influx: convert MDRec capture data to InfluxDB and populate the database

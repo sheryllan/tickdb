@@ -72,7 +72,7 @@ def copy_liquid_capture_to_db(config_file):
         raw_files=[]
         for root,dirs,files in os.walk(rawdata_dir):
             for f in files:
-                if f.endswith(".csv.xz") and 'Reference' not in f:
+                if f.endswith(".csv.xz") and 'Reference' not in f and 'Statistics' not in f:
                     raw_files.append(os.path.join(root,f))
         monitor_raw_files(raw_files,5) # check if upload is done
         return raw_files
@@ -95,6 +95,7 @@ def copy_liquid_capture_to_db(config_file):
             for p in prefix: # remove any "exchange" prefix
                 x=x.replace(p,'')
             ts=x.split('-')[-1]
+            print(x) 
             month= str(int(x.split('-')[-2])//100) # get month
             new_file=dbdir+'/'+month+'/'+x
             new_file=new_file.replace('-'+ts,'.csv.bz2')
@@ -187,21 +188,23 @@ def generate_reference_data(config_file):
                 l = [line.replace(c,'') for line in l] # remove bad characters
             l = [line.replace(',&,',',,') for line in l]# remove & 
             l = [line.replace(',NA,',',,') for line in l]# remove NA to be more generic
-            l[0] = l[0].replace(' ','') # remove spaces in header
+            if len(l)>0:
+                l[0] = l[0].replace(' ','') # remove spaces in header
 
-            # check for product name with a , in place of the decimal point for the strike
-            # if they're not surrounded by quotes, then we add them
-            for i in range(len(l)):
-                if decopt.search(l[i]):
-                    l[i]=decopt.sub('\\1_\\2',l[i])
+                # check for product name with a , in place of the decimal point for the strike
+                # if they're not surrounded by quotes, then we add them
+                for i in range(len(l)):
+                    if decopt.search(l[i]):
+                        l[i]=decopt.sub('\\1_\\2',l[i])
 
-            # make a long string again and read it into a data.frame
-            x = pandas.read_csv(io.StringIO('\n'.join(l)))
-            # add empty missing_col
-            for missing_col in [w for w in header if w not in x.columns]:
-                x[missing_col]=pandas.Series('')
-            # reduce x to the columns we want (in header) and concat with ref
-            ref.append(x[header])
+                # make a long string again and read it into a data.frame
+                x = pandas.read_csv(io.StringIO('\n'.join(l)),error_bad_lines=False)
+                # add empty missing_col
+                for missing_col in [w for w in header if w not in x.columns]:
+                    x[missing_col]=pandas.Series('')
+                # reduce x to the columns we want (in header) and concat with ref
+                ref.append(x[header])
+
         ref=pandas.concat(ref) # make a big data.frame
         ref=ref.drop_duplicates() # remove duplicate lines
         ref.to_csv(target_file,na_rep='NA',columns=header,header=header,index=False)
@@ -237,9 +240,9 @@ if __name__=="__main__":
     ensure_i_am_alone() # wait for previous scripts to finish
     #print("compression")
     #compression_job(config_file) # Run compression jobs
-    print("adding files to db")
+    #print("adding files to db")
     copy_liquid_capture_to_db(config_file) # update the db with the new files
     #print("generate ref data")
-    #generate_reference_data(config_file) # update the reference data files
+    generate_reference_data(config_file) # update the reference data files
 
     os.unlink("/tmp/mypid.pid")
