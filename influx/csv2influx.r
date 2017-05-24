@@ -8,6 +8,7 @@ suppressMessages(library(foreach))
 suppressMessages(library(doMC))
 suppressMessages(library(iterators))
 suppressMessages(library(httr))
+suppressMessages(library(influxdbr2))
 suppressMessages(library(jsonlite))
 
 j=enableJIT(3)
@@ -101,7 +102,7 @@ df2lineprotocol <- function(df,param,measurement)
 }
 
 # Parallel conversion of big data.frames to influx format
-df2influx <- function(df,measurement)
+df2influx <- function(df,param,measurement)
 {
 	if(nrow(df)==0)
 		return("")
@@ -149,7 +150,6 @@ find_data_file <- function(config)
 	if(length(cfg$contracts>0))
 	{
 		p = paste0(paste0('-',cfg$contracts),collapse='|')
-		print(p)
 		files = dir(cfg$capturedir,
 					pattern = p,
 					full.names=T, recursive=T) # get all the data files
@@ -169,6 +169,11 @@ find_data_file <- function(config)
 # Update the Influx db with new files
 update_database <- function(config)
 {
+	# First create a database
+	con = influxdbr2::influx_connection(host="127.0.0.1",port=8086)
+	response = create_database(con,"tickdb") 
+	
+	# find new files and process them
 	newfiles = find_data_file(config)
 	for(f in newfiles)
 	{
@@ -184,13 +189,22 @@ update_database <- function(config)
 		dfq = df[quotes, ]
 
 		# convert data.frame to line protocol
-		influxt=df2influx(dft,"trade")
-		influxq=df2influx(dfq,"book")
+		influxt=df2influx(dft,param,"trade")
+		influxq=df2influx(dfq,param,"book")
 
 		# Populate InfluxDB
 		write2influx(influxt)
 		write2influx(influxq)
 		printf("done\n")
+	}
+
+	# update list of processed files
+	if(length(newfiles)>0)
+	{
+		cfg = read_json(config,simplifyVector=T)
+		pdf = file(cfg$processed_data_files,'a')
+		writeLines(newfiles,pdf)
+		close(pdf)
 	}
 }
 
@@ -200,30 +214,11 @@ if(!interactive())
 	args <- commandArgs(trailingOnly=T)
 	if(length(args)<1)
 	{
-		printf("Usage: csv2influx.r <input>\n")
+		printf("Usage: csv2influx.r <config file>\n")
 		quit("no")
 	}
 
-	input <- args[1] # file to process
+	config <- args[1] # file to process
 
-	# get parameters from file name
-	param <- decompose_filename(input)
-
-	# read data
-	df <- read_csv(input, col_types=csvformat, col_names=csvnames, skip=1)
-
-	# split by trades and quotes
-	trades = df$otype=='S' | df$otype=='T'
-	quotes = !trades
-
-	dft = df[trades, ]
-	dfq = df[quotes, ]
-
-	# convert data.frame to line protocol
-	influxt=df2influx(dft,"trade")
-	influxq=df2influx(dfq,"book")
-
-	# Populate InfluxDB
-	write2influx(influxt)
-	write2influx(influxq)
+	update_database(config)
 }

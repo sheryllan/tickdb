@@ -7,7 +7,7 @@
 					"FTSE-F", "GC-F", "HG-F", "HO-F", "LIFFELR-F", "NG-F", "NIY-F", "NKD-F",
 					"NQ-F", "RB-F", "SI-F", "T-F", "UB-F",
 					"YM-F", "ZB-F", "ZC-F", "ZF-F", "ZL-F", "ZM-F", "ZN-F", "ZS-F", "ZT-F", "ZW-F" ],
-	"processed_data_files" : "/mnt/data/influx/processed_data_files",
-	"processed_ref_files" : "/mnt/data/influx/processed_ref_files",
-	"instdb" : "/mnt/data/influx/instdb.csv"
+	"processed_data_files" : "/mnt/data/database/influx/processed_data_files",
+	"processed_ref_files" : "/mnt/data/database/influx/processed_ref_files",
+	"instdb" : "/mnt/data/database/influx/instdb.csv"
 }
