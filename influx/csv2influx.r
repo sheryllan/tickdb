@@ -1,5 +1,6 @@
 #!/usr/bin/env Rscript
 
+suppressMessages(library(Rcpp))
 suppressMessages(library(readr))
 suppressMessages(library(stringr))
 suppressMessages(library(compiler))
@@ -12,7 +13,7 @@ suppressMessages(library(influxdbr2))
 suppressMessages(library(jsonlite))
 
 j=enableJIT(3)
-registerDoMC(parallel::detectCores())
+registerDoMC(24)
 
 printf <- function(...) invisible(cat(sprintf(...)))
 rien <- function(...) NULL
@@ -53,74 +54,75 @@ decompose_filename <- function(f)
 	}
 }
 
-# Convert one data frame to influx format
-df2lineprotocol <- function(df,param,measurement)
-{
-	# parse option instrument strings
-	if(param$type=='O') # options
-	{
-		x = str_split(df$product,fixed('.'),simplify=T)
-		strike = str_replace(x[,5],fixed(','),'.')
-		strike = paste0("strike=",strike)
-		opt_type = x[,6] # C or P
-		opt_type=paste0("cp=",opt_type)
-		ofield = paste(strike,opt_type,sep=',')
-	}
-	else
-		ofield=-1
-
-	# header used for each line
-	if(param$type=='O' | param$type=='F')
-		header=sprintf('%s,type="%s",product="%s",expiry="%s" ',measurement, param$type, param$product,param$expiry)
-		else header=sprintf('%s,type="%s",product="%s" ',measurement, param$type, param$product)
-
-	# compute fields value
-	hdr_trade=c('price','volume','side')
-	data = alply(df,1,
-			function(d)
-			{
-				if(d$otype!='S' & d$otype!='T')
-				{
-					idx=c(which(!is.na(d[4:33]))+3) # get fields to print
-					paste( paste0(names(df)[idx],'=',d[idx],collapse=','),
-						   sprintf('exch=%si,otype="%s"',d$exch,d$otype),sep=',')
-				}
-				else
-				{
-					idx=c(which(!is.na(d[4:6]))+3)
-					paste( paste0(hdr_trade,'=',d[idx],collapse=','), 
-							sprintf('exch=%si,otype="%s"',d$exch,d$otype),sep=',')
-					
-				}
-			})
-
-	data = paste(header,data,sep='')
-	if(ofield!=-1)
-		data = paste(data,ofield,sep=',')
-	data = paste(data,df$recv)
-	return(data)
-}
-
 # Parallel conversion of big data.frames to influx format
 df2influx <- function(df,param,measurement)
 {
 	if(nrow(df)==0)
 		return("")
 
-	if(nrow(df)<1000)
-		split=data.frame(i=1,j=nrow(df))
-	else split = generate_df_split(nrow(df),gen='lo')
-
-	# Parse data frame and convert to InfluxDB format
-	foreach(d = iter(split,by='row'),.combine='c') %dopar%
+	# parse option instrument strings
+	if(param$type=='O') # options
 	{
-		df2lineprotocol(df[d$i:d$j, ],param, measurement)
+		x = str_split(df$product,fixed('.'),simplify=T)
+		strike = str_c("strike=", str_replace(x[,5],fixed(','),'.'))
+		opt_type=str_c("cp=",x[,6])
+		ofield=T
+	} else ofield=F
+
+	# header used for each line
+	if(param$type=='O' | param$type=='F')
+	{
+		header=sprintf('%s,type=%s,product=%s,expiry=%s ',measurement, param$type, param$product,param$expiry)
+	} else 
+	{
+		header=sprintf('%s,type=%s,product=%s ',measurement, param$type, param$product)
 	}
+
+	if(measurement=="book")
+	{
+		book = df[ , 
+			c('bid1','bid2','bid3','bid4','bid5', 'bidv1','bidv2','bidv3','bidv4','bidv5',
+			  'nbid1','nbid2','nbid3','nbid4','nbid5', 'ask1','ask2','ask3','ask4','ask5',
+			  'askv1','askv2','askv3','askv4','askv5', 'nask1','nask2','nask3','nask4','nask5')]
+	} else {
+		book = df[ , c('bid1','bid2','bid3')]
+		names(book)=c('price','volume','side')
+	}
+
+	# add double-quotes to otype
+	otype=str_c('otype="',df$otype,'"')
+	# add integer tag to exch timestamps
+	exch = str_c("exch=",df$exch,'i')
+
+	# add bid1=value etc... to each column
+	body = foreach(i=1:ncol(book),.combine='cbind') %dopar% {str_c(names(book)[i],'=',book[,i])}
+	# collapse each row into a single string like bid1=12,bid2=11, etc...
+	split = generate_df_split(nrow(book),gen='length')
+	body <- foreach(s=iter(split,by='row'),.combine='c') %dopar% 
+		{foreach(i=s$i:s$j,.combine='c') %do% str_c(body[i,],collapse=',')}
+
+	# for options, add the ofields fields (strike, put/call)
+	if(ofield)
+	{
+		body=str_c(otype,exch,body,strike,opt_type,sep=',')
+	} else {
+		body=str_c(otype,exch,body,sep=',')
+	}
+	# add the influx tags and timestamps (i.e. header and recv)
+	x=str_c(header,body,df$recv,sep=' ')
+	return(x[!is.na(x)])
 }
 
+test_response <- function(r,file,log,measurement)
+{
+	if(r$status_code!=204)
+	{
+		printf("%s - %s %s %s %s %s\n",Sys.time(),file,r$status,http_error(r)$reason,http_error(r)$message,measurement)
+	}
+}
 # Send a vector 'vec' of Influx line protocal to the server
 # Split in smaller blocks to avoid server congestion
-write2influx <- function(vec, max_size=200000)
+write2influx <- function(vec,file,log,measurement,max_size=100000)
 {
 	if(length(vec)>=max_size)
 	{
@@ -130,12 +132,13 @@ write2influx <- function(vec, max_size=200000)
 			response = httr::POST(url="", httr::timeout(60), scheme="http", hostname="127.0.0.1", port=8086,
 				path="write", query=list(db="tickdb",u="",p=""), 
 				body=paste0(vec[split$i[i]:split$j[i]],collapse='\n'))
+			test_response(response,file,log,measurement)
 		}
-	}
-	else {
+	} else {
 			response = httr::POST(url="", httr::timeout(60), scheme="http", hostname="127.0.0.1", port=8086,
 				path="write", query=list(db="tickdb",u="",p=""), 
 				body=paste0(vec,collapse='\n'))
+			test_response(response,file,log,measurement)
 	}
 }
 
@@ -172,40 +175,52 @@ update_database <- function(config)
 	# First create a database
 	con = influxdbr2::influx_connection(host="127.0.0.1",port=8086)
 	response = create_database(con,"tickdb") 
+	cfg = read_json(config,simplifyVector=T)
+	pdf = file(cfg$processed_data_files,'a')
+	sink(cfg$logfile,append=T)
 	
 	# find new files and process them
-	newfiles = find_data_file(config)
+	newfiles = find_data_file(config) 
+#newfiles="/mnt/data/rawdata/20161007/Eurex_mdrec-FBTP-F-DEC2016-20161007-060001.csv.xz"
+	N = length(newfiles)
+	printf("%s - Processing %d files",Sys.time(),N)
 	for(f in newfiles)
 	{
-		printf("Processing %s...",basename(f))
+		t0=Sys.time()
 		param = decompose_filename(basename(f)) # get parameters from file name
-		df = read_csv(f, col_types=csvformat, col_names=csvnames, skip=1) # read data
+		df = suppressWarnings(as.data.frame(read_csv(f, col_types=csvformat, col_names=csvnames, skip=1,))) # read data
 
-		# split by trades and quotes
-		trades = df$otype=='S' | df$otype=='T'
-		quotes = !trades
+		if(nrow(df)>0)
+		{
+			# split by trades and quotes
+			trades = df$otype=='S' | df$otype=='T'
+			quotes = !trades
 
-		dft = df[trades, ]
-		dfq = df[quotes, ]
+			dft = df[trades, ]
+			dfq = df[quotes, ]
 
-		# convert data.frame to line protocol
-		influxt=df2influx(dft,param,"trade")
-		influxq=df2influx(dfq,param,"book")
+			# convert data.frame to line protocol
+			if(nrow(dft)>0)
+				influxt=df2influx(dft,param,"trade")
+			if(nrow(dfq)>0)
+				influxq=df2influx(dfq,param,"book")
 
-		# Populate InfluxDB
-		write2influx(influxt)
-		write2influx(influxq)
-		printf("done\n")
+			# Populate InfluxDB
+			if(length(influxt)>0)
+				write2influx(influxt,f,log,"trade")
+			if(length(influxq)>0)
+				write2influx(influxq,f,log,"book")
+
+			writeLines(f,pdf)
+			flush(pdf)
+			printf("%s - %s : %d trades %d quotes in %s\n",Sys.time(),basename(f), sum(trades), sum(quotes), format(Sys.time()-t0))
+		} else {
+			printf("%s - %s : empty file\n",Sys.time(),basename(f))
+		}
 	}
 
-	# update list of processed files
-	if(length(newfiles)>0)
-	{
-		cfg = read_json(config,simplifyVector=T)
-		pdf = file(cfg$processed_data_files,'a')
-		writeLines(newfiles,pdf)
-		close(pdf)
-	}
+	close(pdf)
+	sink()
 }
 
 # Main program
