@@ -1,7 +1,7 @@
 {
 	"capturedir": "/mnt/data/rawdata",
 
-	"contracts" : [ "FESX-F"],
+	"contracts" : [ "FESX-F","FDAX-F","FGBL-F","FBTP-F"],
 
 	"contracts2" : [ "6A-F", "6B-F", "6C-F", "6E-F", "6J-F", "6M-F", "6N-F", "6S-F",
 					"B-F", "CAC-F", "CL-F", "ES-F",

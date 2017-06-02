@@ -96,7 +96,7 @@ update_ref_database <- function(config)
 	}
 
 	# Filter to eliminate redundant entries
-	data = data %>% group_by(ProductID) %>% filter(filedate==max(filedate)) %>% arrange(ProductID) %>% distinct(ProductID)
+	data = data %>% group_by(ProductID) %>% filter(filedate==max(filedate)) %>% arrange(ProductID) %>% distinct(ProductID,.keep_all=T)
 
 	# Overwrite inst db with new instruments
 	write_csv(data,cfg$instdb)
