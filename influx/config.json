@@ -1,15 +1,12 @@
 {
 	"capturedir": "/mnt/data/rawdata",
 
-	"contracts" : [ "FESX-F","FDAX-F","FGBL-F","FBTP-F"],
+	"contracts" : ["FESX-F","FDAX-F","FGBL-F","FBTP-F","FOAT-F","FGBM-F","FDXM-F","FESB-F","FSMI-F","FGBS-F","FGBX-F"],
 
-	"contracts2" : [ "6A-F", "6B-F", "6C-F", "6E-F", "6J-F", "6M-F", "6N-F", "6S-F",
-					"B-F", "CAC-F", "CL-F", "ES-F",
-					"FBTP-F", "FDAX-F", "FDXM-F", "FESB-F", "FESX-F", "FGBL-F", "FGBM-F",
-					"FGBS-F", "FGBX-F", "FOAT-F", "FSMI-F",
-					"FTSE-F", "GC-F", "HG-F", "HO-F", "LIFFELR-F", "NG-F", "NIY-F", "NKD-F",
-					"NQ-F", "RB-F", "SI-F", "T-F", "UB-F",
-					"YM-F", "ZB-F", "ZC-F", "ZF-F", "ZL-F", "ZM-F", "ZN-F", "ZS-F", "ZT-F", "ZW-F" ],
+	"contracts2" : ["6A-F","6B-F","6C-F","6E-F","6J-F","6M-F","6N-F","6S-F","B-F","CAC-F","CL-F","ES-F",
+					"FTSE-F", "GC-F", "HG-F", "HO-F", "LIFFELR-F","NG-F","NIY-F","NKD-F",
+					"NQ-F", "RB-F", "SI-F", "T-F", "UB-F", "YM-F", "ZB-F", "ZC-F", "ZF-F", "ZL-F", 
+					"ZM-F", "ZN-F", "ZS-F", "ZT-F", "ZW-F" ],
 
 	"processed_data_files" : "/mnt/data/database/processed_data_files",
 	"processed_ref_files" : "/mnt/data/database/processed_ref_files",
