@@ -14,6 +14,8 @@ suppressMessages(library(jsonlite))
 
 j=enableJIT(3)
 registerDoMC(24)
+DBNAME <- 'tickdb2'
+options(readr.show_progress=F)
 
 printf <- function(...) invisible(cat(sprintf(...)))
 rien <- function(...) NULL
@@ -57,6 +59,12 @@ decompose_filename <- function(f)
 # Parallel conversion of big data.frames to influx format
 df2influx <- function(df,param,measurement)
 {
+	if(measurement=='trade') # filter out bad trades (bugs, etc...)
+	{
+		i=which(is.na(df$product)) # product with NA values
+		df = df[-i , ]
+	}
+
 	if(nrow(df)==0)
 		return("")
 
@@ -120,6 +128,7 @@ test_response <- function(r,file,log,measurement)
 		printf("%s - %s %s %s %s %s\n",Sys.time(),file,r$status,http_error(r)$reason,http_error(r)$message,measurement)
 	}
 }
+
 # Send a vector 'vec' of Influx line protocal to the server
 # Split in smaller blocks to avoid server congestion
 write2influx <- function(vec,file,log,measurement,max_size=100000)
@@ -130,13 +139,13 @@ write2influx <- function(vec,file,log,measurement,max_size=100000)
 		for(i in 1:nrow(split))
 		{
 			response = httr::POST(url="", httr::timeout(60), scheme="http", hostname="127.0.0.1", port=8086,
-				path="write", query=list(db="tickdb",u="",p=""), 
+				path="write", query=list(db=DBNAME,u="",p=""), 
 				body=paste0(vec[split$i[i]:split$j[i]],collapse='\n'))
 			test_response(response,file,log,measurement)
 		}
 	} else {
 			response = httr::POST(url="", httr::timeout(60), scheme="http", hostname="127.0.0.1", port=8086,
-				path="write", query=list(db="tickdb",u="",p=""), 
+				path="write", query=list(db=DBNAME,u="",p=""), 
 				body=paste0(vec,collapse='\n'))
 			test_response(response,file,log,measurement)
 	}
@@ -174,7 +183,7 @@ update_database <- function(config)
 {
 	# First create a database
 	con = influxdbr2::influx_connection(host="127.0.0.1",port=8086)
-	response = create_database(con,"tickdb") 
+	response = create_database(con,DBNAME) 
 	cfg = read_json(config,simplifyVector=T)
 	pdf = file(cfg$processed_data_files,'a')
 	sink(cfg$logfile,append=T)
@@ -183,39 +192,55 @@ update_database <- function(config)
 	newfiles = find_data_file(config) 
 #newfiles="/mnt/data/rawdata/20161007/Eurex_mdrec-FBTP-F-DEC2016-20161007-060001.csv.xz"
 	N = length(newfiles)
-	printf("%s - Processing %d files",Sys.time(),N)
+	printf("%s - Processing %d files\n",Sys.time(),N)
 	for(f in newfiles)
 	{
+		printf("%s - processing %s\n",Sys.time(),f)
 		t0=Sys.time()
 		param = decompose_filename(basename(f)) # get parameters from file name
-		df = suppressWarnings(as.data.frame(read_csv(f, col_types=csvformat, col_names=csvnames, skip=1,))) # read data
-
-		if(nrow(df)>0)
+		if(file.access(f,mode=0)==0 & file.access(f,mode=4)==0) # ignore non-readable files
 		{
-			# split by trades and quotes
-			trades = df$otype=='S' | df$otype=='T'
-			quotes = !trades
+			df = suppressWarnings(as.data.frame(
+					read_csv(f, col_types=csvformat, col_names=csvnames, skip=1,))) # read data
 
-			dft = df[trades, ]
-			dfq = df[quotes, ]
+			if(nrow(df)>0)
+			{
+				# split by trades and quotes
+				trades = df$otype=='S' | df$otype=='T'
+				quotes = !trades
 
-			# convert data.frame to line protocol
-			if(nrow(dft)>0)
-				influxt=df2influx(dft,param,"trade")
-			if(nrow(dfq)>0)
-				influxq=df2influx(dfq,param,"book")
+				dft = df[trades, ]
+				dfq = df[quotes, ]
 
-			# Populate InfluxDB
-			if(length(influxt)>0)
-				write2influx(influxt,f,log,"trade")
-			if(length(influxq)>0)
-				write2influx(influxq,f,log,"book")
+				# convert data.frame to line protocol
+				if(nrow(dft)>0)
+				{
+					influxt=df2influx(dft,param,"trade")
+					# Populate InfluxDB
+					if(length(influxt)>0)
+						write2influx(influxt,f,log,"trade")
+				}
+				if(nrow(dfq)>0)
+				{
+					influxq=df2influx(dfq,param,"book")
+					# Populate InfluxDB
+					if(length(influxq)>0)
+						write2influx(influxq,f,log,"book")
+				}
 
-			writeLines(f,pdf)
+				msg<-sprintf("%s - %s : %d trades %d quotes in %s\n",
+							 Sys.time(),basename(f), sum(trades), sum(quotes), format(Sys.time()-t0))
+			} else {
+				msg<-sprintf("%s - %s : empty file\n",Sys.time(),basename(f))
+			}
+
+			writeLines(f,pdf) 
 			flush(pdf)
-			printf("%s - %s : %d trades %d quotes in %s\n",Sys.time(),basename(f), sum(trades), sum(quotes), format(Sys.time()-t0))
+			printf("%s",msg)
+
 		} else {
-			printf("%s - %s : empty file\n",Sys.time(),basename(f))
+			# non-readable files are not written into processed files list
+			printf("%s - %s to readable\n",Sys.time(),basename(f))
 		}
 	}
 
