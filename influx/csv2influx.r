@@ -13,9 +13,9 @@ suppressMessages(library(influxdbr2))
 suppressMessages(library(jsonlite))
 
 j=enableJIT(3)
-registerDoMC(24)
-DBNAME <- 'tickdb2'
+registerDoMC(6)
 options(readr.show_progress=F)
+sourceCpp("cpaste.cpp")
 
 printf <- function(...) invisible(cat(sprintf(...)))
 rien <- function(...) NULL
@@ -66,24 +66,25 @@ df2influx <- function(df,param,measurement)
 	}
 
 	if(nrow(df)==0)
-		return("")
+		return(character(0))
 
 	# parse option instrument strings
 	if(param$type=='O') # options
 	{
 		x = str_split(df$product,fixed('.'),simplify=T)
-		strike = str_c("strike=", str_replace(x[,5],fixed(','),'.'))
-		opt_type=str_c("cp=",x[,6])
+		opt_tags = v2paste( str_c("strike=", str_replace(x[,5],fixed(','),'.')), # strike
+							str_c('cp=',x[,6],''), # option types
+							',') # generate tags for options
 		ofield=T
 	} else ofield=F
 
 	# header used for each line
 	if(param$type=='O' | param$type=='F')
 	{
-		header=sprintf('%s,type=%s,product=%s,expiry=%s ',measurement, param$type, param$product,param$expiry)
+		header=sprintf('%s,type=%s,product=%s,expiry=%s',measurement, param$type, param$product,param$expiry)
 	} else 
 	{
-		header=sprintf('%s,type=%s,product=%s ',measurement, param$type, param$product)
+		header=sprintf('%s,type=%s,product=%s',measurement, param$type, param$product)
 	}
 
 	if(measurement=="book")
@@ -106,19 +107,20 @@ df2influx <- function(df,param,measurement)
 	body = foreach(i=1:ncol(book),.combine='cbind') %dopar% {str_c(names(book)[i],'=',book[,i])}
 	# collapse each row into a single string like bid1=12,bid2=11, etc...
 	split = generate_df_split(nrow(book),gen='length')
-	body <- foreach(s=iter(split,by='row'),.combine='c') %dopar% 
-		{foreach(i=s$i:s$j,.combine='c') %do% str_c(body[i,],collapse=',')}
+	body <- foreach(s=iter(split,by='row'),.combine='c') %dopar% { cpaste(body[s$i:s$j,,drop=F]) }
+	body <- v3paste(otype,exch,body,',') # add the mandatory fields for each record
 
-	# for options, add the ofields fields (strike, put/call)
+	# add timestamps and options tags if needed
 	if(ofield)
 	{
-		body=str_c(otype,exch,body,strike,opt_type,sep=',')
+		body <- v3paste(opt_tags,body,df$recv,' ')
+		body <- fullpaste(header,body,',')
 	} else {
-		body=str_c(otype,exch,body,sep=',')
+		body <- v2paste(body,df$recv,' ')
+		body <- fullpaste(header,body,' ')
 	}
-	# add the influx tags and timestamps (i.e. header and recv)
-	x=str_c(header,body,df$recv,sep=' ')
-	return(x[!is.na(x)])
+
+	return(body[!is.na(body)])
 }
 
 test_response <- function(r,file,log,measurement)
@@ -131,7 +133,7 @@ test_response <- function(r,file,log,measurement)
 
 # Send a vector 'vec' of Influx line protocal to the server
 # Split in smaller blocks to avoid server congestion
-write2influx <- function(vec,file,log,measurement,max_size=100000)
+write2influx <- function(vec,file,log,measurement,DBNAME,max_size=100000)
 {
 	if(length(vec)>=max_size)
 	{
@@ -182,15 +184,15 @@ find_data_file <- function(config)
 update_database <- function(config)
 {
 	# First create a database
-	con = influxdbr2::influx_connection(host="127.0.0.1",port=8086)
-	response = create_database(con,DBNAME) 
 	cfg = read_json(config,simplifyVector=T)
+
+	con = influxdbr2::influx_connection(host="127.0.0.1",port=8086)
+	response = create_database(con,cfg$dbname) 
 	pdf = file(cfg$processed_data_files,'a')
 	sink(cfg$logfile,append=T)
 	
 	# find new files and process them
 	newfiles = find_data_file(config) 
-#newfiles="/mnt/data/rawdata/20161007/Eurex_mdrec-FBTP-F-DEC2016-20161007-060001.csv.xz"
 	N = length(newfiles)
 	printf("%s - Processing %d files\n",Sys.time(),N)
 	for(f in newfiles)
@@ -218,14 +220,14 @@ update_database <- function(config)
 					influxt=df2influx(dft,param,"trade")
 					# Populate InfluxDB
 					if(length(influxt)>0)
-						write2influx(influxt,f,log,"trade")
+						write2influx(influxt,f,log,"trade",cfg$dbname)
 				}
 				if(nrow(dfq)>0)
 				{
 					influxq=df2influx(dfq,param,"book")
 					# Populate InfluxDB
 					if(length(influxq)>0)
-						write2influx(influxq,f,log,"book")
+						write2influx(influxq,f,log,"book",cfg$dbname)
 				}
 
 				msg<-sprintf("%s - %s : %d trades %d quotes in %s\n",
