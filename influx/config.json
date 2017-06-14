@@ -2,7 +2,9 @@
 	"dbname" : "tickdb",
 	"capturedir": "/mnt/data/rawdata",
 
-	"contracts" : [ "FESX-F","FDAX-F","FDXM-F", "FESB-F", "FBTP-F", "FGBL-F", "FSMI-F"],
+	"contracts" : [ "FESX-F","FDAX-F","FDXM-F","FESB-F",
+					"FBTP-F","FGBL-F","FOAT-F","FSMI-F",
+					"6A-F", "6B-F", "6C-F" ],
 
 	"processed_data_files" : "/mnt/data/database/processed_data_files",
 	"processed_ref_files" : "/mnt/data/database/processed_ref_files",

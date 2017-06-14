@@ -59,10 +59,9 @@ decompose_filename <- function(f)
 # Parallel conversion of big data.frames to influx format
 df2influx <- function(df,param,measurement)
 {
-	if(measurement=='trade') # filter out bad trades (bugs, etc...)
+	if(measurement=='trade' & param$type=='O') # filter out bad trades (bugs, etc...)
 	{
-		i=which(is.na(df$product)) # product with NA values
-		df = df[-i , ]
+		df = df[ !is.na(df$product), ] # keep only trades with a product name
 	}
 
 	if(nrow(df)==0)
@@ -133,7 +132,7 @@ test_response <- function(r,file,log,measurement)
 
 # Send a vector 'vec' of Influx line protocal to the server
 # Split in smaller blocks to avoid server congestion
-write2influx <- function(vec,file,log,measurement,DBNAME,max_size=100000)
+write2influx <- function(vec,file,log,measurement,DBNAME,max_size=50000)
 {
 	if(length(vec)>=max_size)
 	{
@@ -183,21 +182,22 @@ find_data_file <- function(config)
 # Update the Influx db with new files
 update_database <- function(config)
 {
-	# First create a database
+	# Read config and set logging file
 	cfg = read_json(config,simplifyVector=T)
+	sink(cfg$logfile,append=T)
 
+	# create a database
+	printf("%s - Starting database session\n",Sys.time())
 	con = influxdbr2::influx_connection(host="127.0.0.1",port=8086)
 	response = create_database(con,cfg$dbname) 
-	pdf = file(cfg$processed_data_files,'a')
-	sink(cfg$logfile,append=T)
+	pdf = file(cfg$processed_data_files,'a') # open file of processed files
 	
 	# find new files and process them
 	newfiles = find_data_file(config) 
 	N = length(newfiles)
 	printf("%s - Processing %d files\n",Sys.time(),N)
-	for(f in newfiles)
+	foreach(f = newfiles,.combine=rien) %dopar%
 	{
-		printf("%s - processing %s\n",Sys.time(),f)
 		t0=Sys.time()
 		param = decompose_filename(basename(f)) # get parameters from file name
 		if(file.access(f,mode=0)==0 & file.access(f,mode=4)==0) # ignore non-readable files
@@ -230,15 +230,14 @@ update_database <- function(config)
 						write2influx(influxq,f,log,"book",cfg$dbname)
 				}
 
-				msg<-sprintf("%s - %s : %d trades %d quotes in %s\n",
-							 Sys.time(),basename(f), sum(trades), sum(quotes), format(Sys.time()-t0))
+				msg<-sprintf("%s : %d trades %d quotes\n",basename(f),sum(trades),sum(quotes))
 			} else {
-				msg<-sprintf("%s - %s : empty file\n",Sys.time(),basename(f))
+				msg<-sprintf("%s : empty file\n",basename(f))
 			}
 
 			writeLines(f,pdf) 
 			flush(pdf)
-			printf("%s",msg)
+			printf("%s - %s",Sys.time(), msg)
 
 		} else {
 			# non-readable files are not written into processed files list

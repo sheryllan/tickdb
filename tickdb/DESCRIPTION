@@ -3,8 +3,23 @@ Title: API to access to Liquid Capital tick database
 Version: 0.1
 Authors@R: person("David", "Bellot", email = "dbellot@liquidcapital.com", role = c("aut", "cre"))
 Description: API to query and download market data from the Liquid Capital database
-Depends: R (>= 3.4.0)
+Depends: 
+	R (>= 3.4.0)
 License: (c) 2017 Liquid Capital Markets Ltd.
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 6.0.1.9000
+Imports:
+	foreach,
+	lubridate,
+	stringr,
+	dplyr,
+	jsonlite,
+	bizdays,
+	bit64,
+	tibble,
+	doMC,
+	readr,
+	iterators,
+	nanotime,
+	httr
