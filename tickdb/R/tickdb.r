@@ -1,15 +1,3 @@
-suppressMessages(library(foreach))
-suppressMessages(library(lubridate))
-suppressMessages(library(stringr))
-suppressMessages(library(dplyr))
-suppressMessages(library(jsonlite))
-suppressMessages(library(bizdays))
-suppressMessages(library(bit64))
-suppressMessages(library(tibble))
-
-options(readr.show_progress=F)
-doMC::registerDoMC(24)
-
 decode.header <- function(h)
 {
 	types = rep('c',length(h)) # by default all types are character
@@ -137,10 +125,10 @@ seq.contracts <- function(product,type,front,rolldays,from,to,periods,idb)
 	# change format from yyyymmdd to yyyy-mm-dd
 	from.s = str_c(str_sub(from,1,4),str_sub(from,5,6),str_sub(from,7,8),sep='-')
 	to.s   = str_c(str_sub(to,1,4),  str_sub(to,5,6),  str_sub(to,7,8),sep='-')
-	if(!has.calendars(exch2ql(exch))) # load bizness calendars
-	{
+	#if(!has.calendars(exch2ql(exch))) # load bizness calendars
+	#{
 		suppressMessages(load_quantlib_calendars(from=from.s,to=to.s))
-	}
+	#}
 	bizseq = bizdays(from.s,to.s,exch2ql(exch)) # generate sequence of biz days for exchange
 
 	# Generate the sequence of contract per business day
@@ -157,7 +145,7 @@ seq.contracts <- function(product,type,front,rolldays,from,to,periods,idb)
 	}
 
 	# Generate for each day a data.frame of from/to nanoseconds timestamps
-	timestamps = foreach(d=iterator::iter(contracts,by='row'),.combine=rbind) %do%
+	timestamps = foreach(d=iterators::iter(contracts,by='row'),.combine=rbind) %do%
 	{
 		# for each period, convert to UTC nanosecond timestamps
 		periods %>%
@@ -216,7 +204,7 @@ load_idb <- function(config)
 	suppressWarnings(suppressMessages(readr::read_csv(cfg$instdb,progress=F)))
 }
 
-#' Helpers function to make a data.frame to specify a time period like 08:00,17:00 with 2 integers only
+#' Make a 'periods' data.frame like 08:00,17:00 with 2 integers only
 #' @param from start hour
 #' @param to end hour
 #' @export period
@@ -225,7 +213,7 @@ period <- function(from,to)
 	data.frame(from=sprintf("%2d:00",from),to=sprintf("%2d:00",to))
 }
 
-#' Generate a query from simple specifications
+#' Generate a query from specifications
 #' @param measurement l1book,l2book,l2.5book,trade
 #' @param product the product's name like FDAX or ODAX
 #' @param type the product's type like F,O,E,S or C
@@ -274,18 +262,17 @@ make.query <- function(measurement,product,type,from,to,periods,
 		create.query(fields,measurement)
 }
 
-#' sample price series
-#' @param product
-#' @param type
-#' @param from
-#' @param to
-#' @param periods
-#' @param frequency
-#' @param series
-#' @param front
-#' @param rolldays
-#' @param con
-#' @param config
+#' Sample price series
+#' @param product Product name
+#' @param type Product type
+#' @param from start date
+#' @param to end date
+#' @param periods trading hours
+#' @param frequency sampling frequency
+#' @param front 1 for front month, 2 for back month, etc...
+#' @param rolldays days to roll the contract before expiry
+#' @param con InfluxDB connection
+#' @param config json config file
 #' @export sample_price
 sample_price <- function(measurement,product,type,from,to,periods,
 						 frequency='1s',front=1,rolldays=5,config="~/recherche/tickdatabase/influx/config.json")
@@ -306,10 +293,11 @@ sample_price <- function(measurement,product,type,from,to,periods,
 	run.query(query,con,sample=T,stype=measurement)
 }
 
-#' Run a predefined query and return a list of data.frame with the results
+#' Run a TickDB query
 #' @param Influx DB connection (use influx.connection)
 #' @param an InfluxDB query for the Tick database
-#' export run.query
+#' @return a data.frame
+#' @export run.query
 run.query <- function(query,con=NULL,db='tickdb',sample=F,stype='')
 {
 	# make a connection by default
@@ -322,6 +310,7 @@ run.query <- function(query,con=NULL,db='tickdb',sample=F,stype='')
 	convert.influx(
 		foreach(q = query) %do%
 		{
+			print(q)
 			httr::GET(url = "", scheme = con$scheme, hostname = con$host, port = con$port, path = "query",
 					  query = list(db=db, u=con$user, p=con$pass, q=q), add_headers(Accept="application/csv"))
 		}, sample,stype)

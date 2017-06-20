@@ -2,7 +2,7 @@
 % Please edit documentation in R/tickdb.r
 \name{period}
 \alias{period}
-\title{Helpers function to make a data.frame to specify a time period like 08:00,17:00 with 2 integers only}
+\title{Make a 'periods' data.frame like 08:00,17:00 with 2 integers only}
 \usage{
 period(from, to)
 }
@@ -12,5 +12,5 @@ period(from, to)
 \item{to}{end hour}
 }
 \description{
-Helpers function to make a data.frame to specify a time period like 08:00,17:00 with 2 integers only
+Make a 'periods' data.frame like 08:00,17:00 with 2 integers only
 }

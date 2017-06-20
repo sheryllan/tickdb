@@ -2,7 +2,7 @@
 % Please edit documentation in R/tickdb.r
 \name{make.query}
 \alias{make.query}
-\title{Generate a query from simple specifications}
+\title{Generate a query from specifications}
 \usage{
 make.query(measurement, product, type, from, to, periods, front = 1,
   rolldays = 5, fields = NULL,
@@ -28,5 +28,5 @@ make.query(measurement, product, type, from, to, periods, front = 1,
 \item{idb}{the instrument database or the json config file used to load the database}
 }
 \description{
-Generate a query from simple specifications
+Generate a query from specifications
 }

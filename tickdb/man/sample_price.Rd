@@ -2,12 +2,33 @@
 % Please edit documentation in R/tickdb.r
 \name{sample_price}
 \alias{sample_price}
-\title{sample price series}
+\title{Sample price series}
 \usage{
 sample_price(measurement, product, type, from, to, periods, frequency = "1s",
   front = 1, rolldays = 5,
   config = "~/recherche/tickdatabase/influx/config.json")
 }
+\arguments{
+\item{product}{Product name}
+
+\item{type}{Product type}
+
+\item{from}{start date}
+
+\item{to}{end date}
+
+\item{periods}{trading hours}
+
+\item{frequency}{sampling frequency}
+
+\item{front}{1 for front month, 2 for back month, etc...}
+
+\item{rolldays}{days to roll the contract before expiry}
+
+\item{config}{json config file}
+
+\item{con}{InfluxDB connection}
+}
 \description{
-sample price series
+Sample price series
 }

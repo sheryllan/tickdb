@@ -2,16 +2,18 @@
 % Please edit documentation in R/tickdb.r
 \name{run.query}
 \alias{run.query}
-\title{Run a predefined query and return a list of data.frame with the results}
+\title{Run a TickDB query}
 \usage{
 run.query(query, con = NULL, db = "tickdb", sample = F, stype = "")
 }
 \arguments{
 \item{Influx}{DB connection (use influx.connection)}
 
-\item{an}{InfluxDB query for the Tick database
-export run.query}
+\item{an}{InfluxDB query for the Tick database}
+}
+\value{
+a data.frame
 }
 \description{
-Run a predefined query and return a list of data.frame with the results
+Run a TickDB query
 }

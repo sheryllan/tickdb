@@ -134,7 +134,7 @@ test_response <- function(r,file,log,measurement)
 # Split in smaller blocks to avoid server congestion
 write2influx <- function(vec,file,log,measurement,DBNAME,max_size=50000)
 {
-	if(length(vec)>=max_size)
+	if(length(vec)>max_size)
 	{
 		split = generate_df_split(length(vec),gen='by',size=max_size)
 		for(i in 1:nrow(split))

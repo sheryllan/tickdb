@@ -4,7 +4,14 @@
 
 	"contracts" : [ "FESX-F","FDAX-F","FDXM-F","FESB-F",
 					"FBTP-F","FGBL-F","FOAT-F","FSMI-F",
-					"6A-F", "6B-F", "6C-F" ],
+					"6A-F", "6B-F", "6C-F","6M-F","6S-F","SI-F",
+
+					"FGBM-F","B-F","T-F","FTSE-F","LIFFELR-F",
+					"CL-F","6E-F","6J-F","ES-F","NQ-F","YM-F",
+					"GC-F","ZF-F","ZN-F",
+					"FGBS-F", "FGBX-F",
+					"ZB-F","ZT-F","UB-T","HG-F","6N-F","NG-F"
+   	],
 
 	"processed_data_files" : "/mnt/data/database/processed_data_files",
 	"processed_ref_files" : "/mnt/data/database/processed_ref_files",
