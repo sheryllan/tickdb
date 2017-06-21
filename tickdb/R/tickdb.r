@@ -14,8 +14,7 @@ decode.header <- function(h)
 # convert a response to a data frame with market data
 convert.influx <- function(response,sample,stype)
 {
-	#foreach(r=response) %dopar%
-	for(r in response) 
+	foreach(r=response) %dopar%
 	{
 		if(r$status_code==200 & length(r$content)>0)
 		{
@@ -69,7 +68,8 @@ convert.influx <- function(response,sample,stype)
 			}
 
 			data
-		} else { NULL} # remove failed responses
+		} else { printf("--------\n")
+		NULL } # remove failed responses
 	}
 }
 
