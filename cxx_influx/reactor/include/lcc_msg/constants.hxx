@@ -1,0 +1,38 @@
+#ifndef RS_QTGPROXYD_LCCMSGS_CONSTANTS_HXX_
+#define RS_QTGPROXYD_LCCMSGS_CONSTANTS_HXX_
+
+
+namespace lcc { namespace msg {
+
+  enum {
+    EXECUTION_ID_EXCH_LEN = 32,
+    ORDER_ID_EXCH_LEN = 32,
+
+    USER_ID_LEN = 8,
+    CURRENCY_LEN = 8,
+    ACCOUNT_LEN = 16,
+    EXT_SYMBOL_LEN = 14,
+
+    APP_ID_LEN = 16,
+    MAX_ENGINE_ALPHAS_2 = 10,
+    ERROR_MSG_LEN = 32,
+    MAX_MODELS = 10,
+
+    STRATEGY_LIMIT_CNT = 4,
+    LIMIT_LOG_DEPTH = 5,
+    PASSIVE_TRACKING_COUNT = 16,
+
+    GENERAL_STR_LEN = 16,
+
+    STRATEGY_ID_MAX_LEN = 4,
+
+    PUBLISHER_LEN = 2,
+    QUOTE_LEVELS = 5,
+
+    EXTERNAL_ALPHA_LEVELS = 20,
+    MAX_DELTAS_INFO_COUNT = 18,
+  };
+}}
+
+#endif
+
