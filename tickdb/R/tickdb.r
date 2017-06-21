@@ -14,9 +14,10 @@ decode.header <- function(h)
 # convert a response to a data frame with market data
 convert.influx <- function(response,sample,stype)
 {
-	foreach(r=response) %dopar%
+	#foreach(r=response) %dopar%
+	for(r in response) 
 	{
-		if(r$status_code==200)
+		if(r$status_code==200 & length(r$content)>0)
 		{
 			text = rawToChar(r$content) # convert to text
 			header = decode.header(unlist(str_split(readLines(textConnection(text),1),',')))
@@ -310,7 +311,6 @@ run.query <- function(query,con=NULL,db='tickdb',sample=F,stype='')
 	convert.influx(
 		foreach(q = query) %do%
 		{
-			print(q)
 			httr::GET(url = "", scheme = con$scheme, hostname = con$host, port = con$port, path = "query",
 					  query = list(db=db, u=con$user, p=con$pass, q=q), add_headers(Accept="application/csv"))
 		}, sample,stype)
