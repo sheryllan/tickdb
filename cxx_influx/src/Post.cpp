@@ -17,18 +17,18 @@ void Post::push(const str_ptr& msg)
 void Post::start()
 {
     _thread = std::thread(&Post::run, this);    
-    BOOST_LOG_SEV(Log::logger(), logging::trivial::info) << "thread to post influx msg is started";
+    CUSTOM_LOG(Log::logger(), logging::trivial::info) << "thread to post influx msg is started";
 }
 
 void Post::stop()
 {
-    BOOST_LOG_SEV(Log::logger(), logging::trivial::info) << "thread to post influx msg is requested to stop";
+    CUSTOM_LOG(Log::logger(), logging::trivial::info) << "thread to post influx msg is requested to stop";
     push(std::make_shared<std::string>());
 }
 
 void Post::run()
 {
-    BOOST_LOG_SEV(Log::logger(), logging::trivial::info) << "thread to post influx msg is running.";
+    CUSTOM_LOG(Log::logger(), logging::trivial::info) << "thread to post influx msg is running.";
     while(true)
     {
         str_ptr msg;
@@ -46,11 +46,11 @@ void Post::run()
         }
         if (!_post_influx_msg.post(*msg))
         {
-            BOOST_LOG_SEV(Log::logger(), logging::trivial::error) << "Failed to post influx msg : " << *msg;
+            CUSTOM_LOG(Log::logger(), logging::trivial::error) << "Failed to post influx msg : " << *msg;
         }
     }        
         
-    BOOST_LOG_SEV(Log::logger(), logging::trivial::info) << "thread to post influx msg is stopped.";
+    CUSTOM_LOG(Log::logger(), logging::trivial::info) << "thread to post influx msg is stopped.";
 }
 
 

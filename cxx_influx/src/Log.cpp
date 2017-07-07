@@ -12,19 +12,21 @@ namespace expr = boost::log::expressions;
 
 Logger Log::_logger;
 
-bool Log::init(const std::string& log_file)
+bool Log::init()
 {
-    if (log_file.empty())
+    const char * log_file = getenv("LOG_FILE");
+    if (!log_file)
     {
-        std::cerr << "LOG_FILE is not configured." << std::endl;
-        return false;
+        log_file = "__store_tick_to_influx.log";
     }
+
     try
     {
         logging::add_common_attributes();
         logging::add_file_log
         (
             keywords::file_name = log_file,
+            keywords::auto_flush = true,
             keywords::format = //"%TimeStamp% [%Severity%][%ThreadID%]: %Message%"
             (
                 expr::stream
@@ -45,7 +47,8 @@ bool Log::init(const std::string& log_file)
             logging::trivial::severity >= debug_level
         );
 
-        BOOST_LOG_SEV(_logger, logging::trivial::info) << "start logging.";
+        //CUSTOM_LOG(_logger, logging::trivial::info) << "start logging.";
+        CUSTOM_LOG(_logger, logging::trivial::info) << "start logging.";
     }
     catch(boost::exception& e)
     {

@@ -9,11 +9,12 @@ namespace cxx_influx
 namespace fs = boost::filesystem;
 namespace 
 {
-    const std::regex regex("[0-9]+\\.[0-9]+\\.dat");
+    //one example of tick file is 6092.20100510.dat.gz" 6092 is product id while20100510 is the date.
+    const std::regex regex("([0-9]+)\\.([0-9]+)\\.dat");
 }
 
-Find_Tick_Files::Find_Tick_Files(int32_t begin_date_)
-    : _begin_date(begin_date_)
+Find_Tick_Files::Find_Tick_Files(const Valid_Product& valid_product_, Date_Range range_)
+    : _valid_product(valid_product_), _date_range(range_)
 {
 }
 
@@ -21,7 +22,7 @@ void Find_Tick_Files::find_files(const fs::path& dir_)
 {
     if (!fs::is_directory(dir_))
     {
-        BOOST_LOG_SEV(Log::logger(), logging::trivial::error) << dir_ << " is not a directory.";
+        CUSTOM_LOG(Log::logger(), logging::trivial::error) << dir_ << " is not a directory.";
         return;
     }
     try
@@ -30,17 +31,17 @@ void Find_Tick_Files::find_files(const fs::path& dir_)
     }
     catch(boost::exception& e)
     {
-        BOOST_LOG_SEV(Log::logger(), logging::trivial::error) << "failed to get files from " << dir_
+        CUSTOM_LOG(Log::logger(), logging::trivial::error) << "failed to get files from " << dir_
                   << "; error : " << boost::diagnostic_information(e);
     }
     catch(std::exception& e)
     {
-        BOOST_LOG_SEV(Log::logger(), logging::trivial::error) << "failed to get files from " << dir_
+        CUSTOM_LOG(Log::logger(), logging::trivial::error) << "failed to get files from " << dir_
                   << "; error : " << e.what();
     }        
     catch(...)
     {
-        BOOST_LOG_SEV(Log::logger(), logging::trivial::error) << "failed to get files from " << dir_
+        CUSTOM_LOG(Log::logger(), logging::trivial::error) << "failed to get files from " << dir_
                   << "; unknown error.";
     }
 }
@@ -49,17 +50,24 @@ void Find_Tick_Files::add_tick_files(const fs::path& dir_)
 {
     for ( fs::recursive_directory_iterator itr(dir_); itr != fs::recursive_directory_iterator(); ++itr)
     {
-        BOOST_LOG_SEV(Log::logger(), logging::trivial::trace) << "file = " << itr->path().filename();
+        CUSTOM_LOG(Log::logger(), logging::trivial::trace) << "file = " << itr->path().filename();
         if (fs::is_regular_file(itr->status()))
         {
             const std::string file = itr->path().filename().string();
-            if (!is_tick_file(file)) continue;
-
-            int32_t date = extract_date(file);
-            if (date == 0 || date < _begin_date) return;
+            int32_t product_id{0}, date{0};
         
-            _total_size += fs::file_size(itr->path()); 
-            _files[date].insert(std::make_pair(itr->path().filename().string(), itr->path()));
+            if (!is_tick_file(file, product_id, date)) continue;
+
+            CUSTOM_LOG(Log::logger(), logging::trivial::trace) << "found one tick file " << file << " date: " << date 
+                                 << " product id " << product_id << " begin date " << _date_range._begin
+                                 << " end date " << _date_range._end;
+
+            
+            if ( !_date_range.within(date) || !_valid_product(product_id)) continue;
+
+        
+            int64_t file_size = fs::file_size(itr->path()); 
+            _files[date].insert(std::make_pair(itr->path().filename().string(), Qtg_File{itr->path(), file_size, product_id, date}));
         }
     }
 }
@@ -69,12 +77,12 @@ int32_t Find_Tick_Files::extract_date(const std::string& file_)
     size_t pos = file_.find('.');
     if (pos == std::string::npos)    
     {
-        BOOST_LOG_SEV(Log::logger(), logging::trivial::error) << "Impossible, can't extract date from " << file_;
+        CUSTOM_LOG(Log::logger(), logging::trivial::error) << "Impossible, can't extract date from " << file_;
         return 0;
     }
     if (pos + DATE_SIZE >= file_.size())
     {
-        BOOST_LOG_SEV(Log::logger(), logging::trivial::error) << "Impossible, can't extract date from " << file_;
+        CUSTOM_LOG(Log::logger(), logging::trivial::error) << "Impossible, can't extract date from " << file_;
         return 0;
     }
     char date[DATE_SIZE + 1];
@@ -83,24 +91,36 @@ int32_t Find_Tick_Files::extract_date(const std::string& file_)
     return atoi(date);
 }
 
-bool Find_Tick_Files::is_tick_file(const std::string& file_)
+bool Find_Tick_Files::is_tick_file(const std::string& file_, int32_t& product_id_, int32_t& date_)
 {
     std::smatch match;
-    return std::regex_search(file_, match, regex);
+    if (!std::regex_search(file_, match, regex)) return false;
+
+    if (match.size() < 3)
+    {
+        CUSTOM_LOG(Log::logger(), logging::trivial::error) << "Impossible, " << file_ 
+                         << " is matched, but can't extract date and id.";
+        return false;
+    }
+    product_id_ = std::stoi(match[1]);
+    date_ = std::stoi(match[2]);
+    return true;
 }
 
-Find_Files_In_Parallel::Find_Files_In_Parallel(const std::string& dir_, uint8_t thread_cnt_, int32_t begin_date_)
-    : _dir(dir_), _begin_date(begin_date_), _threads(thread_cnt_)
+Find_Files_In_Parallel::Find_Files_In_Parallel(const std::string& dir_, const Valid_Product& valid_product_
+                              , Date_Range range_, uint8_t thread_cnt_)
+    : _dir(dir_), _valid_product(valid_product_), _date_range(range_), _threads(thread_cnt_)
 {
+    CUSTOM_LOG(Log::logger(), logging::trivial::info) << "Find files from " << _date_range._begin << " to " << _date_range._end;
 }
 
-void Find_Files_In_Parallel::files_to_process(const File_Handler& handler_)
+void Find_Files_In_Parallel::find_files()
 {
-    BOOST_LOG_SEV(Log::logger(), logging::trivial::info) << "begin to get tick files from  " << _dir;
+    CUSTOM_LOG(Log::logger(), logging::trivial::info) << "begin to get tick files from  " << _dir;
     std::map<std::string, fs::path> store_tick_directories;
     for (fs::directory_iterator itr(_dir); itr != fs::directory_iterator(); ++itr)
     {
-        BOOST_LOG_SEV(Log::logger(), logging::trivial::trace) << "file = " << itr->path().native();
+        CUSTOM_LOG(Log::logger(), logging::trivial::trace) << "file = " << itr->path().native();
         if (!fs::is_directory(itr->path())) continue;
         const std::string file = itr->path().filename().string();
         if (boost::algorithm::starts_with(file, "StoreTick") && file.find("Cxl") == std::string::npos)
@@ -115,19 +135,16 @@ void Find_Files_In_Parallel::files_to_process(const File_Handler& handler_)
     {
         add_product_dir(pair.second);
     }
-    BOOST_LOG_SEV(Log::logger(), logging::trivial::info) << "dir size." << _dirs.size();
+    CUSTOM_LOG(Log::logger(), logging::trivial::info) << "dir size." << _dirs.size();
     init_parallel_parameter();
 
     run();
     
     wait_all();
-    BOOST_LOG_SEV(Log::logger(), logging::trivial::info) << "start merging files.";
+    CUSTOM_LOG(Log::logger(), logging::trivial::info) << "start merging files.";
     merge_files();
-    BOOST_LOG_SEV(Log::logger(), logging::trivial::info) << "finished getting tick files. files count : " << file_map_count(_files)
-                                << "; file size : " << _total_size;   
-
-    iterate_files(handler_);    
-    BOOST_LOG_SEV(Log::logger(), logging::trivial::info) << "finished processing files.";
+    CUSTOM_LOG(Log::logger(), logging::trivial::info) << "finished getting tick files. files count : " << file_map_count(_files)
+                                << "; file size : " << file_size();
 }
 
 void Find_Files_In_Parallel::init_parallel_parameter()
@@ -137,19 +154,6 @@ void Find_Files_In_Parallel::init_parallel_parameter()
     _step_cnt = (_dirs.size() / _threads.size() / LOOP_CNT) + 1;
     _index = 0;
     _file_maps.resize(_dirs.size());
-}
-
-void Find_Files_In_Parallel::iterate_files(const File_Handler& handler_)
-{
-    for (auto& pair : _files)
-    {
-        const File_Name_Map& name_map = pair.second;
-        for (auto& pair2 : name_map)
-        {
-            handler_(pair2.second);
-        }
-    }
-
 }
 
 void Find_Files_In_Parallel::wait_all()
@@ -170,11 +174,6 @@ void Find_Files_In_Parallel::merge_files()
         merge_files(_file_maps[i], _files);
     }
     _file_maps.clear();
-    BOOST_LOG_SEV(Log::logger(), logging::trivial::info) << "start counting.";
-    _total_size = 0;
-    uint64_t count = 0;
-    //iterate_files([this, &count](const fs::path& file_){this->_total_size += fs::file_size(file_); count++;});
-    iterate_files([this, &count](const fs::path& file_){this->_total_size++; count++;});
 }
 
 void Find_Files_In_Parallel::merge_files(const File_Map& dest_, File_Map& src_)
@@ -182,7 +181,7 @@ void Find_Files_In_Parallel::merge_files(const File_Map& dest_, File_Map& src_)
     for (auto& pair : dest_)
     {
         int32_t date = pair.first;
-        const File_Name_Map& name_map = pair.second;
+        const Qtg_File_Map& name_map = pair.second;
         src_[date].insert(name_map.begin(), name_map.end());
     }
 }
@@ -193,11 +192,16 @@ void Find_Files_In_Parallel::add_product_dir(const fs::path& dir_, std::queue<fs
     {
         for (fs::directory_iterator itr(dir_); itr != fs::directory_iterator(); ++itr)
         {
-            if (!fs::is_directory(itr->path())) continue;
-    
-            if (std::regex_match(itr->path().filename().string(), regex))
+            //symbolic link to other dir should be ignored.
+            if (!fs::is_directory(itr->path()) || fs::is_symlink(itr->path())) continue;
+
+            const std::string file_name = itr->path().filename().string(); 
+            if (std::regex_match(file_name, regex))
             {
-                BOOST_LOG_SEV(Log::logger(), logging::trivial::trace) << "found one product dir : " << itr->path();
+                CUSTOM_LOG(Log::logger(), logging::trivial::trace) << "found one product dir : " << itr->path();
+                //directories like 201008 should be ignored and not go inside.
+                if (!_valid_product(std::stoi(file_name))) continue;
+
                 _dirs.push_back(itr->path());
             }
             else
@@ -208,7 +212,7 @@ void Find_Files_In_Parallel::add_product_dir(const fs::path& dir_, std::queue<fs
     }
     catch(std::exception& e)
     {
-        BOOST_LOG_SEV(Log::logger(), logging::trivial::error) << "Can't iterate through dir : " << dir_
+        CUSTOM_LOG(Log::logger(), logging::trivial::error) << "Can't iterate through dir : " << dir_
                          << "; error : " << e.what();
     }
 
@@ -250,20 +254,20 @@ void Find_Files_In_Parallel::process_dirs()
         if (index >= _dirs.size()) return;  
         uint64_t file_count = 0;
         uint64_t file_size = 0; 
-        BOOST_LOG_SEV(Log::logger(), logging::trivial::info) << "iterate dir : " << _dirs[index];
+        CUSTOM_LOG(Log::logger(), logging::trivial::info) << "iterate dir : " << _dirs[index];
         size_t i = 0;
         for (; i < _step_cnt; ++i)
         {
             if ( (index + i) >= _dirs.size()) break;
             
-            Find_Tick_Files item(_begin_date);
-            fs::path dir = _dirs[index+i];
+            Find_Tick_Files item(_valid_product, _date_range);
+            const fs::path& dir = _dirs[index+i];
             item.find_files(dir);
             file_size += item.file_size();
             file_count += file_map_count(item.files());        
             _file_maps[index + i].swap(item.files());
         }
-        BOOST_LOG_SEV(Log::logger(), logging::trivial::info) << "Finished iterating dir : " << _dirs[index + i -1] 
+        CUSTOM_LOG(Log::logger(), logging::trivial::info) << "Finished iterating dir : " << _dirs[index + i -1] 
                   << "; file count : " << file_count << " file size : " << file_size << " bytes.";
     }
 }
