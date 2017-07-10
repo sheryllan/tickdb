@@ -23,6 +23,7 @@ const std::string MEASUREMENT_TRADE("trade");
 const std::string TAG_PRODUCT("product");
 const std::string TAG_EXPIRY("expiry");
 const std::string TAG_TYPE("type");
+const std::string TAG_MARKET("market");
 
 const std::string LEGS("legs");
 const std::string OTYPE("otype");
@@ -149,6 +150,7 @@ void Generate_Influx_Msg::add_header(const Product& product_)
 {
     _builder.add_tag(TAG_PRODUCT, product_._name);
     _builder.add_tag(TAG_TYPE, static_cast<char>(product_._type));
+    _builder.add_tag(TAG_MARKET, product_._exch);
     const Product_Expires * pe = dynamic_cast<const Product_Expires*>(&product_);
     if (pe)
     {

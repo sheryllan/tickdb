@@ -74,6 +74,10 @@ bool is_sfe(const std::string& exch_)
 {
     return exch_ == "XSFE";
 }
+bool is_bond_market(const std::string& exch_)
+{
+    return exch_ == "XBGC";
+}
 
 Product::Product(Type type_) : _type(type_)
 {
@@ -90,7 +94,7 @@ const std::string& Product::as_reactor_str()
 std::string Product::_as_reactor_str()
 {
     std::ostringstream os;
-    os << "PROD." << static_cast<char>(_type) << "." << _name;// << "_" << _exch;
+    os << "PROD." << static_cast<char>(_type) << "." << _name << "_" << _exch;
     return os.str();
 }
 Product_Expires::Product_Expires(Product::Type type_) : Product(type_)

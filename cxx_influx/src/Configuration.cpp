@@ -83,6 +83,21 @@ bool Configuration::init()
     {
         _date_range._end = atoi(env);
     }
+    env = getenv("PRODUCT_NAMES");
+    if (env)
+    {
+        _product_names = env;
+    }
+    env = getenv("EXCLUDED_PRODUCT_NAMES");
+    if (env)
+    {
+        _excluded_product_names = env;
+    }
+    env = getenv("PRODUCT_TYPES");
+    if (env)
+    {
+        _product_types = env;
+    }
     CUSTOM_LOG(Log::logger(), logging::trivial::info) << "HTTP_HOST : " << _http_host << ";HTTP_PORT : " << _http_port
                      << ";INFLUX_DB : " << _influx_db << ";STORE_TICK_DIR : " << _store_tick_dir
                      << ";QTG_PRODUCT_FILE : " << _qtg_product_file << ";decode thread count : " << _decode_thread_cnt

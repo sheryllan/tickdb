@@ -1,11 +1,12 @@
 #include "Product_Center.h"
+#include "Product_Filter.h"
 #include "Log.h"
+#include "Configuration.h"
 #include <boost/algorithm/string.hpp>
 #include <fstream>
 
 namespace cxx_influx
 {
-
 bool Product_Center::load_qtg_instrument_file(const std::string& file_, const std::string& http_host_
                           , int16_t http_port_, const std::string& db_)
 {
@@ -59,6 +60,8 @@ void Product_Center::parse_line(const std::string& line_)
 
 
     std::unique_ptr<Product> product(create_product(columns));
+
+
     if (product)
     {
         if (product->_id >= _instruments.size())
@@ -137,7 +140,7 @@ std::string Product_Center::get_reactor_name(const std::string& qtg_name_, const
     const std::string* reactor_name;
     if (_name_map) reactor_name = _name_map->get_reactor_name(qtg_name_, exch_,  type_);
 
-    return reactor_name ? *reactor_name : qtg_name_ + "_" + exch_;
+    return reactor_name ? *reactor_name : qtg_name_;
 }
 //qtg name for strategy is either in form of "GE:BS 3YU8 3YU1' or in form of "GEZ5-GEZ6"
 std::string Product_Center::get_strategy_product_name(const std::string& qtg_name_, const std::string& trading_, const std::string& exch_)
@@ -167,13 +170,23 @@ std::string Product_Center::get_strategy_product_name(const std::string& qtg_nam
 std::string Product_Center::get_product_name(const std::string& qtg_name_, const std::string& market_data_
                                   , const std::string& exch_, char type_, bool expires_)
 {
-    
+    size_t pos = qtg_name_.find("_");
     if (!expires_) 
     {
-        return get_reactor_name(qtg_name_, exch_, type_);
+        // An example of bond name is USG_02Y_Bond
+        if (is_bond_market(exch_))
+        {
+            size_t pos = qtg_name_.rfind("_");
+            return pos == std::string::npos ? get_reactor_name(qtg_name_, exch_, type_)
+                                  : get_reactor_name(qtg_name_.substr(0, pos), exch_, type_);
+        }
+        //only use short name for equirty and currency
+        return pos == std::string::npos || (type_ != static_cast<char>(Product::Type::currency) 
+                                && type_ != static_cast<char>(Product::Type::equity))
+               ? get_reactor_name(qtg_name_, exch_, type_) 
+               : get_reactor_name(qtg_name_.substr(0, pos), exch_, type_);
     }
 
-    size_t pos = qtg_name_.find("_");
     if (pos == std::string::npos)
     {
         CUSTOM_LOG(Log::logger(), logging::trivial::error) << "irregular qtg name : " << qtg_name_;
@@ -299,7 +312,9 @@ std::unique_ptr<Product_Expires> Product_Center::create_future(const std::vector
 
 std::unique_ptr<Product> Product_Center::create_product_not_expires(const std::vector<std::string>& col_)
 {
-    std::unique_ptr<Product> product(new Product(get_product_type(std::stoi(col_[static_cast<int>(Column::instrument_type)]))));
+    const std::string& exch = col_[static_cast<int>(Column::exchange)];
+    std::unique_ptr<Product> product(new Product( is_bond_market(exch) ? Product::Type::bond  //XBGC is a bond market.
+                                   : get_product_type(std::stoi(col_[static_cast<int>(Column::instrument_type)]))));
     set_product(col_, *product);
     return std::move(product);
 }

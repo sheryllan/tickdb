@@ -15,6 +15,9 @@ public:
     std::string _qtg_product_file;
     std::string _product_exchanges;
     std::string _product_id_ranges;
+    std::string _product_types;
+    std::string _product_names;
+    std::string _excluded_product_names;
     uint16_t _http_port = 0;
     uint8_t _decode_thread_cnt = 8;
     uint8_t _post_influx_thread_cnt = 4;

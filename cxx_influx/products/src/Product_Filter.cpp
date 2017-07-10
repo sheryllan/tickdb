@@ -5,9 +5,13 @@
 
 namespace cxx_influx
 {
-Product_Filter::Product_Filter(const std::string& exchs_, const std::string& ranges_, const std::string& types_)
+Product_Filter::Product_Filter(const std::string& exchs_, const std::string& ranges_, const std::string& types_
+                                , const std::string& product_names_, const std::string& excluded_product_names_)
 {
-    parse_exch(exchs_);
+    //one example of exchs_ is XCBOE, XCME, XEUR
+    parse_strings(exchs_, _valid_exchs);
+    parse_strings(product_names_, _valid_product_name);
+    parse_strings(excluded_product_names_, _excluded_product_name);
     parse_range(ranges_);
     parse_type(types_);
     std::ostringstream os;
@@ -26,7 +30,24 @@ Product_Filter::Product_Filter(const std::string& exchs_, const std::string& ran
     {
         os << type << ",";
     }
+    os << "; product_names = ";
+    for (auto& name : _valid_product_name)
+    {
+        os << name << ",";
+    }
+    os << "; excluded product names = ";
+    for (auto& name : _excluded_product_name)
+    {
+        os << name << ",";
+    }
     CUSTOM_LOG(Log::logger(), logging::trivial::info) << os.str();
+    
+}
+
+bool Product_Filter::valid_product(const Product& product_) const
+{
+    return valid_exch(product_._exch) && valid_product_id(product_._id) && valid_product_type(static_cast<char>(product_._type))
+            && valid_product_name(product_._name) && !excluded_product_name(product_._name);
 }
 
 bool Product_Filter::valid_exch(const std::string& exch_) const
@@ -35,7 +56,7 @@ bool Product_Filter::valid_exch(const std::string& exch_) const
 }
 
 
-bool Product_Filter::valid_product(int32_t id_) const
+bool Product_Filter::valid_product_id(int32_t id_) const
 {
     if (_valid_products.empty()) return true;
     auto it = _valid_products.upper_bound(id_);
@@ -51,6 +72,15 @@ bool Product_Filter::valid_product_type(char type_) const
     return _valid_product_types.empty() || _valid_product_types.find(type_) != _valid_product_types.end();
 }
 
+bool Product_Filter::valid_product_name(const std::string& name_) const
+{
+    return _valid_product_name.empty() || _valid_product_name.find(name_) != _valid_product_name.end();
+}
+
+bool Product_Filter::excluded_product_name(const std::string& name_) const
+{
+    return _excluded_product_name.find(name_) != _excluded_product_name.end();
+}
 
 void Product_Filter::parse_type(const std::string& types_)
 {
@@ -66,17 +96,18 @@ void Product_Filter::parse_type(const std::string& types_)
     
 }
 
-//one example of exchs_ is XCBOE, XCME, XEUR
-void Product_Filter::parse_exch(const std::string& exchs_)
+void Product_Filter::parse_strings(const std::string& strs_, std::set<std::string>& str_set_)
 {
-    if (exchs_.empty()) return;
-    std::vector<std::string> exchs;
-    boost::algorithm::split(exchs, exchs_, boost::is_any_of(","));
-
-    for (auto& exch : exchs) boost::algorithm::trim(exch);
-
-    _valid_exchs.insert(exchs.begin(), exchs.end());
+    if (strs_.empty()) return;
+    std::vector<std::string> strs;
+    boost::algorithm::split(strs, strs_, boost::is_any_of(","));
+    for (auto& str : strs) boost::algorithm::trim(str);
+ 
+    str_set_.insert(strs.begin(), strs.end());   
 }
+
+
+
 
 //an example of ranges_ is as below
 //0 - 5000 ,6000, 9000, 10000-20000

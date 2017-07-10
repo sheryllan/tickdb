@@ -51,7 +51,7 @@ int main(int argc, char** argv)
                                   {
                                       const Product* product = get_product(product_id_);
                                       if (product == nullptr) return false;
-                                      return filter.valid_exch(product->_exch) && filter.valid_product(product->_id);
+                                      return filter.valid_product(*product);
                                   };
    
 

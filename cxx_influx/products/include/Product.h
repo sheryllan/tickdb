@@ -38,6 +38,7 @@ std::string get_short_name(const std::string& name_, size_t end);
 bool is_eurex(const std::string& exch_);
 bool is_cme(const std::string& exch_);
 bool is_sfe(const std::string& exch_);
+bool is_bond_market(const std::string& exch_);
 
 struct Product
 {
