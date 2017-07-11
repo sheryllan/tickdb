@@ -14,4 +14,4 @@ COMMON_ARGS="-DCMAKE_INSTALL_PREFIX=${INSTALLDIR} -DCMAKE_CXX_COMPILER=$RS_BUILD
 rm -rf release
 mkdir release
 cd release
-cmake $COMMON_ARGS -DREACTOR_BUILD=ON -DDEBUG=ON -DCMAKE_BUILD_TYPE=Debug .. && make -j VERBOSE=1 && make install
+cmake $COMMON_ARGS -DREACTOR_BUILD=ON -DDEBUG=OFF -DCMAKE_BUILD_TYPE=Release .. && make -j VERBOSE=1 && make install

@@ -12,6 +12,20 @@ namespace
     thread_local int32_t t_post_size = 0;
     thread_local int32_t t_product_id = 0;
     thread_local int32_t t_date = 0;
+
+    void dump_files(const File_Map& files_)
+    {
+        CUSTOM_LOG(Log::logger(), logging::trivial::debug) << "Files to decode...";
+        for (auto& pair : files_)
+        {
+            const Qtg_File_Map& files = pair.second;
+            for (auto& pair2 : files)
+            {
+                CUSTOM_LOG(Log::logger(), logging::trivial::debug) << pair2.second._file_path.native();
+            }
+        }
+        CUSTOM_LOG(Log::logger(), logging::trivial::debug) << "Fles to decode...Done";
+    }
 }
 
 Store_Tick_To_Influx::Store_Tick_To_Influx(const std::string& http_host_, const uint16_t http_port_
@@ -76,6 +90,7 @@ void Store_Tick_To_Influx::run(const std::string& dir_, uint8_t decode_thread_cn
     ffip.find_files();
     CUSTOM_LOG(Log::logger(), logging::trivial::info) << "find " << file_map_count(ffip.files()) << " files to process."
                   << " total size is " << ffip.file_size();
+    dump_files(ffip.files());
     _influx_dispatcher.reset(new Influx_Dispath(post_influx_thread_cnt_, [this](const Influx_Msg& msg_){this->post_influx(msg_);}));
     _influx_dispatcher->run();
 

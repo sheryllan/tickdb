@@ -176,8 +176,8 @@ endif()
 file(GLOB ticktool_HDR "include/*.h")
 file(GLOB ticktool_SRC "src/*.cpp" "products/src/*.cpp")
 
-set(strat_MAIN_SRC "main/main.cpp")
-set(read_dir_src "main/read_dir.cpp")
+set(qtg2influx_MAIN_SRC "main/main.cpp")
+set(testtool_dir_src "main/testtool.cpp")
 add_library(ticktool_obj OBJECT ${ticktool_SRC})
 set_property(TARGET ${ticktool_obj} PROPERTY POSITION_INDEPENDENT_CODE 1)
 
@@ -185,16 +185,9 @@ add_library(ticktool SHARED $<TARGET_OBJECTS:ticktool_obj>)
 add_library(ticktoolstatic STATIC $<TARGET_OBJECTS:ticktool_obj>)
 set_target_properties(ticktoolstatic PROPERTIES OUTPUT_NAME ticktool)
 
-add_executable(strat ${strat_MAIN_SRC})
-add_executable(read ${read_dir_src})
+add_executable(qtg2influx ${qtg2influx_MAIN_SRC})
+add_executable(testtool ${testtool_dir_src})
 
-# ----
-# Test
-# ----
-
-#add_executable(testaf test/test.cpp)
-#target_link_libraries(testaf -lrt -lbz2 ${LIBRT_LIBRARIES} Threads::Threads ${ticklib} ${Boost_LIBRARIES} ${LIBS} ${PYTHON_LIBRARIES} ${LIBDL_LIBRARIES} ${LIBUTIL_LIBRARIES} pthread)
-#add_test(NAME test COMMAND testaf)
 
 # ------------
 # Dependencies
@@ -202,7 +195,7 @@ add_executable(read ${read_dir_src})
 target_link_libraries(ticktool asm  pthread)
 set(ticklib -Wl,--whole-archive ticktool -Wl,--no-whole-archive)
 
-target_link_libraries(strat -lrt ${GPERF_LIB} ${UNWIND_LIB} ticktoolstatic ${LCC_MSG_LIBRARY}  ${Boost_LIBRARIES} ${TBB_LIBRARY} ${PocoNet_LIBRARY} PocoUtil PocoFoundation pthread)
+target_link_libraries(qtg2influx -lrt ${GPERF_LIB} ${UNWIND_LIB} ticktoolstatic ${LCC_MSG_LIBRARY}  ${Boost_LIBRARIES} ${TBB_LIBRARY} ${PocoNet_LIBRARY} PocoUtil PocoFoundation pthread)
 
-target_link_libraries(read -lrt ${GPERF_LIB} ${UNWIND_LIB} ticktoolstatic ${LCC_MSG_LIBRARY} ${Boost_LIBRARIES} ${TBB_LIBRARY} ${PocoNet_LIBRARY} PocoUtil PocoFoundation  pthread)
+target_link_libraries(testtool -lrt ${GPERF_LIB} ${UNWIND_LIB} ticktoolstatic ${LCC_MSG_LIBRARY} ${Boost_LIBRARIES} ${TBB_LIBRARY} ${PocoNet_LIBRARY} PocoUtil PocoFoundation  pthread)
 
