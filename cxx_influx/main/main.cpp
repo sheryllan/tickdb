@@ -33,7 +33,8 @@ int main(int argc, char** argv)
     cxx_influx::Product_Center pc;
     if (!pc.load_qtg_instrument_file(config._qtg_product_file, config._http_host, config._http_port, config._influx_db)) return 0;
 
-    Product_Filter filter(config._product_exchanges, config._product_id_ranges);
+    Product_Filter filter(config._product_exchanges, config._product_id_ranges, config._product_types
+                          , config._product_names, config._excluded_product_names);
     Get_Product get_product = std::bind(&cxx_influx::Product_Center::get_product, std::cref(pc), std::placeholders::_1);
 /*
     Generate_Influx_Msg gen(get_product);
