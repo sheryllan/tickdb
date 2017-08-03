@@ -1,5 +1,6 @@
 #!/usr/bin/env Rscript
 
+suppressMessages(library(bit64))
 suppressMessages(library(Rcpp))
 suppressMessages(library(readr))
 suppressMessages(library(stringr))
@@ -126,7 +127,7 @@ test_response <- function(r,file,log,measurement)
 {
 	if(r$status_code!=204)
 	{
-		printf("%s - %s %s %s %s %s\n",Sys.time(),file,r$status,http_error(r)$reason,http_error(r)$message,measurement)
+		printf("%s - Error writing %s %s %s %s %s\n",Sys.time(),file,r$status_code,measurement)
 	}
 }
 
@@ -152,13 +153,30 @@ write2influx <- function(vec,file,log,measurement,DBNAME,max_size=50000)
 	}
 }
 
-# Find new data file in the raw capture
-find_data_file <- function(config)
+read_processed_file <- function(cfg,con)
 {
-	cfg = read_json(config,simplifyVector=T)
-	donefiles = tryCatch(read_csv(cfg$processed_data_files,col_types='c',col_names='file'),
-						 error=function(e) return(data.frame(file=character(0))))
-	donefiles = donefiles$file
+	if(!is.null(con))
+	{
+		response = httr::GET(url="",scheme=con$scheme, hostname=con$host, port=con$port,
+				  path="query",
+				  query=list(db=cfg$dbname,u=con$user,p=con$pass,
+							 q="select * from data_files"),
+				  add_headers(Accept="application/csv"))
+		donefiles = character(0)
+		if(status_code(response)==200 & length(response$content)>0)
+		{
+			text = rawToChar(response$content)
+			donefiles = readr::read_csv(text,col_types='cccc')$file
+		}
+	}
+
+	return(donefiles)
+}
+
+# Find new data file in the raw capture
+find_data_file <- function(cfg,con)
+{
+	donefiles = read_processed_file(cfg,con)
 
 	if(length(cfg$contracts>0))
 	{
@@ -179,6 +197,18 @@ find_data_file <- function(config)
 	return(newfiles)
 }
 
+add_file_to_db <- function(cfg,con,f)
+{
+	x = str_c("data_files file=\"",f,"\"")
+	response=httr::POST(url="",httr::timeout(60),scheme="http",
+			hostname=cfg$host,port=8086,path="write",
+			query=list(db=cfg$dbname,u='',p=''),
+			body=x)
+
+	if(response$status_code!=204)
+		printf("%s - Error writing data file name\n",Sys.time())
+}
+
 # Update the Influx db with new files
 update_database <- function(config)
 {
@@ -190,13 +220,12 @@ update_database <- function(config)
 	printf("%s - Starting database session\n",Sys.time())
 	con = influxdbr2::influx_connection(host="127.0.0.1",port=8086)
 	response = create_database(con,cfg$dbname) 
-	pdf = file(cfg$processed_data_files,'a') # open file of processed files
 	
 	# find new files and process them
-	newfiles = find_data_file(config) 
+	newfiles = find_data_file(cfg,con) 
 	N = length(newfiles)
 	printf("%s - Processing %d files\n",Sys.time(),N)
-	foreach(f = newfiles,.combine=rien) %dopar%
+	foreach(f = newfiles,.combine=rien) %do%
 	{
 		t0=Sys.time()
 		param = decompose_filename(basename(f)) # get parameters from file name
@@ -204,6 +233,9 @@ update_database <- function(config)
 		{
 			df = suppressWarnings(as.data.frame(
 					read_csv(f, col_types=csvformat, col_names=csvnames, skip=1,))) # read data
+			# clean up data
+			df = df[!is.na(as.integer64(df$recv)) , ] # remove bad recv
+			df = df[!is.na(as.integer64(df$exch)) , ] # remove bad exch
 
 			if(nrow(df)>0)
 			{
@@ -235,8 +267,7 @@ update_database <- function(config)
 				msg<-sprintf("%s : empty file\n",basename(f))
 			}
 
-			writeLines(f,pdf) 
-			flush(pdf)
+			add_file_to_db(cfg,con,f)
 			printf("%s - %s",Sys.time(), msg)
 
 		} else {
@@ -245,7 +276,6 @@ update_database <- function(config)
 		}
 	}
 
-	close(pdf)
 	sink()
 }
 
