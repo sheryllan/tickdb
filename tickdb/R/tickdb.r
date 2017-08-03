@@ -32,10 +32,12 @@ convert.influx <- function(response,sample,stype)
 				{
 					data$time = as.integer64(data$time)
 					names(data)[idx]='recv'
+					data$date = as.POSIXct(nanotime(data$recv))
 				}
 				idx = which(str_detect(names(data),"exch")) # convert "exch" to bit64
 				if(length(idx)>0)
 					data$exch = as.integer64(data$exch)
+
 			} else # sample data
 			{
 				if(stype=='book')
@@ -68,8 +70,7 @@ convert.influx <- function(response,sample,stype)
 			}
 
 			data
-		} else { printf("--------\n")
-		NULL } # remove failed responses
+		} else { NULL } # remove failed responses
 	}
 }
 
