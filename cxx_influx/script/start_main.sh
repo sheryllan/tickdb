@@ -1,7 +1,7 @@
-export QTG_PRODUCT_FILE=/home/ylei/work/instRefdataCoh.csv
-export HTTP_HOST="192.168.20.34"
+export QTG_PRODUCT_FILE=/mnt/data/qtg/instRefdataCoh.csv
+export HTTP_HOST="192.168.55.49"
 export HTTP_PORT=8086
-export INFLUX_DB="test"
+export INFLUX_DB="qtg_tick"
 #directory of qtg tick data
 export STORE_TICK_DIR=$1
 #0 : trace, 1 : debug, 2 : info, 3 :warning, 4:error
@@ -10,17 +10,17 @@ export STORE_TICK_DIR=$1
 export POST_INFLUX_THREAD_COUNT=8
 #number of threads to decode qtg file. default 8. decoding is faster than posting(influx can't keep up with decoding). 
 #so normally, no need to increase number of thread here.
-#export DECODE_THREAD_COUNT=16
+#export DECODE_THREAD_COUNT=14
 #number of qtg market data records in one influx message. 5000 by default.
-export INFLUX_BATCH_COUNT=300000
+export INFLUX_BATCH_COUNT=30000
 #converts file whose date is bigger than or equal to BEGIN_DATE. default 0000000
-#export BEGIN_DATE=20120101
+export BEGIN_DATE=20101123
 #convers file whose date is less than or equal to END_DATE, default INT_MAX
 export END_DATE=`date -d '2 days' +%Y%m%d`
 
 #only files for products that belong to exchange in PRODUCT_EXCHCHANGES are converted
 #exchange is seperated by ',', default empty which means all exchanges
-#export PRODUCT_EXCHCHANGES='XEUR,XCME'
+export PRODUCT_EXCHCHANGES='XEUR'
 
 #only files for products whose product type is in PRODUCT_TYPES are converted.
 #valid product types: F : future, O : option, S : strategy, I : index, E : equity, C: currency, B : bond

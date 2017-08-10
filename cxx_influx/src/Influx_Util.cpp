@@ -125,7 +125,7 @@ bool post_http_msg(const std::string& influx_msg, const std::string& uri, Poco::
     if (res.getStatus() != Poco::Net::HTTPResponse::HTTP_NO_CONTENT)
     {
         CUSTOM_LOG(Log::logger(), logging::trivial::error) << "Failed to send influx message to influxdb, msg size : " << influx_msg.size() << "; status " << res.getStatus() << ", reason " << res.getReason();
-        CUSTOM_LOG(Log::logger(), logging::trivial::trace) << "msg : " << influx_msg;
+        CUSTOM_LOG(Log::logger(), logging::trivial::error) << "msg : " << influx_msg;
         std::ostringstream output;
         Poco::StreamCopier::copyStream(rs, output);
         CUSTOM_LOG(Log::logger(), logging::trivial::error) << "response " << output.str();

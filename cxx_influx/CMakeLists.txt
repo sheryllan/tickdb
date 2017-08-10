@@ -178,6 +178,7 @@ file(GLOB ticktool_SRC "src/*.cpp" "products/src/*.cpp")
 
 set(qtg2influx_MAIN_SRC "main/main.cpp")
 set(testtool_dir_src "main/testtool.cpp")
+set(resendfailedmsg_dir_src "main/resendfailedmsg.cpp")
 add_library(ticktool_obj OBJECT ${ticktool_SRC})
 set_property(TARGET ${ticktool_obj} PROPERTY POSITION_INDEPENDENT_CODE 1)
 
@@ -187,6 +188,7 @@ set_target_properties(ticktoolstatic PROPERTIES OUTPUT_NAME ticktool)
 
 add_executable(qtg2influx ${qtg2influx_MAIN_SRC})
 add_executable(testtool ${testtool_dir_src})
+add_executable(resendfailedmsg ${resendfailedmsg_dir_src})
 
 
 # ------------
@@ -198,4 +200,5 @@ set(ticklib -Wl,--whole-archive ticktool -Wl,--no-whole-archive)
 target_link_libraries(qtg2influx -lrt ${GPERF_LIB} ${UNWIND_LIB} ticktoolstatic ${LCC_MSG_LIBRARY}  ${Boost_LIBRARIES} ${TBB_LIBRARY} ${PocoNet_LIBRARY} PocoUtil PocoFoundation pthread)
 
 target_link_libraries(testtool -lrt ${GPERF_LIB} ${UNWIND_LIB} ticktoolstatic ${LCC_MSG_LIBRARY} ${Boost_LIBRARIES} ${TBB_LIBRARY} ${PocoNet_LIBRARY} PocoUtil PocoFoundation  pthread)
+target_link_libraries(resendfailedmsg -lrt ${GPERF_LIB} ${UNWIND_LIB} ticktoolstatic ${LCC_MSG_LIBRARY} ${Boost_LIBRARIES} ${TBB_LIBRARY} ${PocoNet_LIBRARY} PocoUtil PocoFoundation  pthread)
 

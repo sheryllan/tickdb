@@ -81,13 +81,14 @@ void Generate_Influx_Msg::read_file(std::istream& in_, const Msg_Handler& func_)
     {
         lcc::msg::MarketData md;
         in_.read(reinterpret_cast<char*>(&md), sizeof(md));
-        if (in_.gcount() < sizeof(md) && in_.gcount() != 0) 
+        if (in_.gcount() == 0)//reaches end.
         {
-            if (in_.gcount() != 0) //in_.gcount() == 0 means only eof is reached.
-            {
-                CUSTOM_LOG(Log::logger(), logging::trivial::error) << "corrupted file. expected to read " << sizeof(md) 
+            break;
+        }
+        if (in_.gcount() < sizeof(md))
+        {
+            CUSTOM_LOG(Log::logger(), logging::trivial::error) << "corrupted file. expected to read " << sizeof(md) 
                               << " bytes. only has " << in_.gcount() << " left.";
-            }
             return;
         }
         CUSTOM_LOG(Log::logger(), logging::trivial::trace) << "header :" << md._header.to_debug_string()

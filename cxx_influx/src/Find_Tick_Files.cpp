@@ -63,7 +63,15 @@ void Find_Tick_Files::add_tick_files(const fs::path& dir_)
                                  << " end date " << _date_range._end;
 
             
-            if ( !_date_range.within(date) || !_valid_product(product_id)) continue;
+            if ( !_date_range.within(date) )
+            {
+                continue;
+            } 
+            if (!_valid_product(product_id))
+            {
+                CUSTOM_LOG(Log::logger(), logging::trivial::debug) << "ignore file " << file << " invalid product.";
+                continue;
+            }
 
         
             int64_t file_size = fs::file_size(itr->path()); 
@@ -200,7 +208,11 @@ void Find_Files_In_Parallel::add_product_dir(const fs::path& dir_, std::queue<fs
             {
                 CUSTOM_LOG(Log::logger(), logging::trivial::trace) << "found one product dir : " << itr->path();
                 //directories like 201008 should be ignored and not go inside.
-                if (!_valid_product(std::stoi(file_name))) continue;
+                if (!_valid_product(std::stoi(file_name))) 
+                {
+                    CUSTOM_LOG(Log::logger(), logging::trivial::debug) << "ignore dir " << itr->path().native();
+                    continue;
+                }
 
                 _dirs.push_back(itr->path());
             }

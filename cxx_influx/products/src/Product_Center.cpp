@@ -137,7 +137,7 @@ bool Product_Center::is_strategy(const std::string& qtg_name_, bool expires_)
 
 std::string Product_Center::get_reactor_name(const std::string& qtg_name_, const std::string& exch_, char type_)
 {
-    const std::string* reactor_name;
+    const std::string* reactor_name = nullptr;
     if (_name_map) reactor_name = _name_map->get_reactor_name(qtg_name_, exch_,  type_);
 
     return reactor_name ? *reactor_name : qtg_name_;

@@ -51,7 +51,11 @@ int main(int argc, char** argv)
     Valid_Product valid_product = [&get_product, &filter](const int32_t product_id_) -> bool
                                   {
                                       const Product* product = get_product(product_id_);
-                                      if (product == nullptr) return false;
+                                      if (product == nullptr) 
+                                      {
+                                          CUSTOM_LOG(Log::logger(), logging::trivial::warning) << "unknown product id " << product_id_;
+                                          return false;
+                                      }
                                       return filter.valid_product(*product);
                                   };
    
