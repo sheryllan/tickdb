@@ -127,13 +127,13 @@ test_response <- function(r,file,log,measurement)
 {
 	if(r$status_code!=204)
 	{
-		printf("%s - Error writing %s %s %s %s %s\n",Sys.time(),file,r$status_code,measurement)
+		printf("%s - Error writing %s %s %s\n",Sys.time(),file,r$status_code,measurement)
 	}
 }
 
 # Send a vector 'vec' of Influx line protocal to the server
 # Split in smaller blocks to avoid server congestion
-write2influx <- function(vec,file,log,measurement,DBNAME,max_size=50000)
+write2influx <- function(vec,file,log,measurement,DBNAME,max_size=20000)
 {
 	if(length(vec)>max_size)
 	{
@@ -169,6 +169,8 @@ read_processed_file <- function(cfg,con)
 			donefiles = readr::read_csv(text,col_types='cccc')$file
 		}
 	}
+
+	printf("%s - found %d already processed files in the database\n",Sys.time(),length(donefiles))
 
 	return(donefiles)
 }
@@ -225,7 +227,7 @@ update_database <- function(config)
 	newfiles = find_data_file(cfg,con) 
 	N = length(newfiles)
 	printf("%s - Processing %d files\n",Sys.time(),N)
-	foreach(f = newfiles,.combine=rien) %do%
+	for(f in newfiles)
 	{
 		t0=Sys.time()
 		param = decompose_filename(basename(f)) # get parameters from file name
