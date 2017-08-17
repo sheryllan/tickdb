@@ -108,9 +108,6 @@ create.query <- function(sc,fields,measurement,group='')
 # generate sequence of contract and business date for a product, and the nanoseconds timestamps of required periods
 seq.contracts <- function(product,type,front,rolldays,from,to,periods,idb)
 {
-	if(is.character(idb)) # load instrument database
-		idb = load_idb(idb)
-
 	s = seq(ymd(from), ymd(to), by='1 day') # sequence of days [from,to]
 	regex = str_c("PROD\\.",type,"\\.",product)
 	x=idb[grepl(regex,idb$ProductID) & idb$Type=="F",]
@@ -161,17 +158,36 @@ seq.contracts <- function(product,type,front,rolldays,from,to,periods,idb)
 	list(contracts=contracts,timestamps=timestamps, idb=idb)
 }
 
-###########
-# Interface
-###########
+# Load the instrument database
+load_idb <- function(db,con)
+{
+	# Get data from Influx
+	if(db=='liquid_tick' | db=='tickdb')
+	{
+		response = httr::GET(url = "", scheme = con$scheme, hostname = con$host, port = con$port, 
+							 path = "query",
+							 query = list(db=db, u=con$user, p=con$pass, q="select * from refdata"),
+							 add_headers(Accept="application/csv"))
+		if(response$status_code==200)
+		{
+			text = rawToChar(response$content)
+			options(readr.show_progress=F)
+			data = readr::read_csv(text,progress=F)
+			return(data)
+		} else {
+			return(NULL)
+		}
+	} else if(db=='qtg_tick')
+	{
+	}
 
-#' Create a connection object to an InfluxDB
-#' @param host hostname
-#' @param port numerical. port number
-#' @param scheme NA
-#' @param user username
-#' @param pass password
-#' @export influx.connection
+	return(instdb)
+
+	#cfg = read_json(config)
+	#suppressWarnings(suppressMessages(readr::read_csv(cfg$instdb,progress=F)))
+}
+
+# Create a connection object to an InfluxDB
 influx.connection <- function(host='127.0.0.1', port=8086, scheme="http", user="", pass="")
 {
   # create list of server connection details
@@ -197,40 +213,23 @@ influx.connection <- function(host='127.0.0.1', port=8086, scheme="http", user="
   return(influxdb_srv)
 }
 
-#' Load the instrument database
-#' @param config file name of the database json config file
-#' @export load_idb
-load_idb <- function(config)
-{
-	cfg = read_json(config)
-	suppressWarnings(suppressMessages(readr::read_csv(cfg$instdb,progress=F)))
-}
-
-#' Make a 'periods' data.frame like 08:00,17:00 with 2 integers only
-#' @param from start hour
-#' @param to end hour
-#' @export period
-period <- function(from,to)
-{
-	data.frame(from=sprintf("%2d:00",from),to=sprintf("%2d:00",to))
-}
-
 #' Generate a query from specifications
 #' @param measurement l1book,l2book,l2.5book,trade
 #' @param product the product's name like FDAX or ODAX
 #' @param type the product's type like F,O,E,S or C
-#' @param front 1 for front month, 2 for back month, 3 for 3rd month, etc...
-#' @param rolldays the number of days to roll the contract before its expiry date
 #' @param from the start date of the period
 #' @param to the end date of the period
 #' @param periods a data.frame with 2 columns, from and to, of trading time period like "08:00" "16:30"
-#' @param idb the instrument database or the json config file used to load the database
+#' @param front 1 for front month, 2 for back month, 3 for 3rd month, etc...
+#' @param rolldays the number of days to roll the contract before its expiry date
+#' @param fields
+#' @param config json config file
 #' @export make.query
-make.query <- function(measurement,product,type,from,to,periods,
-					   front=1,rolldays=5,fields=NULL,config="~/recherche/tickdatabase/influx/config.json")
+make.query <- function(db,measurement,product,type,from,to,periods,
+					   front,rolldays,fields,con)
 {
 	if(!exists("idb")) # load instrument database
-		idb <<- load_idb(config)
+		idb <<- load_idb(db,con)
 
 	# generate field's names
 	if(is.null(fields))
@@ -264,7 +263,37 @@ make.query <- function(measurement,product,type,from,to,periods,
 		create.query(fields,measurement)
 }
 
+#' Run a TickDB query
+#' @param Influx DB connection (use influx.connection)
+#' @param an InfluxDB query for the Tick database
+#' @return a data.frame
+#' @export run.query
+run.query <- function(query,db,sample=F,stype='',con)
+{
+	# submit queries and convert to data.frame
+	convert.influx(
+		foreach(q = query) %do%
+		{
+			httr::GET(url = "", scheme = con$scheme, hostname = con$host, port = con$port, path = "query",
+					  query = list(db=db, u=con$user, p=con$pass, q=q), add_headers(Accept="application/csv"))
+		}, sample,stype)
+}
+
+###########
+# Interface
+###########
+
+#' Make a 'periods' data.frame like 08:00,17:00 with 2 integers only
+#' @param from start hour
+#' @param to end hour
+#' @export period
+period <- function(from,to)
+{
+	data.frame(from=sprintf("%2d:00",from),to=sprintf("%2d:00",to))
+}
+
 #' Sample price series
+#' @param measurement l1book,l2book,l2.5book,trade
 #' @param product Product name
 #' @param type Product type
 #' @param from start date
@@ -273,11 +302,41 @@ make.query <- function(measurement,product,type,from,to,periods,
 #' @param frequency sampling frequency
 #' @param front 1 for front month, 2 for back month, etc...
 #' @param rolldays days to roll the contract before expiry
-#' @param con InfluxDB connection
+#' @param config json config file
+#' @export sample_price
+tick_data <- function(measurement,product,type,from,to,periods,
+					 front=1,rolldays=5,fields=NULL,
+					 config="~/recherche/tickdatabase/influx/config.json")
+{
+	# Initialize Influx connection
+	cfg = read_json(config)
+	con = influx.connection(cfg$host)
+
+	# Create a query
+	db = cfg$dbname
+	query = make.query(db,measurement,product,type,from,to,periods,front,rolldays,fields,con)
+
+	# Run query
+	data = run.query(query,db,con=con)
+
+	return(data)
+}
+
+#' Sample price series
+#' @param measurement book,trade
+#' @param product Product name
+#' @param type Product type
+#' @param from start date
+#' @param to end date
+#' @param periods trading hours
+#' @param frequency sampling frequency
+#' @param front 1 for front month, 2 for back month, etc...
+#' @param rolldays days to roll the contract before expiry
 #' @param config json config file
 #' @export sample_price
 sample_price <- function(measurement,product,type,from,to,periods,
-						 frequency='1s',front=1,rolldays=5,config="~/recherche/tickdatabase/influx/config.json")
+						 frequency='1s',front=1,rolldays=5,
+						 config="~/recherche/tickdatabase/influx/config.json")
 {
 	if(measurement=='book')
 	{
@@ -288,31 +347,15 @@ sample_price <- function(measurement,product,type,from,to,periods,
 		fields="last(exch),first(price),max(price),min(price),last(price),first(volume),max(volume),min(volume),last(volume)"
 	}
 
-	query = make.query(measurement,product,type,from,to,periods,front,rolldays,fields,config)
+	# Initialize Influx connection
+	cfg = read_json(config)
+	con = influx.connection(cfg$host)
+
+	# Create a query
+	db = cfg$dbname
+	query = make.query(db,measurement,product,type,from,to,periods,front,rolldays,fields,con)
 	query = foreach(q=query,.combine='c') %do% paste(q," group by time(",frequency,")")
 
 	# run the sampling query
-	run.query(query,con,sample=T,stype=measurement)
-}
-
-#' Run a TickDB query
-#' @param Influx DB connection (use influx.connection)
-#' @param an InfluxDB query for the Tick database
-#' @return a data.frame
-#' @export run.query
-run.query <- function(query,con=NULL,db='tickdb',sample=F,stype='')
-{
-	# make a connection by default
-	if(is.null(con))
-	{
-		 con <- influx.connection()
-	}
-
-	# submit queries and convert to data.frame
-	convert.influx(
-		foreach(q = query) %do%
-		{
-			httr::GET(url = "", scheme = con$scheme, hostname = con$host, port = con$port, path = "query",
-					  query = list(db=db, u=con$user, p=con$pass, q=q), add_headers(Accept="application/csv"))
-		}, sample,stype)
+	run.query(query,db,sample=T,stype=measurement,con=con)
 }
