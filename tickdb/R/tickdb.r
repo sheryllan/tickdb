@@ -291,7 +291,7 @@ period <- function(from,to)
 #' @param front 1 for front month, 2 for back month, etc...
 #' @param rolldays days to roll the contract before expiry
 #' @param config json config file
-#' @export sample_price
+#' @export tick_data
 tick_data <- function(measurement,product,type,from,to,periods,
 					 front=1,rolldays=5,fields=NULL,
 					 config="~/recherche/tickdatabase/influx/config.json")
