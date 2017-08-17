@@ -214,17 +214,6 @@ influx.connection <- function(host='127.0.0.1', port=8086, scheme="http", user="
 }
 
 #' Generate a query from specifications
-#' @param measurement l1book,l2book,l2.5book,trade
-#' @param product the product's name like FDAX or ODAX
-#' @param type the product's type like F,O,E,S or C
-#' @param from the start date of the period
-#' @param to the end date of the period
-#' @param periods a data.frame with 2 columns, from and to, of trading time period like "08:00" "16:30"
-#' @param front 1 for front month, 2 for back month, 3 for 3rd month, etc...
-#' @param rolldays the number of days to roll the contract before its expiry date
-#' @param fields
-#' @param config json config file
-#' @export make.query
 make.query <- function(db,measurement,product,type,from,to,periods,
 					   front,rolldays,fields,con)
 {
@@ -267,7 +256,6 @@ make.query <- function(db,measurement,product,type,from,to,periods,
 #' @param Influx DB connection (use influx.connection)
 #' @param an InfluxDB query for the Tick database
 #' @return a data.frame
-#' @export run.query
 run.query <- function(query,db,sample=F,stype='',con)
 {
 	# submit queries and convert to data.frame

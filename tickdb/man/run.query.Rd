@@ -4,7 +4,7 @@
 \alias{run.query}
 \title{Run a TickDB query}
 \usage{
-run.query(query, con = NULL, db = "tickdb", sample = F, stype = "")
+run.query(query, db, sample = F, stype = "", con)
 }
 \arguments{
 \item{Influx}{DB connection (use influx.connection)}

@@ -4,28 +4,8 @@
 \alias{make.query}
 \title{Generate a query from specifications}
 \usage{
-make.query(measurement, product, type, from, to, periods, front = 1,
-  rolldays = 5, fields = NULL,
-  config = "~/recherche/tickdatabase/influx/config.json")
-}
-\arguments{
-\item{measurement}{l1book,l2book,l2.5book,trade}
-
-\item{product}{the product's name like FDAX or ODAX}
-
-\item{type}{the product's type like F,O,E,S or C}
-
-\item{from}{the start date of the period}
-
-\item{to}{the end date of the period}
-
-\item{periods}{a data.frame with 2 columns, from and to, of trading time period like "08:00" "16:30"}
-
-\item{front}{1 for front month, 2 for back month, 3 for 3rd month, etc...}
-
-\item{rolldays}{the number of days to roll the contract before its expiry date}
-
-\item{idb}{the instrument database or the json config file used to load the database}
+make.query(db, measurement, product, type, from, to, periods, front, rolldays,
+  fields, con)
 }
 \description{
 Generate a query from specifications
