@@ -2,6 +2,7 @@
 
 export(period)
 export(sample_price)
+export(tick_data)
 import(bit64)
 import(bizdays)
 import(doMC)
