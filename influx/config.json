@@ -1,9 +1,18 @@
 {
 	"host" : "127.0.0.1",
-	"dbname" : "tickdb",
-	"capturedir": "/mnt/data/rawdata",
-	"contracts" : [ "FESX-F","FDAX-F","FDXM-F","FESB-F"],
+	"dbname" : "liquid_tick",
+	"capturedir": "/mnt/tank/backups/london/quants/data/rawdata",
+	"contracts" : [ "FESX-F","FDAX-F","FDXM-F","FESB-F",
+					"FBTP-F","FGBL-F","FOAT-F","FSMI-F",
+					"6A-F", "6B-F", "6C-F","6M-F","6S-F","SI-F",
+					"FGBM-F","B-F","T-F","FTSE-F","LIFFELR-F",
+					"CL-F","6E-F","6J-F","ES-F","NQ-F","YM-F",
+					"GC-F","ZF-F","ZN-F",
+					"FGBS-F", "FGBX-F",
+					"ZB-F","ZT-F","UB-T","HG-F","6N-F","NG-F",
+					"ZC-F","ZL-F","ZM-F","ZS-F","ZW-F","HO-F","RB-F",
+					"NIY-F","NKD-F","CAC-F"
+   	],
 
-	"instdb" : "/mnt/data/database/instdb.csv",
-	"logfile": "/mnt/data/database/influxdb.log"
+	"logfile": "/home/influx/influx.log"
 }
