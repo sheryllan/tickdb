@@ -160,7 +160,7 @@ seq.contracts <- function(product,type,front,rolldays,from,to,periods,idb)
 			  )
 	}
 
-	list(contracts=contracts,timestamps=timestamps, idb=idb)
+	list(contracts=contracts,timestamps=timestamps, idb=idb,tz=exch2tz(exch))
 }
 
 # Load the instrument database
@@ -252,8 +252,7 @@ make.query <- function(db,measurement,product,type,from,to,periods,
 	} else {
 		sequence = seq.contracts(product,type,front,rolldays,from,to,periods,idb)
 		query = sequence %>% create.query(fields,measurement)
-		sequence = sequence$contracts
-		return(list(sequence=sequence,query=query))
+		return(list(sequence=sequence$contracts,query=query,tz=sequence$tz))
 	}
 }
 
@@ -363,44 +362,11 @@ sample_price <- function(measurement,product,type,from,to,periods,
 			data[[i]]$contract=sequence$ProductID[i]
 			data[[i]]$ExpiryDate=sequence$ExpiryDate[i]
 			data[[i]]$date = sequence$date[i]
+			data[[i]]$hour = hour(with_tz(as.POSIXct(nanotime(data[[i]]$time)),tz=equery$tz))
+			data[[i]]$min = minute(with_tz(as.POSIXct(nanotime(data[[i]]$time)),tz=equery$tz))
+			data[[i]]$sec = second(with_tz(as.POSIXct(nanotime(data[[i]]$time)),tz=equery$tz))
 		}
 	}
 
 	return(data)
 }
-
-# get_qtg_inst <- function(db,con)
-# {
-# 	response = httr::GET(url="",scheme=con$scheme,hostname=con$host,port=con$port,
-# 						 path="query",
-# 						 query=list(db=db,u=con$user,p=con$pass,q="select * from qtg_instruments"),
-# 						 add_headers(Accept="application/csv"))
-# 	if(response$status_code==200)
-# 	{
-# 		text=rawToChar(response$content)
-# 		options(readr.show_progress=F)
-# 		data=readr::read_csv(text,progress=F)
-# 		return(data)
-# 	} else {
-# 		return(NULL)
-# 	}
-# }
-# 
-# get_qtg_prod_map <- function(db,con)
-# {
-# 	response = httr::GET(url="",scheme=con$scheme,hostname=con$host,port=con$port,
-# 						 path="query",
-# 						 query=list(db=db,u=con$user,p=con$pass,q="select * from product_name_mapping"),
-# 						 add_headers(Accept="application/csv"))
-# 	if(response$status_code==200)
-# 	{
-# 		text=rawToChar(response$content)
-# 		options(readr.show_progress=F)
-# 		data=readr::read_csv(text,progress=F)
-# 		return(data)
-# 	} else {
-# 		return(NULL)
-# 	}
-# }
-# 
-# 
