@@ -2,3 +2,4 @@ Current packages as of Jun 2017:
 -------------------------------
 influx: convert MDRec capture data to InfluxDB and populate the database
 tickdb: R package to access the Tick Database on the Influx server
+software: standalone applications to use the tick database
