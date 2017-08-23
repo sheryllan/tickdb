@@ -78,7 +78,8 @@ convert.influx <- function(response,sample,stype)
 exch2ql <- function(exchange)
 {
 	switch(exchange,
-		   EUREX = "QuantLib/Germany/Eurex"
+		   EUREX = "QuantLib/Germany/Eurex",
+		   XEUR = "QuantLib/Germany/Eurex"
 		   )
 }
 
@@ -86,7 +87,8 @@ exch2ql <- function(exchange)
 exch2tz <- function(exchange)
 {
 	switch(exchange,
-		   EUREX = "Europe/Berlin"
+		   EUREX = "Europe/Berlin",
+		   XEUR = "Europe/Berlin"
 		   )
 }
 
@@ -114,7 +116,10 @@ seq.contracts <- function(product,type,front,rolldays,from,to,periods,idb)
 	x$expdate = ymd(x$ExpiryDate) - days(rolldays)
 
 	# Get exchange name. It must be unique
-	exch = unique(x$Exchange)
+	if("Exchange" %in% names(x))
+		exch = unique(x$Exchange)
+	else exch = unique(x$exchange)
+
 	if(length(exch)!=1)
 		NULL
 
@@ -162,29 +167,19 @@ seq.contracts <- function(product,type,front,rolldays,from,to,periods,idb)
 load_idb <- function(db,con)
 {
 	# Get data from Influx
-	if(db=='liquid_tick' | db=='tickdb')
+	response = httr::GET(url = "", scheme = con$scheme, hostname = con$host, port = con$port, 
+						 path = "query",
+						 query = list(db=db, u=con$user, p=con$pass, q="select * from refdata"),
+						 add_headers(Accept="application/csv"))
+	if(response$status_code==200)
 	{
-		response = httr::GET(url = "", scheme = con$scheme, hostname = con$host, port = con$port, 
-							 path = "query",
-							 query = list(db=db, u=con$user, p=con$pass, q="select * from refdata"),
-							 add_headers(Accept="application/csv"))
-		if(response$status_code==200)
-		{
-			text = rawToChar(response$content)
-			options(readr.show_progress=F)
-			data = readr::read_csv(text,progress=F)
-			return(data)
-		} else {
-			return(NULL)
-		}
-	} else if(db=='qtg_tick')
-	{
+		text = rawToChar(response$content)
+		options(readr.show_progress=F)
+		data = readr::read_csv(text,progress=F)
+		return(data)
+	} else {
+		return(NULL)
 	}
-
-	return(instdb)
-
-	#cfg = read_json(config)
-	#suppressWarnings(suppressMessages(readr::read_csv(cfg$instdb,progress=F)))
 }
 
 # Create a connection object to an InfluxDB
@@ -215,7 +210,7 @@ influx.connection <- function(host='127.0.0.1', port=8086, scheme="http", user="
 
 #' Generate a query from specifications
 make.query <- function(db,measurement,product,type,from,to,periods,
-					   front,rolldays,fields,con)
+					   front,rolldays,fields,con,extended_result=F)
 {
 	if(!exists("idb")) # load instrument database
 		idb <<- load_idb(db,con)
@@ -248,8 +243,18 @@ make.query <- function(db,measurement,product,type,from,to,periods,
 	}
 
 	# generate queries
-	seq.contracts(product,type,front,rolldays,from,to,periods,idb) %>%
-		create.query(fields,measurement)
+	if(!extended_result)
+	{
+		return(
+			   seq.contracts(product,type,front,rolldays,from,to,periods,idb) %>%
+				create.query(fields,measurement)
+			)
+	} else {
+		sequence = seq.contracts(product,type,front,rolldays,from,to,periods,idb)
+		query = sequence %>% create.query(fields,measurement)
+		sequence = sequence$contracts
+		return(list(sequence=sequence,query=query))
+	}
 }
 
 #' Run a TickDB query
@@ -341,9 +346,61 @@ sample_price <- function(measurement,product,type,from,to,periods,
 
 	# Create a query
 	db = cfg$dbname
-	query = make.query(db,measurement,product,type,from,to,periods,front,rolldays,fields,con)
+	equery = make.query(db,measurement,product,type,from,to,periods,front,rolldays,fields,con,
+					   extended_result=T)
+	query = equery$query
+	sequence = equery$sequence
 	query = foreach(q=query,.combine='c') %do% paste(q," group by time(",frequency,")")
 
 	# run the sampling query
-	run.query(query,db,sample=T,stype=measurement,con=con)
+	data = run.query(query,db,sample=T,stype=measurement,con=con)
+	
+	# Add extra information to sampled data
+	for(i in 1:length(data))
+	{
+		if(inherits(data[[i]],"data.frame"))
+		{
+			data[[i]]$contract=sequence$ProductID[i]
+			data[[i]]$ExpiryDate=sequence$ExpiryDate[i]
+			data[[i]]$date = sequence$date[i]
+		}
+	}
+
+	return(data)
 }
+
+# get_qtg_inst <- function(db,con)
+# {
+# 	response = httr::GET(url="",scheme=con$scheme,hostname=con$host,port=con$port,
+# 						 path="query",
+# 						 query=list(db=db,u=con$user,p=con$pass,q="select * from qtg_instruments"),
+# 						 add_headers(Accept="application/csv"))
+# 	if(response$status_code==200)
+# 	{
+# 		text=rawToChar(response$content)
+# 		options(readr.show_progress=F)
+# 		data=readr::read_csv(text,progress=F)
+# 		return(data)
+# 	} else {
+# 		return(NULL)
+# 	}
+# }
+# 
+# get_qtg_prod_map <- function(db,con)
+# {
+# 	response = httr::GET(url="",scheme=con$scheme,hostname=con$host,port=con$port,
+# 						 path="query",
+# 						 query=list(db=db,u=con$user,p=con$pass,q="select * from product_name_mapping"),
+# 						 add_headers(Accept="application/csv"))
+# 	if(response$status_code==200)
+# 	{
+# 		text=rawToChar(response$content)
+# 		options(readr.show_progress=F)
+# 		data=readr::read_csv(text,progress=F)
+# 		return(data)
+# 	} else {
+# 		return(NULL)
+# 	}
+# }
+# 
+# 

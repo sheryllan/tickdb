@@ -1,6 +1,9 @@
 #!/usr/bin/env Rscript
 
-#suppressWarnings(suppressMessages(library(tickdb)))
+sup <- function(...)
+	suppressWarnings(suppressMessages(...))
+
+sup(library(tickdb))
 
 printf=function(...) invisible(cat(sprintf(...)))
 
@@ -28,12 +31,13 @@ if(!interactive())
 	}
 
 
-	x = sample_price(args[1],args[2],args[3],as.integer(args[4]),as.integer(args[5]),
+	sup(x <- sample_price(args[1],args[2],args[3],as.integer(args[4]),as.integer(args[5]),
 					 period(as.integer(args[6]),as.integer(args[7])),
 					 args[8], # frequency
 					 as.integer(args[9]),as.integer(args[10]),
 					 args[11] # config
-					 )
-	z = do.call(rbind,x)
-	write.csv(z,args[12])
+					 ))
+
+	sup(z <- do.call(rbind,x))
+	sup(write.csv(z,args[12]))
 }
