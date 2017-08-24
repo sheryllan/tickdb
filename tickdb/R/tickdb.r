@@ -322,6 +322,7 @@ tick_data <- function(measurement,product,type,from,to,periods,
 #' @param to UTC nanosecond
 #' @param group influx group by clause
 #' @param config json config file
+#' @export raw_sample
 raw_sample <- function(measurement,product,type,expiry,from,to,group,config)
 {
 	if(measurement=='book')
