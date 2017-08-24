@@ -314,6 +314,39 @@ tick_data <- function(measurement,product,type,from,to,periods,
 	return(data)
 }
 
+#' Run a simple query with a group by argument
+#' @param measurement book,trade
+#' @param product Product name
+#' @param type Product type
+#' @param from UTC nanosecond
+#' @param to UTC nanosecond
+#' @param group influx group by clause
+#' @param config json config file
+raw_sample <- function(measurement,product,type,expiry,from,to,group,config)
+{
+	if(measurement=='book')
+	{
+		fields="last(exch),first(bid1),max(bid1),min(bid1),last(bid1),first(bidv1),max(bidv1),min(bidv1),last(bidv1),first(ask1),max(ask1),min(ask1),last(ask1),first(askv1),max(askv1),min(askv1),last(askv1)"
+		measurement = 'book'
+	} else if(measurement=='trade')
+	{
+		fields="last(exch),first(price),max(price),min(price),last(price),first(volume),max(volume),min(volume),last(volume)"
+	}
+
+	# Initialize Influx connection
+	cfg = read_json(config)
+	con = influx.connection(cfg$host)
+
+	# Create a query
+	query = sprintf("select %s from %s where product='%s' and expiry='%s' and type='%s' and time>=%s and time<=%s group by time(%s)",
+					fields,measurement,product,expiry,type,from,to,group)
+
+	# run the sampling query
+	data = run.query(query,cfg$dbname,sample=T,stype=measurement,con=con)
+
+	return(data)
+}
+
 #' Sample price series
 #' @param measurement book,trade
 #' @param product Product name
