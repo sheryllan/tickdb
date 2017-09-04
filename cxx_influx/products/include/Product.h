@@ -60,7 +60,7 @@ struct Product
     };
     Product(Type type_);
     virtual ~Product() = default;
-    const std::string& as_reactor_str();
+    const std::string& as_reactor_str(bool include_exch_ = true, bool reset_ = false) const;
     std::string _qtg_name;
     std::string _name;
     std::string _exch;
@@ -69,8 +69,8 @@ struct Product
     int32_t _qtg_type;
 protected:
     Product() = default;
-    virtual std::string _as_reactor_str();
-    std::string _reactor_str;
+    virtual std::string _as_reactor_str(bool include_exch_) const;
+    mutable std::string _reactor_str;
 };
 
 struct Product_Expires : public Product
@@ -80,7 +80,7 @@ struct Product_Expires : public Product
     const std::string& get_reactor_expiry() const;
     const std::string& get_reactor_expiry_with_day() const;
 protected:
-    std::string _as_reactor_str() override;
+    std::string _as_reactor_str(bool include_exch_) const override;
     std::string _reactor_expiry;
     std::string _reactor_expiry_with_day;
     std::string _expiry_date;//YYYYMMDD
@@ -94,7 +94,7 @@ struct Option : public Product_Expires
     lcc::msg::fixed_point _strike;
     int32_t _underlying;
 protected:
-    std::string _as_reactor_str() override;
+    std::string _as_reactor_str(bool include_exch_) const override;
 };
 
 struct Strategy : public Product_Expires
@@ -103,7 +103,7 @@ struct Strategy : public Product_Expires
     //unlike rector, here the _legs is a string like GE:PB U8-U0-U2
     std::string _legs;
 protected:
-    std::string _as_reactor_str() override;
+    std::string _as_reactor_str(bool include_exch_) const override;
 };
 
 

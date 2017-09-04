@@ -12,9 +12,9 @@ export POST_INFLUX_THREAD_COUNT=8
 #so normally, no need to increase number of thread here.
 #export DECODE_THREAD_COUNT=14
 #number of qtg market data records in one influx message. 5000 by default.
-export INFLUX_BATCH_COUNT=30000
+export INFLUX_BATCH_COUNT=15000
 #converts file whose date is bigger than or equal to BEGIN_DATE. default 0000000
-export BEGIN_DATE=20101123
+export BEGIN_DATE=20170809
 #convers file whose date is less than or equal to END_DATE, default INT_MAX
 export END_DATE=`date -d '2 days' +%Y%m%d`
 
@@ -37,6 +37,7 @@ export PRODUCT_TYPES='F,O'
 #default empty which means no product is excluded.
 #export EXCLUDED_PRODUCT_NAMES='FDAX,ED'
 
+export LOG_FILE=qtg2influx`date +%Y-%m-%dT%H:%M:%S`.log
 
 #only files for products whose qtg id is in PRODUCT_ID_RANGES are converted
 #1 - 500 means all product ids from 1 to 500 are valid. space does not matter.
@@ -47,3 +48,5 @@ export LD_LIBRARY_PATH=/home/ylei/development/Linuxi686/ylei_depot/BuildKit2/tbb
 export LD_PRELOAD="libtbbmalloc_proxy.so.2 libtbbmalloc.so.2"
 
 ../release/qtg2influx $*
+
+python resend.py ${LOG_FILE} $HTTP_HOST $HTTP_PORT $INFLUX_DB

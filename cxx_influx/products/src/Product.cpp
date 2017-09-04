@@ -82,28 +82,30 @@ bool is_bond_market(const std::string& exch_)
 Product::Product(Type type_) : _type(type_)
 {
 }
-const std::string& Product::as_reactor_str()
+const std::string& Product::as_reactor_str(bool include_exch_, bool reset_) const
 {
+    if (reset_) _reactor_str.clear();
     if (_reactor_str.empty()) 
     {
-        _reactor_str = _as_reactor_str();
+        _reactor_str = _as_reactor_str(include_exch_);
     }
     return _reactor_str;
 }
 
-std::string Product::_as_reactor_str()
+std::string Product::_as_reactor_str(bool include_exch_) const
 {
     std::ostringstream os;
-    os << "PROD." << static_cast<char>(_type) << "." << _name << "_" << _exch;
+    os << "PROD." << static_cast<char>(_type) << "." << _name;
+    if (include_exch_) os << "_" << _exch;
     return os.str();
 }
 Product_Expires::Product_Expires(Product::Type type_) : Product(type_)
 {
 }
-std::string Product_Expires::_as_reactor_str()
+std::string Product_Expires::_as_reactor_str(bool include_exch_) const
 {
     std::ostringstream os;
-    os << Product::_as_reactor_str() << "." << get_reactor_expiry();
+    os << Product::_as_reactor_str(include_exch_) << "." << get_reactor_expiry();
     return os.str();
 }
 
@@ -154,12 +156,12 @@ Option::Option()
 {
 }
 
-std::string Option::_as_reactor_str()
+std::string Option::_as_reactor_str(bool include_exch_) const
 {
     std::ostringstream os;
     std::string strike = _strike.as_string();
     
-    os << Product_Expires::_as_reactor_str() << "." << _strike.integer();
+    os << Product_Expires::_as_reactor_str(include_exch_) << "." << _strike.integer();
     int64_t frac = _strike.fractional();
     while (frac != 0 && (frac % 10) == 0 )
     {
@@ -174,10 +176,10 @@ Strategy::Strategy()
 {
 }
 //not really reactor string.
-std::string Strategy::_as_reactor_str()
+std::string Strategy::_as_reactor_str(bool include_exch_) const
 {
     std::ostringstream os;
-    os << Product_Expires::_as_reactor_str() << "." << _legs;
+    os << Product_Expires::_as_reactor_str(include_exch_) << "." << _legs;
     return os.str();
 }
 

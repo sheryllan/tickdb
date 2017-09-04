@@ -49,13 +49,13 @@ void dump_tick_files(int argc, char * argv[])
 {
     if (argc <= 6)
     {
-        std::cout << "incorrect parameter provided. dump_tick_files <instrument file> <influx http host> <influx http port> <influx db> <tick files' dir> <exchanges> <product types>" << std::endl;
+        std::cout << "incorrect parameter provided. dump_tick_files <instrument file> <influx http host> <influx http port> <influx db> <tick files' dir> <exchanges> <product types> <product names> <begin date> <end date>, the last five parameters are optional." << std::endl;
         return;
     }
     cxx_influx::Product_Center pc;
     pc.load_qtg_instrument_file(argv[2], argv[3], atoi(argv[4]), argv[5]);    
     
-    std::string exchs, types;
+    std::string exchs, types, names;
     if (argc > 7)
     {
         exchs = argv[7];        
@@ -64,7 +64,21 @@ void dump_tick_files(int argc, char * argv[])
     {
         types = argv[8];
     }
-    Product_Filter filter(exchs, "", types);
+    if (argc > 9)
+    {
+        names = argv[9];
+    }
+    Date_Range range;
+    if (argc > 10)
+    {
+        range._begin = atoi(argv[10]);
+    }
+    if (argc > 11)
+    {
+        range._end = atoi(argv[11]);
+    }
+    
+    Product_Filter filter(exchs, "", types, names);
     Get_Product get_product = std::bind(&cxx_influx::Product_Center::get_product, std::cref(pc), std::placeholders::_1);
     Valid_Product valid_product = [&get_product, &filter](const int32_t product_id_) -> bool
                                   {
@@ -80,7 +94,7 @@ void dump_tick_files(int argc, char * argv[])
 
     std::string path_ss(argv[6]);
     uint8_t t_cnt = 16;
-    cxx_influx::Find_Files_In_Parallel ftf(path_ss, valid_product, Date_Range{20101123}, t_cnt);
+    cxx_influx::Find_Files_In_Parallel ftf(path_ss, valid_product, range, t_cnt);
     ftf.find_files();
 
     print_file(ftf.files());
@@ -137,7 +151,7 @@ void command_format()
 {
     std::cout << "following command input supported." << std::endl;
     std::cout << "load_products <instrument file> <influx http host> <influx http port> <influx db> #try loading instruments." << std::endl;   
-    std::cout << "dump_tick_files <instrument file> <influx http host> <influx http port> <influx db> <tick files' dir>" << std::endl;   
+    std::cout << "dump_tick_files <instrument file> <influx http host> <influx http port> <influx db> <tick files' dir> <exchanges> <product types> <product names> <begin date> <end date>, the last five parameters are optional." << std::endl;
     std::cout << "generate_influx_msg <instrument file> <influx http host> <influx http port> <influx db> <store tick files> <tick count in one influx msg>" << std::endl;   
 }
 int main(int argc, char * argv[])

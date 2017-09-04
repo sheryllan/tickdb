@@ -69,6 +69,9 @@ public:
     void add_time_field(const std::string& key_, const int64_t time_);
     //0 means using current time.
     void point_end(const int64_t time_ = 0);
+    //point_end adds extra 0 to make sure passed in time_ is in nanoseconds
+    //point_end_time_asis uses the value passed in directly.
+    void point_end_time_asis(const int64_t time_);
     std::string get_influx_msg() const;
     void get_influx_msg(std::string&);
     void clear();

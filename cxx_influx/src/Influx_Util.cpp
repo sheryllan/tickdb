@@ -187,7 +187,12 @@ void Influx_Builder::point_begin(const std::string& measurement_)
     _msg_count++;
     _os << measurement_;    
 }
-
+void Influx_Builder::point_end_time_asis(const int64_t time_)
+{
+    _space_before_fields_added = false;
+    _os << SPACE;
+    _os << time_;
+}
 void Influx_Builder::point_end(const int64_t time_)
 {
     _space_before_fields_added = false;
