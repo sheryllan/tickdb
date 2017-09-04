@@ -1,3 +1,5 @@
+#!/bin/bash
+
 export QTG_PRODUCT_FILE=/mnt/data/qtg/instRefdataCoh.csv
 export HTTP_HOST="192.168.55.49"
 export HTTP_PORT=8086
