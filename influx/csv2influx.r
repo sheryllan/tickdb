@@ -216,7 +216,10 @@ update_database <- function(config)
 {
 	# Read config and set logging file
 	cfg = read_json(config,simplifyVector=T)
-	sink(cfg$logfile,append=T)
+	if(!file.exists(cfg$logfile))
+	{
+		sink(cfg$logfile)
+	} else sink(cfg$logfile,append=T)
 
 	# create a database
 	printf("%s - Starting database session\n",Sys.time())

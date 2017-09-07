@@ -342,6 +342,7 @@ raw_sample <- function(measurement,product,type,expiry,from,to,group,config)
 	query = sprintf("select %s from %s where product='%s' and expiry='%s' and type='%s' and time>=%s and time<=%s group by time(%s)",
 					fields,measurement,product,expiry,type,from,to,group)
 
+	print(query)
 	# run the sampling query
 	data = run.query(query,cfg$dbname,sample=T,stype=measurement,con=con)
 
