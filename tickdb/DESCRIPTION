@@ -1,6 +1,6 @@
 Package: tickdb
 Title: API to access to Liquid Capital tick database
-Version: 0.1
+Version: 0.2
 Authors@R: person("David", "Bellot", email = "dbellot@liquidcapital.com", role = c("aut", "cre"))
 Description: API to query and download market data from the Liquid Capital database
 Depends: 

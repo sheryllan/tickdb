@@ -1,0 +1,35 @@
+#!/usr/bin/env Rscript
+
+sup <- function(...)
+	suppressWarnings(suppressMessages(...))
+
+sup(library(tickdb))
+
+printf=function(...) invisible(cat(sprintf(...)))
+
+if(!interactive())
+{
+	args = commandArgs(trailingOnly=T)
+	if(length(args)!=9)
+	{
+		printf("Usage: rawsample <measurement> <product> <type> <expiry> <from> <to> <group> <config> <output>\n")
+		printf("\n\033[4mParameters\033[24m:\n\n")
+		printf("\033[1mmeasurument\033[22m\tbook or trade\n")
+		printf("\033[1mproduct\033[22m\t\tproduct name. For example: FESX\n")
+		printf("\033[1mtype\033[22m\t\tproduct type. For example F for futures, O for options\n")
+		printf("\033[1mexpiry\033[22m\t\tproduct's expiry. Example MAR2017\n")
+		printf("\033[1mfrom\033[22m\t\tStart time in nanosecond, UTC, since Epoch\n")
+		printf("\033[1mend\033[22m\t\tEnd time in nanosecond, UTC, since Epoch\n")
+		printf("\033[1mgroup\033[22m\t\tInflux group by time clause\n")
+		printf("\033[1mconfig\033[22m\t\tjson config file to access the Influx database\n")
+		printf("\033[1moutput\033[22m\t\tname of the csv output file\n")
+		printf("\n")
+		quit(status=1)
+	}
+
+
+	sup(x <- raw_sample(args[1],args[2],args[3],args[4],
+						args[5],args[6],args[7],args[8]))
+	sup(z <- do.call(rbind,x))
+	sup(write.csv(z,args[9]))
+}

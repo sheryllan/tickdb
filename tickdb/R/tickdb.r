@@ -160,7 +160,7 @@ seq.contracts <- function(product,type,front,rolldays,from,to,periods,idb)
 			  )
 	}
 
-	list(contracts=contracts,timestamps=timestamps, idb=idb)
+	list(contracts=contracts,timestamps=timestamps, idb=idb,tz=exch2tz(exch))
 }
 
 # Load the instrument database
@@ -252,8 +252,7 @@ make.query <- function(db,measurement,product,type,from,to,periods,
 	} else {
 		sequence = seq.contracts(product,type,front,rolldays,from,to,periods,idb)
 		query = sequence %>% create.query(fields,measurement)
-		sequence = sequence$contracts
-		return(list(sequence=sequence,query=query))
+		return(list(sequence=sequence$contracts,query=query,tz=sequence$tz))
 	}
 }
 
@@ -315,6 +314,41 @@ tick_data <- function(measurement,product,type,from,to,periods,
 	return(data)
 }
 
+#' Run a simple query with a group by argument
+#' @param measurement book,trade
+#' @param product Product name
+#' @param type Product type
+#' @param from UTC nanosecond
+#' @param to UTC nanosecond
+#' @param group influx group by clause
+#' @param config json config file
+#' @export raw_sample
+raw_sample <- function(measurement,product,type,expiry,from,to,group,config)
+{
+	if(measurement=='book')
+	{
+		fields="last(exch),first(bid1),max(bid1),min(bid1),last(bid1),first(bidv1),max(bidv1),min(bidv1),last(bidv1),first(ask1),max(ask1),min(ask1),last(ask1),first(askv1),max(askv1),min(askv1),last(askv1)"
+		measurement = 'book'
+	} else if(measurement=='trade')
+	{
+		fields="last(exch),first(price),max(price),min(price),last(price),first(volume),max(volume),min(volume),last(volume)"
+	}
+
+	# Initialize Influx connection
+	cfg = read_json(config)
+	con = influx.connection(cfg$host)
+
+	# Create a query
+	query = sprintf("select %s from %s where product='%s' and expiry='%s' and type='%s' and time>=%s and time<=%s group by time(%s)",
+					fields,measurement,product,expiry,type,from,to,group)
+
+	print(query)
+	# run the sampling query
+	data = run.query(query,cfg$dbname,sample=T,stype=measurement,con=con)
+
+	return(data)
+}
+
 #' Sample price series
 #' @param measurement book,trade
 #' @param product Product name
@@ -363,44 +397,11 @@ sample_price <- function(measurement,product,type,from,to,periods,
 			data[[i]]$contract=sequence$ProductID[i]
 			data[[i]]$ExpiryDate=sequence$ExpiryDate[i]
 			data[[i]]$date = sequence$date[i]
+			data[[i]]$hour = hour(with_tz(as.POSIXct(nanotime(data[[i]]$time)),tz=equery$tz))
+			data[[i]]$min = minute(with_tz(as.POSIXct(nanotime(data[[i]]$time)),tz=equery$tz))
+			data[[i]]$sec = second(with_tz(as.POSIXct(nanotime(data[[i]]$time)),tz=equery$tz))
 		}
 	}
 
 	return(data)
 }
-
-# get_qtg_inst <- function(db,con)
-# {
-# 	response = httr::GET(url="",scheme=con$scheme,hostname=con$host,port=con$port,
-# 						 path="query",
-# 						 query=list(db=db,u=con$user,p=con$pass,q="select * from qtg_instruments"),
-# 						 add_headers(Accept="application/csv"))
-# 	if(response$status_code==200)
-# 	{
-# 		text=rawToChar(response$content)
-# 		options(readr.show_progress=F)
-# 		data=readr::read_csv(text,progress=F)
-# 		return(data)
-# 	} else {
-# 		return(NULL)
-# 	}
-# }
-# 
-# get_qtg_prod_map <- function(db,con)
-# {
-# 	response = httr::GET(url="",scheme=con$scheme,hostname=con$host,port=con$port,
-# 						 path="query",
-# 						 query=list(db=db,u=con$user,p=con$pass,q="select * from product_name_mapping"),
-# 						 add_headers(Accept="application/csv"))
-# 	if(response$status_code==200)
-# 	{
-# 		text=rawToChar(response$content)
-# 		options(readr.show_progress=F)
-# 		data=readr::read_csv(text,progress=F)
-# 		return(data)
-# 	} else {
-# 		return(NULL)
-# 	}
-# }
-# 
-# 

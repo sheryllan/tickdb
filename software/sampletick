@@ -12,7 +12,7 @@ if(!interactive())
 	args = commandArgs(trailingOnly=T)
 	if(length(args)!=12)
 	{
-		printf("Usage: sample <measurement> <product> <type> <from> <to> <start> <end> <frequency> <front> <rolldays> <config> <output>\n")
+		printf("Usage: sampletick <measurement> <product> <type> <from> <to> <start> <end> <frequency> <front> <rolldays> <config> <output>\n")
 		printf("\n\033[4mParameters\033[24m:\n\n")
 		printf("\033[1mmeasurument\033[22m\tbook or trade\n")
 		printf("\033[1mproduct\033[22m\t\tproduct name. For example: FESX\n")
