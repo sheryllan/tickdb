@@ -21,9 +21,44 @@ sourceCpp("cpaste.cpp")
 printf <- function(...) invisible(cat(sprintf(...)))
 rien <- function(...) NULL
 
-csvnames <- c('otype','recv','exch','bid1','bid2','bid3','bid4','bid5','bidv1','bidv2','bidv3','bidv4','bidv5','nbid1','nbid2','nbid3','nbid4','nbid5','ask1','ask2','ask3','ask4','ask5','askv1','askv2','askv3','askv4','askv5','nask1','nask2','nask3','nask4','nask5','product','state')
 
-csvformat <- "cccnnnnniiiiiiiiiinnnnniiiiiiiiiicc"
+read_csv_file <- function(f)
+{
+	# Check if old style header
+	x = xzfile(f)
+
+	csvnames <- c('otype','recv','exch','bid1','bid2','bid3','bid4','bid5',
+				  'bidv1','bidv2','bidv3','bidv4','bidv5',
+				  'nbid1','nbid2','nbid3','nbid4','nbid5',
+				  'ask1','ask2','ask3','ask4','ask5',
+				  'askv1','askv2','askv3','askv4','askv5',
+				  'nask1','nask2','nask3','nask4','nask5')
+	
+	header = all(c("series","strike","call_put") %in% unlist(str_split(readLines(x,1),',')))
+	if(header) # old style
+	{
+		csvnames = c(csvnames,"market","type","prod","series","strike","call_put","version")
+		csvformat <- "cccnnnnniiiiiiiiiinnnnniiiiiiiiiiccccccc"
+		style = "old"
+	} else { # new style
+		csvnames = c(csvnames,'product','state')
+		csvformat <- "cccnnnnniiiiiiiiiinnnnniiiiiiiiiicc"
+		style = "new"
+	}
+
+	close(x)
+
+	result = suppressWarnings(as.data.frame(
+		read_csv(f, col_types=csvformat, col_names=csvnames, skip=1,))) # read data
+	attr(result,"style")=style
+
+	if(attr(result,"style")=="old")
+	{
+		names(result)[which(names(result)=="call_put")]="cp"
+	}
+
+	return(result)
+}
 
 # generate split indices of the data.frame (for // execution)
 generate_df_split <- function(N,gen='by',size=parallel::detectCores())
@@ -71,10 +106,15 @@ df2influx <- function(df,param,measurement)
 	# parse option instrument strings
 	if(param$type=='O') # options
 	{
-		x = str_split(df$product,fixed('.'),simplify=T)
-		opt_tags = v2paste( str_c("strike=", str_replace(x[,5],fixed(','),'.')), # strike
-							str_c('cp=',x[,6],''), # option types
-							',') # generate tags for options
+		if(attr(df,"style")=="new")
+		{
+			x = str_split(df$product,fixed('.'),simplify=T)
+			opt_tags = v2paste( str_c("strike=", str_replace(x[,5],fixed(','),'.')), # strike
+						str_c('cp=',x[,6],''), # option types
+						',') # generate tags for options
+		} else {
+			opt_tags = v2paste(str_c('strike=',df$strike), str_c('cp=',df$cp),',')
+		}
 		ofield=T
 	} else ofield=F
 
@@ -233,8 +273,7 @@ update_database <- function(config)
 		param = decompose_filename(basename(f)) # get parameters from file name
 		if(file.access(f,mode=0)==0 & file.access(f,mode=4)==0) # ignore non-readable files
 		{
-			df = suppressWarnings(as.data.frame(
-					read_csv(f, col_types=csvformat, col_names=csvnames, skip=1,))) # read data
+			df = read_csv_file(f) # read data
 			# clean up data
 			df = df[!is.na(as.integer64(df$recv)) , ] # remove bad recv
 			df = df[!is.na(as.integer64(df$exch)) , ] # remove bad exch
