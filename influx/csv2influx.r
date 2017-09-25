@@ -173,7 +173,7 @@ test_response <- function(r,file,log,measurement)
 
 # Send a vector 'vec' of Influx line protocal to the server
 # Split in smaller blocks to avoid server congestion
-write2influx <- function(vec,file,log,measurement,DBNAME,max_size=20000)
+write2influx <- function(vec,file,log,measurement,DBNAME,max_size=10000)
 {
 	if(length(vec)>max_size)
 	{
@@ -222,12 +222,18 @@ find_data_file <- function(cfg,con)
 
 	if(length(cfg$contracts>0))
 	{
-		p = paste0(paste0('-',cfg$contracts),collapse='|')
+		p1 = paste0(paste0('-',cfg$contracts),collapse='|')
+		p2 = paste0(paste0('^',cfg$contracts),collapse='|')
+		p = paste0(c(p1,p2),collapse='|')
+		print(p1)
+		print(p2)
+		print(p)
 		files = dir(cfg$capturedir,
 					pattern = p,
 					full.names=T, recursive=T) # get all the data files
 	}
 	else files=dir(cfg$capturedir,pattern='*.csv.xz', full.names=T,recursive=T)
+	print(files)
 
 	# Filter out ref and stats files
 	files = grep("Reference",files,value=T,invert=T)
@@ -235,6 +241,8 @@ find_data_file <- function(cfg,con)
 
 	# Make the diff with already processed files
 	newfiles = setdiff(files,donefiles)
+
+	print(newfiles)
 
 	return(newfiles)
 }
