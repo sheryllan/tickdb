@@ -1,0 +1,19 @@
+{
+	"host" : "192.168.55.49",
+	"dbname" : "test4_tick",
+	"capturedir": "/home/influx/tickdatabase/influx/test",
+	"contracts" : [ "FESX-F","FDAX-F","FDXM-F","FESB-F",
+					"FBTP-F","FGBL-F","FOAT-F","FOAM-F", "FSMI-F","FVS-F",
+					"6A-F", "6B-F", "6C-F","6M-F","6S-F","SI-F",
+					"FGBM-F","B-F","T-F","FTSE-F","LIFFELR-F",
+					"CL-F","6E-F","6J-F","ES-F","NQ-F","YM-F",
+					"GC-F","ZF-F","ZN-F",
+					"FGBS-F", "FGBX-F",
+					"ZB-F","ZT-F","UB-T","HG-F","6N-F","NG-F",
+					"ZC-F","ZL-F","ZM-F","ZS-F","ZW-F","HO-F","RB-F",
+					"NIY-F","NKD-F","CAC-F",
+					"OESX-O", "ODAX-O"
+   	],
+
+	"logfile": "/home/influx/test.log"
+}
