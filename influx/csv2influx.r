@@ -12,6 +12,7 @@ suppressMessages(library(iterators))
 suppressMessages(library(httr))
 suppressMessages(library(influxdbr2))
 suppressMessages(library(jsonlite))
+suppressMessages(library(data.table))
 
 j=enableJIT(3)
 registerDoMC(6)
@@ -21,6 +22,20 @@ sourceCpp("cpaste.cpp")
 printf <- function(...) invisible(cat(sprintf(...)))
 rien <- function(...) NULL
 
+colclass <- function(c,nm)
+{
+	setNames(
+		sapply(unlist(strsplit(c,'')),
+			   function(c)
+			   {
+				   switch(c,
+						  'c' = 'character',
+						  'n' = 'numeric',
+						  'i' = 'integer',
+						  )
+			   }),
+		nm)
+}
 
 read_csv_file <- function(f)
 {
@@ -48,8 +63,10 @@ read_csv_file <- function(f)
 
 	close(x)
 
-	result = suppressWarnings(as.data.frame(
-		read_csv(f, col_types=csvformat, col_names=csvnames, skip=1,))) # read data
+	xz = paste("xz -cdk -T 32 ",f)
+	result = fread(xz,sep=',',colClasses=colclass(csvformat,csvnames),showProgress=F,data.table=F) # read data
+	#result = suppressWarnings(as.data.frame(
+	#	read_csv(f, col_types=csvformat, col_names=csvnames, skip=1,))) # read data
 	attr(result,"style")=style
 
 	if(attr(result,"style")=="old")
