@@ -20,7 +20,7 @@ j=enableJIT(3)
 options(readr.show_progress=F)
 WAIT = 3 # seconds between each attempt to write the same chunk in InfluxDB
 COUNT= 100# Number of tries before we give up on a chunk of data
-NBCORES=32
+NBCORES=10
 
 sourceCpp("cpaste.cpp")
 
@@ -314,8 +314,9 @@ update_database <- function(config)
 	# find new files and process them
 	newfiles = find_data_file(cfg,con) 
 	N = length(newfiles)
+	printf("%s - %d new files will be added\n",Sys.time(),N)
 
-	options(cores=8)
+	options(cores=3)
 	foreach(f=newfiles) %dopar%
 	{
 		t0=Sys.time()
@@ -324,6 +325,7 @@ update_database <- function(config)
 		if(file.access(f,mode=0)==0 & file.access(f,mode=4)==0) # ignore non-readable files
 		{
 			df = read_csv_file(f) # read data
+			gc()
 			printf("%s - read %s: %d rows\n",Sys.time(),f,nrow(df))
 			# clean up data
 			df = df[!is.na(as.integer64(df$recv)) , ] # remove bad recv
@@ -337,11 +339,13 @@ update_database <- function(config)
 
 				dft = df[trades, ]
 				dfq = df[quotes, ]
+				rm(df)
 
 				# convert data.frame to line protocol
 				if(nrow(dft)>0)
 				{
 					influxt=df2influx(dft,param,"trade")
+					rm(dft); gc()
 					# Populate InfluxDB
 					if(length(influxt)>0)
 						write2influx(influxt,f,log,"trade",cfg$dbname)
@@ -349,6 +353,7 @@ update_database <- function(config)
 				if(nrow(dfq)>0)
 				{
 					influxq=df2influx(dfq,param,"book")
+					rm(dfq);gc()
 					# Populate InfluxDB
 					if(length(influxq)>0)
 						write2influx(influxq,f,log,"book",cfg$dbname)
