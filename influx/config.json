@@ -11,8 +11,7 @@
 					"FGBS-F", "FGBX-F",
 					"ZB-F","ZT-F","UB-T","HG-F","6N-F","NG-F",
 					"ZC-F","ZL-F","ZM-F","ZS-F","ZW-F","HO-F","RB-F",
-					"NIY-F","NKD-F","CAC-F",
-					"OESX-O", "ODAX-O"
+					"NIY-F","NKD-F","CAC-F"
    	],
 
 	"logfile": "/home/influx/influx.log"

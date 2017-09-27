@@ -20,7 +20,7 @@ j=enableJIT(3)
 options(readr.show_progress=F)
 WAIT = 3 # seconds between each attempt to write the same chunk in InfluxDB
 COUNT= 100# Number of tries before we give up on a chunk of data
-NBCORES=10
+NBCORES=8
 
 sourceCpp("cpaste.cpp")
 
@@ -83,7 +83,7 @@ read_csv_file <- function(f)
 }
 
 # generate split indices of the data.frame (for // execution)
-generate_df_split <- function(N,gen='by',size=parallel::detectCores())
+generate_df_split <- function(N,gen='by',size=NBCORES)
 {
 	if(gen=='by') i = seq(1,N,by=size)
 	else i = round(seq(1,N,length.out=size))
@@ -316,7 +316,7 @@ update_database <- function(config)
 	N = length(newfiles)
 	printf("%s - %d new files will be added\n",Sys.time(),N)
 
-	options(cores=3)
+	options(cores=2)
 	foreach(f=newfiles) %dopar%
 	{
 		t0=Sys.time()
@@ -349,6 +349,7 @@ update_database <- function(config)
 					# Populate InfluxDB
 					if(length(influxt)>0)
 						write2influx(influxt,f,log,"trade",cfg$dbname)
+					rm(influxt); gc()
 				}
 				if(nrow(dfq)>0)
 				{
@@ -357,6 +358,7 @@ update_database <- function(config)
 					# Populate InfluxDB
 					if(length(influxq)>0)
 						write2influx(influxq,f,log,"book",cfg$dbname)
+					rm(influxq); gc()
 				}
 
 				msg<-sprintf("%s : %d trades %d quotes\n",basename(f),sum(trades),sum(quotes))
