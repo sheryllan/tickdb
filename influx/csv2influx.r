@@ -1,5 +1,8 @@
 #!/usr/bin/env Rscript
 
+suppressMessages(library(doParallel))
+registerDoParallel()
+
 suppressMessages(library(bit64))
 suppressMessages(library(Rcpp))
 suppressMessages(library(readr))
@@ -7,26 +10,39 @@ suppressMessages(library(stringr))
 suppressMessages(library(compiler))
 suppressMessages(library(plyr))
 suppressMessages(library(foreach))
-suppressMessages(library(doMC))
 suppressMessages(library(iterators))
 suppressMessages(library(httr))
 suppressMessages(library(influxdbr2))
 suppressMessages(library(jsonlite))
+suppressMessages(library(data.table))
 
 j=enableJIT(3)
-registerDoMC(6)
 options(readr.show_progress=F)
+WAIT = 3 # seconds between each attempt to write the same chunk in InfluxDB
+COUNT= 100# Number of tries before we give up on a chunk of data
+NBCORES=8
+
 sourceCpp("cpaste.cpp")
 
 printf <- function(...) invisible(cat(sprintf(...)))
 rien <- function(...) NULL
 
+colclass <- function(c)
+{
+	unname(
+		sapply(unlist(strsplit(c,'')),
+			   function(c)
+			   {
+				   switch(c,
+						  'c' = 'character',
+						  'n' = 'numeric',
+						  'i' = 'integer'
+						  )
+			   }))
+}
 
 read_csv_file <- function(f)
 {
-	# Check if old style header
-	x = xzfile(f)
-
 	csvnames <- c('otype','recv','exch','bid1','bid2','bid3','bid4','bid5',
 				  'bidv1','bidv2','bidv3','bidv4','bidv5',
 				  'nbid1','nbid2','nbid3','nbid4','nbid5',
@@ -34,6 +50,8 @@ read_csv_file <- function(f)
 				  'askv1','askv2','askv3','askv4','askv5',
 				  'nask1','nask2','nask3','nask4','nask5')
 	
+	# Check if old style header
+	x = xzfile(f)
 	header = all(c("series","strike","call_put") %in% unlist(str_split(readLines(x,1),',')))
 	if(header) # old style
 	{
@@ -48,10 +66,14 @@ read_csv_file <- function(f)
 
 	close(x)
 
-	result = suppressWarnings(as.data.frame(
-		read_csv(f, col_types=csvformat, col_names=csvnames, skip=1,))) # read data
-	attr(result,"style")=style
+	# Read file
+	xz = paste("xz -cdk ",f)
+	result = fread(xz,sep=',',colClasses=colclass(csvformat),
+				   skip=1, col.names=csvnames,
+				   fill=T, showProgress=F,data.table=F) # read data
 
+	# Set 'style' and column name
+	attr(result,"style")=style
 	if(attr(result,"style")=="old")
 	{
 		names(result)[which(names(result)=="call_put")]="cp"
@@ -61,7 +83,7 @@ read_csv_file <- function(f)
 }
 
 # generate split indices of the data.frame (for // execution)
-generate_df_split <- function(N,gen='by',size=parallel::detectCores())
+generate_df_split <- function(N,gen='by',size=NBCORES)
 {
 	if(gen=='by') i = seq(1,N,by=size)
 	else i = round(seq(1,N,length.out=size))
@@ -144,11 +166,14 @@ df2influx <- function(df,param,measurement)
 	exch = str_c("exch=",df$exch,'i')
 
 	# add bid1=value etc... to each column
+	previous_nb_cores = options("cores")$cores
+	options(cores=NBCORES) # temporarily boost the number of cores here
 	body = foreach(i=1:ncol(book),.combine='cbind') %dopar% {str_c(names(book)[i],'=',book[,i])}
 	# collapse each row into a single string like bid1=12,bid2=11, etc...
 	split = generate_df_split(nrow(book),gen='length')
 	body <- foreach(s=iter(split,by='row'),.combine='c') %dopar% { cpaste(body[s$i:s$j,,drop=F]) }
 	body <- v3paste(otype,exch,body,',') # add the mandatory fields for each record
+	options(cores=previous_nb_cores)
 
 	# add timestamps and options tags if needed
 	if(ofield)
@@ -168,28 +193,46 @@ test_response <- function(r,file,log,measurement)
 	if(r$status_code!=204)
 	{
 		printf("%s - Error writing %s %s %s\n",Sys.time(),file,r$status_code,measurement)
-	}
+		return(FALSE)
+	} else return(TRUE)
 }
 
 # Send a vector 'vec' of Influx line protocal to the server
 # Split in smaller blocks to avoid server congestion
 write2influx <- function(vec,file,log,measurement,DBNAME,max_size=10000)
 {
+	loopwrite<-function(chunk)
+	{
+		count = COUNT
+		repeat
+		{
+			response = httr::POST(url="", httr::timeout(60), scheme="http", hostname="127.0.0.1", port=8086, 
+								  path="write", query=list(db=DBNAME,u="",p=""),
+								  body=paste0(chunk,collapse='\n'))
+			if(test_response(response,file,log,measurement)) # write OK
+				break
+			else { # write not OK
+				printf("%s - Retrying to write %s chunk of %s\n",Sys.time(),measurement,file)
+				Sys.sleep(WAIT) # if error, wait 3 seconds
+				count = count - 1
+				if(count==0)
+				{
+					printf("%s - Giving up on %s chunk of %s\n",Sys.time(),measurement,file)
+					break
+				}
+			}
+		}
+	}
+
 	if(length(vec)>max_size)
 	{
 		split = generate_df_split(length(vec),gen='by',size=max_size)
 		for(i in 1:nrow(split))
 		{
-			response = httr::POST(url="", httr::timeout(60), scheme="http", hostname="127.0.0.1", port=8086,
-				path="write", query=list(db=DBNAME,u="",p=""), 
-				body=paste0(vec[split$i[i]:split$j[i]],collapse='\n'))
-			test_response(response,file,log,measurement)
+			loopwrite(vec[split$i[i]:split$j[i]])
 		}
 	} else {
-			response = httr::POST(url="", httr::timeout(60), scheme="http", hostname="127.0.0.1", port=8086,
-				path="write", query=list(db=DBNAME,u="",p=""), 
-				body=paste0(vec,collapse='\n'))
-			test_response(response,file,log,measurement)
+			loopwrite(vec)
 	}
 }
 
@@ -225,15 +268,11 @@ find_data_file <- function(cfg,con)
 		p1 = paste0(paste0('-',cfg$contracts),collapse='|')
 		p2 = paste0(paste0('^',cfg$contracts),collapse='|')
 		p = paste0(c(p1,p2),collapse='|')
-		print(p1)
-		print(p2)
-		print(p)
 		files = dir(cfg$capturedir,
 					pattern = p,
 					full.names=T, recursive=T) # get all the data files
 	}
 	else files=dir(cfg$capturedir,pattern='*.csv.xz', full.names=T,recursive=T)
-	print(files)
 
 	# Filter out ref and stats files
 	files = grep("Reference",files,value=T,invert=T)
@@ -241,8 +280,6 @@ find_data_file <- function(cfg,con)
 
 	# Make the diff with already processed files
 	newfiles = setdiff(files,donefiles)
-
-	print(newfiles)
 
 	return(newfiles)
 }
@@ -277,14 +314,19 @@ update_database <- function(config)
 	# find new files and process them
 	newfiles = find_data_file(cfg,con) 
 	N = length(newfiles)
-	printf("%s - Processing %d files\n",Sys.time(),N)
-	for(f in newfiles)
+	printf("%s - %d new files will be added\n",Sys.time(),N)
+
+	options(cores=2)
+	foreach(f=newfiles) %dopar%
 	{
 		t0=Sys.time()
+		printf("%s - processing %s\n",Sys.time(),f)
 		param = decompose_filename(basename(f)) # get parameters from file name
 		if(file.access(f,mode=0)==0 & file.access(f,mode=4)==0) # ignore non-readable files
 		{
 			df = read_csv_file(f) # read data
+			gc()
+			printf("%s - read %s: %d rows\n",Sys.time(),f,nrow(df))
 			# clean up data
 			df = df[!is.na(as.integer64(df$recv)) , ] # remove bad recv
 			df = df[!is.na(as.integer64(df$exch)) , ] # remove bad exch
@@ -297,21 +339,26 @@ update_database <- function(config)
 
 				dft = df[trades, ]
 				dfq = df[quotes, ]
+				rm(df)
 
 				# convert data.frame to line protocol
 				if(nrow(dft)>0)
 				{
 					influxt=df2influx(dft,param,"trade")
+					rm(dft); gc()
 					# Populate InfluxDB
 					if(length(influxt)>0)
 						write2influx(influxt,f,log,"trade",cfg$dbname)
+					rm(influxt); gc()
 				}
 				if(nrow(dfq)>0)
 				{
 					influxq=df2influx(dfq,param,"book")
+					rm(dfq);gc()
 					# Populate InfluxDB
 					if(length(influxq)>0)
 						write2influx(influxq,f,log,"book",cfg$dbname)
+					rm(influxq); gc()
 				}
 
 				msg<-sprintf("%s : %d trades %d quotes\n",basename(f),sum(trades),sum(quotes))
@@ -324,7 +371,7 @@ update_database <- function(config)
 
 		} else {
 			# non-readable files are not written into processed files list
-			printf("%s - %s to readable\n",Sys.time(),basename(f))
+			printf("%s - %s not readable\n",Sys.time(),basename(f))
 		}
 	}
 
