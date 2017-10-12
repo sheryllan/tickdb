@@ -311,7 +311,30 @@ tick_data <- function(measurement,product,type,from,to,periods,
 	# Run query
 	data = run.query(query,db,con=con)
 
+	class(data)="tickdata"
+
 	return(data)
+}
+
+#' Print a tickdata object
+#' @param x an object of class tickdata, usually, a result of a call to 'tick_data'
+#' @export print.tickdata
+print.tickdata <- function(x,...)
+{
+}
+
+#' Produce result summaries on tick data
+#' @param x an object of class tickdata, usually, a result of a call to 'tick_data'
+#' @export summary.tickdata
+summary.tickdata <- function(x,...)
+{
+}
+
+#' Plot a tickdata object
+#' @param x an object of class tickdata, usually, a result of a call to 'tick_data'
+#' @export plot.tickdata
+plot.tickdata <- function(x,...)
+{
 }
 
 #' Run a simple query with a group by argument
@@ -403,5 +426,28 @@ sample_price <- function(measurement,product,type,from,to,periods,
 		}
 	}
 
+	class(data)="sampleprice"
+
 	return(data)
+}
+
+#' Print a sampleprice object
+#' @param x an object of class sampleprice, usually, a result of a call to 'sample_price'
+#' @export print.sampleprice
+print.sampleprice <- function(x,...)
+{
+}
+
+#' Produce result summaries on tick data
+#' @param x an object of class sampleprice, usually, a result of a call to 'sample_price'
+#' @export summary.sampleprice
+summary.sampleprice <- function(x,...)
+{
+}
+
+#' Plot a sampleprice object
+#' @param x an object of class sampleprice, usually, a result of a call to 'sample_price'
+#' @export plot.sampleprice
+plot.sampleprice <- function(x,...)
+{
 }
