@@ -4,9 +4,10 @@
 \alias{make.query}
 \title{Generate a query from specifications}
 \usage{
-make.query(db, measurement, product, type, from, to, periods, front, rolldays,
-  fields, con, extended_result = F)
+make.query(db, con, measurement, product, type, from, to, periods, front,
+  rolldays, fields, extended_result = F)
 }
 \description{
 Generate a query from specifications
 }
+

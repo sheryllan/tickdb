@@ -6,7 +6,7 @@
 \usage{
 tick_data(measurement, product, type, from, to, periods, front = 1,
   rolldays = 5, fields = NULL,
-  config = "~/recherche/tickdatabase/influx/config.json")
+  config = "~/recherche/tickdatabase/influx/config.json", verbose = F)
 }
 \arguments{
 \item{measurement}{l1book,l2book,l2.5book,trade}
@@ -32,3 +32,4 @@ tick_data(measurement, product, type, from, to, periods, front = 1,
 \description{
 Sample price series
 }
+

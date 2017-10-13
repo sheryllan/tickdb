@@ -107,11 +107,35 @@ create.query <- function(sc,fields,measurement,group='')
 				ifelse(str_length(group)>0, str_c(" group by ",group), "")))
 }
 
+# Load the instrument database
+load_idb <- function(db,con,product,type)
+{
+	# Get data from Influx
+	query = paste0('select * from refdata where ProductID=~ /',
+				   str_c("PROD.",type,".",product),
+				   '/')
+
+	response = httr::GET(url = "", scheme = con$scheme, hostname = con$host, port = con$port, 
+						 path = "query",
+						 query = list(db=db, u=con$user, p=con$pass, q=query),
+						 add_headers(Accept="application/csv"))
+	if(response$status_code==200)
+	{
+		text = rawToChar(response$content)
+		options(readr.show_progress=F)
+		data = suppressWarnings(readr::read_csv(text,progress=F))
+		return(data)
+	} else {
+		return(NULL)
+	}
+}
+
 # generate sequence of contract and business date for a product, and the nanoseconds timestamps of required periods
-seq.contracts <- function(product,type,front,rolldays,from,to,periods,idb)
+seq.contracts <- function(db,con,product,type,front,rolldays,from,to,periods)
 {
 	s = seq(ymd(from), ymd(to), by='1 day') # sequence of days [from,to]
 	regex = str_c("PROD\\.",type,"\\.",product)
+	idb = load_idb(db,con,product,type)
 	x=idb[grepl(regex,idb$ProductID) & idb$Type=="F",]
 	x$expdate = ymd(x$ExpiryDate) - days(rolldays)
 
@@ -160,26 +184,7 @@ seq.contracts <- function(product,type,front,rolldays,from,to,periods,idb)
 			  )
 	}
 
-	list(contracts=contracts,timestamps=timestamps, idb=idb,tz=exch2tz(exch))
-}
-
-# Load the instrument database
-load_idb <- function(db,con)
-{
-	# Get data from Influx
-	response = httr::GET(url = "", scheme = con$scheme, hostname = con$host, port = con$port, 
-						 path = "query",
-						 query = list(db=db, u=con$user, p=con$pass, q="select * from refdata"),
-						 add_headers(Accept="application/csv"))
-	if(response$status_code==200)
-	{
-		text = rawToChar(response$content)
-		options(readr.show_progress=F)
-		data = readr::read_csv(text,progress=F)
-		return(data)
-	} else {
-		return(NULL)
-	}
+	list(contracts=contracts,timestamps=timestamps, tz=exch2tz(exch))
 }
 
 # Create a connection object to an InfluxDB
@@ -209,12 +214,9 @@ influx.connection <- function(host='127.0.0.1', port=8086, scheme="http", user="
 }
 
 #' Generate a query from specifications
-make.query <- function(db,measurement,product,type,from,to,periods,
-					   front,rolldays,fields,con,extended_result=F)
+make.query <- function(db,con,measurement,product,type,from,to,periods,
+					   front,rolldays,fields,extended_result=F)
 {
-	if(!exists("idb")) # load instrument database
-		idb <<- load_idb(db,con)
-
 	# generate field's names
 	if(is.null(fields))
 	{
@@ -246,11 +248,11 @@ make.query <- function(db,measurement,product,type,from,to,periods,
 	if(!extended_result)
 	{
 		return(
-			   seq.contracts(product,type,front,rolldays,from,to,periods,idb) %>%
+			   seq.contracts(db,con,product,type,front,rolldays,from,to,periods) %>%
 				create.query(fields,measurement)
 			)
 	} else {
-		sequence = seq.contracts(product,type,front,rolldays,from,to,periods,idb)
+		sequence = seq.contracts(db,con,product,type,front,rolldays,from,to,periods)
 		query = sequence %>% create.query(fields,measurement)
 		return(list(sequence=sequence$contracts,query=query,tz=sequence$tz))
 	}
@@ -298,21 +300,24 @@ period <- function(from,to)
 #' @export tick_data
 tick_data <- function(measurement,product,type,from,to,periods,
 					 front=1,rolldays=5,fields=NULL,
-					 config="~/recherche/tickdatabase/influx/config.json")
+					 config="~/recherche/tickdatabase/influx/config.json",
+					 verbose=F)
 {
 	# Initialize Influx connection
 	cfg = read_json(config)
 	con = influx.connection(cfg$host)
+	if(verbose) message("Connection to database established")
 
 	# Create a query
 	db = cfg$dbname
-	query = make.query(db,measurement,product,type,from,to,periods,front,rolldays,fields,con)
+	query = make.query(db,con,measurement,product,type,from,to,periods,front,rolldays,fields)
+	if(verbose) message(sprintf("Generated %d individual queries",length(query)))
 
 	# Run query
 	data = run.query(query,db,con=con)
+	if(verbose) message(sprintf("Received %d results from %d queries",length(data),length(query)))
 
 	class(data)="tickdata"
-
 	return(data)
 }
 
@@ -403,7 +408,7 @@ sample_price <- function(measurement,product,type,from,to,periods,
 
 	# Create a query
 	db = cfg$dbname
-	equery = make.query(db,measurement,product,type,from,to,periods,front,rolldays,fields,con,
+	equery = make.query(db,con,measurement,product,type,from,to,periods,front,rolldays,fields,
 					   extended_result=T)
 	query = equery$query
 	sequence = equery$sequence
