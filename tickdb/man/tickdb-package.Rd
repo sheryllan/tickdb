@@ -10,3 +10,4 @@ Functions to access the Liquid Capital Tick Database
 \author{
 David Bellot \email{dbellot@liquidcapital.com}
 }
+
