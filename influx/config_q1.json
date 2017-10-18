@@ -1,7 +1,0 @@
-{
-	"host" : "192.168.55.31",
-	"dbname" : "tickdb",
-	"capturedir": "/mnt/ssd/test",
-	"contracts" : [ "OESX-O"],
-	"logfile": "/mnt/ssd/influx.log"
-}
