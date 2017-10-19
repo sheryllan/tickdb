@@ -1,0 +1,5 @@
+#!/bin/bash
+
+cd /home/influx/tickdatabase/influx
+./csv2influx.r ./config.json
+./ref2db.r ./config.json
