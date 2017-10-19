@@ -316,7 +316,7 @@ update_database <- function(config)
 	N = length(newfiles)
 	printf("%s - %d new files will be added\n",Sys.time(),N)
 
-	options(cores=6)
+	options(cores=8)
 	foreach(f=newfiles) %dopar%
 	{
 		t0=Sys.time()
