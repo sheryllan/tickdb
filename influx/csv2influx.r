@@ -284,7 +284,7 @@ find_data_file <- function(cfg,con)
 	return(newfiles)
 }
 
-add_file_to_db <- function(cfg,con,f)
+add_file_to_db <- function(cfg,con,f,error=F)
 {
 	x = str_c("data_files file=\"",f,"\"")
 	response=httr::POST(url="",httr::timeout(60),scheme="http",
@@ -316,7 +316,7 @@ update_database <- function(config)
 	N = length(newfiles)
 	printf("%s - %d new files will be added\n",Sys.time(),N)
 
-	options(cores=2)
+	options(cores=8)
 	foreach(f=newfiles) %dopar%
 	{
 		t0=Sys.time()
@@ -324,54 +324,62 @@ update_database <- function(config)
 		param = decompose_filename(basename(f)) # get parameters from file name
 		if(file.access(f,mode=0)==0 & file.access(f,mode=4)==0) # ignore non-readable files
 		{
-			df = read_csv_file(f) # read data
+			df = tryCatch(read_csv_file(f),error=function(e) F)  # read data
 			gc()
-			printf("%s - read %s: %d rows\n",Sys.time(),f,nrow(df))
-			# clean up data
-			df = df[!is.na(as.integer64(df$recv)) , ] # remove bad recv
-			df = df[!is.na(as.integer64(df$exch)) , ] # remove bad exch
-
-			if(nrow(df)>0)
+			if(is.data.frame(df))
 			{
-				# split by trades and quotes
-				trades = df$otype=='S' | df$otype=='T'
-				quotes = !trades
-
-				dft = df[trades, ]
-				dfq = df[quotes, ]
-				rm(df)
-
-				# convert data.frame to line protocol
-				if(nrow(dft)>0)
+				printf("%s - read %s: %d rows\n",Sys.time(),f,nrow(df))
+				# clean up data
+				df = df[!is.na(as.integer64(df$recv)) , ] # remove bad recv
+				df = df[!is.na(as.integer64(df$exch)) , ] # remove bad exch
+	
+				if(nrow(df)>0)
 				{
-					influxt=df2influx(dft,param,"trade")
-					rm(dft); gc()
-					# Populate InfluxDB
-					if(length(influxt)>0)
-						write2influx(influxt,f,log,"trade",cfg$dbname)
-					rm(influxt); gc()
+					# split by trades and quotes
+					trades = df$otype=='S' | df$otype=='T'
+					quotes = !trades
+	
+					dft = df[trades, ]
+					dfq = df[quotes, ]
+					rm(df)
+	
+					# convert data.frame to line protocol
+					if(nrow(dft)>0)
+					{
+						influxt=df2influx(dft,param,"trade")
+						rm(dft); gc()
+						# Populate InfluxDB
+						if(length(influxt)>0)
+							write2influx(influxt,f,log,"trade",cfg$dbname)
+						rm(influxt); gc()
+					}
+					if(nrow(dfq)>0)
+					{
+						influxq=df2influx(dfq,param,"book")
+						rm(dfq);gc()
+						# Populate InfluxDB
+						if(length(influxq)>0)
+							write2influx(influxq,f,log,"book",cfg$dbname)
+						rm(influxq); gc()
+					}
+	
+					msg<-sprintf("%s : %d trades %d quotes\n",basename(f),sum(trades),sum(quotes))
+				} else {
+					msg<-sprintf("%s : empty file\n",basename(f))
 				}
-				if(nrow(dfq)>0)
-				{
-					influxq=df2influx(dfq,param,"book")
-					rm(dfq);gc()
-					# Populate InfluxDB
-					if(length(influxq)>0)
-						write2influx(influxq,f,log,"book",cfg$dbname)
-					rm(influxq); gc()
-				}
-
-				msg<-sprintf("%s : %d trades %d quotes\n",basename(f),sum(trades),sum(quotes))
+				add_file_to_db(cfg,con,f) # update list of processed files in the db
+				printf("%s - %s",Sys.time(), msg)
 			} else {
-				msg<-sprintf("%s : empty file\n",basename(f))
+				# Even if the file has an error, it's added to the list of processed files
+				# Most of the time, the problem is with the old version of MDRec capture
+				# which was not recording options correctly. We have approx. 6 months of
+				# useless data (01-06 2016).
+				add_file_to_db(cfg,con,f,error=T)
+				printf("%s - Error reading %s\n",Sys.time(),f)#
 			}
-
-			add_file_to_db(cfg,con,f)
-			printf("%s - %s",Sys.time(), msg)
-
 		} else {
 			# non-readable files are not written into processed files list
-			printf("%s - %s not readable\n",Sys.time(),basename(f))
+			printf("%s - Error: %s not readable\n",Sys.time(),basename(f))
 		}
 	}
 

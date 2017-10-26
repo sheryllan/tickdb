@@ -2,16 +2,18 @@
 	"host" : "192.168.55.49",
 	"dbname" : "liquid_tick",
 	"capturedir": "/mnt/tank/backups/london/quants/data/rawdata",
-	"contracts" : [ "FESX-F","FDAX-F","FDXM-F","FESB-F",
-					"FBTP-F","FGBL-F","FOAT-F","FOAM-F", "FSMI-F","FVS-F",
-					"6A-F", "6B-F", "6C-F","6M-F","6S-F","SI-F",
-					"FGBM-F","B-F","T-F","FTSE-F","LIFFELR-F",
-					"CL-F","6E-F","6J-F","ES-F","NQ-F","YM-F",
-					"GC-F","ZF-F","ZN-F",
-					"FGBS-F", "FGBX-F",
-					"ZB-F","ZT-F","UB-T","HG-F","6N-F","NG-F",
-					"ZC-F","ZL-F","ZM-F","ZS-F","ZW-F","HO-F","RB-F",
-					"NIY-F","NKD-F","CAC-F"
+	"contracts" : [ 
+"6A-F", "6B-F", "6C-F", "6E-F", "6J-F", "6M-F", "6N-F", "6S-F", "B-F", "BT",
+"CAC-F", "CCO", "CCOT", "CL-F", "CN-F", "CONF", "EE", "EF", "ES-F", "FBTM",
+"FBTP-F", "FBTS", "FDAX-F", "FDXM-F", "FEF", "FESB", "FESB-F", "FESX-F", "FEU3", "FGBL-F",
+"FGBM-F", "FGBS-F", "FGBX-F", "FMK2", "FOAM-F", "FOAT-F", "FSMI-F", "FTSE-F", "FTSET", "FVS-F",
+"FXXP-F", "GC-F", "GWM", "GWMT", "HG-F", "HHI-F", "HO-F", "HSI-F", "IC", "IF",
+"IH", "JGB", "JP400-F", "LE-F", "LIFFELI", "LIFFELIT", "LIFFELL", "LIFFELLT", "LIFFELR-F", "LIFFELRT",
+"MCH-F", "MHI-F", "MN-F", "N225-F", "NG-F", "NIY-F", "NK", "NK-F", "NKD-F", "NQ-F",
+"NS", "RB-F", "SB", "SBT", "SI-F", "T-F", "TF", "TOPIX-F", "TOPIXMINI-F", "TT",
+"T_CN", "UB-T", "WEU", "YM-F", "ZB-F", "ZC-F", "ZF-F", "ZL-F", "ZM-F", "ZN-F",
+"ZS-F", "ZT-F", "ZW-F",
+"OESX-O"
    	],
 
 	"logfile": "/home/influx/influx.log"

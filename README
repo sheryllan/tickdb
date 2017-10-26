@@ -3,3 +3,17 @@ Current packages as of Jun 2017:
 influx: convert MDRec capture data to InfluxDB and populate the database
 tickdb: R package to access the Tick Database on the Influx server
 software: standalone applications to use the tick database
+
+influx directory:
+----------------
+
+the json config file works the same for all the softwares in this directory.
+
+csv2influx.r <json config file>: this software will take whatever new files it can find in  the Tank,
+                                 process them and push them  into the Influx  database. It's the main
+								 software for updating the database with new data.
+
+ref2db.r <json config file>: it searches for reference data file and push them into Influx. It's used
+                             by the 'tickdb' R package, for example, to find  which products  we have
+							 in the database, know about their properties, like  tick size  or expiry
+							 date.
