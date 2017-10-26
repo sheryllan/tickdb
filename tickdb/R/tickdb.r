@@ -133,11 +133,11 @@ load_idb <- function(db,con,product,type)
 # generate sequence of contract and business date for a product, and the nanoseconds timestamps of required periods
 seq.contracts <- function(db,con,product,type,front,rolldays,from,to,periods)
 {
-	s = seq(ymd(from), ymd(to), by='1 day') # sequence of days [from,to]
+	s = seq(lubridate::ymd(from), lubridate::ymd(to), by='1 day') # sequence of days [from,to]
 	regex = str_c("PROD\\.",type,"\\.",product)
 	idb = load_idb(db,con,product,type)
 	x=idb[grepl(regex,idb$ProductID) & idb$Type=="F",]
-	x$expdate = ymd(x$ExpiryDate) - days(rolldays)
+	x$expdate = lubridate::ymd(x$ExpiryDate) - lubridate::days(rolldays)
 
 	# Get exchange name. It must be unique
 	if("Exchange" %in% names(x))
@@ -153,10 +153,8 @@ seq.contracts <- function(db,con,product,type,front,rolldays,from,to,periods)
 	# change format from yyyymmdd to yyyy-mm-dd
 	from.s = str_c(str_sub(from,1,4),str_sub(from,5,6),str_sub(from,7,8),sep='-')
 	to.s   = str_c(str_sub(to,1,4),  str_sub(to,5,6),  str_sub(to,7,8),sep='-')
-	#if(!has.calendars(exch2ql(exch))) # load bizness calendars
-	#{
-		suppressMessages(load_quantlib_calendars(from=from.s,to=to.s))
-	#}
+
+	suppressMessages(load_quantlib_calendars(from=from.s,to=to.s))
 	bizseq = bizdays(from.s,to.s,exch2ql(exch)) # generate sequence of biz days for exchange
 
 	# Generate the sequence of contract per business day
@@ -283,7 +281,12 @@ run.query <- function(query,db,sample=F,stype='',con)
 #' @export period
 period <- function(from,to)
 {
-	data.frame(from=sprintf("%2d:00",from),to=sprintf("%2d:00",to))
+	f1 = from[1]
+	f2 = if(length(from)==2) from[2] else 0
+	t1 = to[1]
+	t2 = if(length(to)==2) to[2] else 0
+
+	data.frame(from=sprintf("%02d:%02d",f1,f2),to=sprintf("%02d:%02d",t1,t2))
 }
 
 #' Sample price series
@@ -425,9 +428,9 @@ sample_price <- function(measurement,product,type,from,to,periods,
 			data[[i]]$contract=sequence$ProductID[i]
 			data[[i]]$ExpiryDate=sequence$ExpiryDate[i]
 			data[[i]]$date = sequence$date[i]
-			data[[i]]$hour = hour(with_tz(as.POSIXct(nanotime(data[[i]]$time)),tz=equery$tz))
-			data[[i]]$min = minute(with_tz(as.POSIXct(nanotime(data[[i]]$time)),tz=equery$tz))
-			data[[i]]$sec = second(with_tz(as.POSIXct(nanotime(data[[i]]$time)),tz=equery$tz))
+			data[[i]]$hour = lubridate::hour  (with_tz(as.POSIXct(nanotime(data[[i]]$time)),tz=equery$tz))
+			data[[i]]$min  = lubridate::minute(with_tz(as.POSIXct(nanotime(data[[i]]$time)),tz=equery$tz))
+			data[[i]]$sec  = lubridate::second(with_tz(as.POSIXct(nanotime(data[[i]]$time)),tz=equery$tz))
 		}
 	}
 
