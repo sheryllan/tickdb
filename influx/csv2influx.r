@@ -188,6 +188,7 @@ df2influx <- function(df,param,measurement)
 	return(body[!is.na(body)])
 }
 
+# Influx HTTP protocal returns 204 when things are good
 test_response <- function(r,file,log,measurement)
 {
 	if(r$status_code!=204)
@@ -236,6 +237,7 @@ write2influx <- function(vec,file,log,measurement,DBNAME,max_size=10000)
 	}
 }
 
+# Read list of processed files from Influx
 read_processed_file <- function(cfg,con)
 {
 	if(!is.null(con))
@@ -258,7 +260,7 @@ read_processed_file <- function(cfg,con)
 	return(donefiles)
 }
 
-# Find new data file in the raw capture
+# Find new data files from MDrec repository
 find_data_file <- function(cfg,con)
 {
 	donefiles = read_processed_file(cfg,con)
@@ -268,11 +270,12 @@ find_data_file <- function(cfg,con)
 		p1 = paste0(paste0('-',cfg$contracts),collapse='|')
 		p2 = paste0(paste0('^',cfg$contracts),collapse='|')
 		p = paste0(c(p1,p2),collapse='|')
-		files = dir(cfg$capturedir,
-					pattern = p,
-					full.names=T, recursive=T) # get all the data files
 	}
-	else files=dir(cfg$capturedir,pattern='*.csv.xz', full.names=T,recursive=T)
+	else p='*.csv.xz'
+
+	# list files from the pattern	
+	files = dir(cfg$capturedir, pattern = p,
+				full.names=T, recursive=T) # get all the data files
 
 	# Filter out ref and stats files
 	files = grep("Reference",files,value=T,invert=T)
@@ -284,6 +287,7 @@ find_data_file <- function(cfg,con)
 	return(newfiles)
 }
 
+# Add processed files to Influx (after completely processing them)
 add_file_to_db <- function(cfg,con,f,error=F)
 {
 	x = str_c("data_files file=\"",f,"\"")
@@ -346,7 +350,7 @@ update_database <- function(config)
 					# convert data.frame to line protocol
 					if(nrow(dft)>0)
 					{
-						influxt=df2influx(dft,param,"trade")
+						influxt=df2influx(dft,param,"trade") # convert mdrec to Influx line protocol
 						rm(dft); gc()
 						# Populate InfluxDB
 						if(length(influxt)>0)

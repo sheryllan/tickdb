@@ -13,7 +13,9 @@
 "NS", "RB-F", "SB", "SBT", "SI-F", "T-F", "TF", "TOPIX-F", "TOPIXMINI-F", "TT",
 "T_CN", "UB-T", "WEU", "YM-F", "ZB-F", "ZC-F", "ZF-F", "ZL-F", "ZM-F", "ZN-F",
 "ZS-F", "ZT-F", "ZW-F",
-"OESX-O"
+"OESX-O",
+"CTP_MDREC",
+"CFFEX_Shim"
    	],
 
 	"logfile": "/home/influx/influx.log"
