@@ -70,6 +70,7 @@ read_csv_file <- function(f)
 	xz = paste("xz -cdk ",f)
 	result = fread(xz,sep=',',colClasses=colclass(csvformat),
 				   skip=1, col.names=csvnames,
+				   blank.lines.skip=T,
 				   fill=T, showProgress=F,data.table=F) # read data
 
 	# Set 'style' and column name
@@ -267,9 +268,7 @@ find_data_file <- function(cfg,con)
 
 	if(length(cfg$contracts>0))
 	{
-		p1 = paste0(paste0('-',cfg$contracts),collapse='|')
-		p2 = paste0(paste0('^',cfg$contracts),collapse='|')
-		p = paste0(c(p1,p2),collapse='|')
+		p = paste0(paste0(cfg$contracts,collapse='|'),collapse='|')
 	}
 	else p='*.csv.xz'
 
@@ -321,7 +320,8 @@ update_database <- function(config)
 	printf("%s - %d new files will be added\n",Sys.time(),N)
 
 	options(cores=8)
-	foreach(f=newfiles) %dopar%
+#	foreach(f=newfiles) %dopar%
+	for(f in newfiles)
 	{
 		t0=Sys.time()
 		printf("%s - processing %s\n",Sys.time(),f)
