@@ -393,6 +393,18 @@ update_database <- function(config)
 # Main program
 if(!interactive())
 {
+	# detect if another instance is running. In this case, wait for 5 minutes
+	repeat
+	{
+		x=grep('R .*csv2influx',system2('ps','x',T,T),value=T)
+		if(length(x)<1)
+		{
+			break
+		} else {
+			Sys.sleep(60)
+		}
+	}
+	
 	args <- commandArgs(trailingOnly=T)
 	if(length(args)<1)
 	{
