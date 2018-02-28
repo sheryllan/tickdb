@@ -14,4 +14,3 @@ period(from, to)
 \description{
 Make a 'periods' data.frame like 08:00,17:00 with 2 integers only
 }
-

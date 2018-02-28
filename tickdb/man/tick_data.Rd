@@ -32,4 +32,3 @@ tick_data(measurement, product, type, from, to, periods, front = 1,
 \description{
 Sample price series
 }
-

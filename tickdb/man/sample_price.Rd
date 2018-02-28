@@ -32,4 +32,3 @@ sample_price(measurement, product, type, from, to, periods, frequency = "1s",
 \description{
 Sample price series
 }
-

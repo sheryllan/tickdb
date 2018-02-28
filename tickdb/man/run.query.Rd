@@ -17,4 +17,3 @@ a data.frame
 \description{
 Run a TickDB query
 }
-

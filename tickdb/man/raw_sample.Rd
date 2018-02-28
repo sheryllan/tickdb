@@ -24,4 +24,3 @@ raw_sample(measurement, product, type, expiry, from, to, group, config)
 \description{
 Run a simple query with a group by argument
 }
-

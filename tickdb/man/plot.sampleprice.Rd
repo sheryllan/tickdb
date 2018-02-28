@@ -12,4 +12,3 @@
 \description{
 Plot a sampleprice object
 }
-

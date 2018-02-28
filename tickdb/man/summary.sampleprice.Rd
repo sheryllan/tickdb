@@ -12,4 +12,3 @@
 \description{
 Produce result summaries on tick data
 }
-

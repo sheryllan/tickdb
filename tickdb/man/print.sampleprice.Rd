@@ -4,7 +4,7 @@
 \alias{print.sampleprice}
 \title{Print a sampleprice object}
 \usage{
-print.sampleprice(x, ...)
+\method{print}{sampleprice}(x, ...)
 }
 \arguments{
 \item{x}{an object of class sampleprice, usually, a result of a call to 'sample_price'}
@@ -12,4 +12,3 @@ print.sampleprice(x, ...)
 \description{
 Print a sampleprice object
 }
-

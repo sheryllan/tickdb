@@ -10,4 +10,3 @@ make.query(db, con, measurement, product, type, from, to, periods, front,
 \description{
 Generate a query from specifications
 }
-

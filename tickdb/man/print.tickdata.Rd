@@ -4,7 +4,7 @@
 \alias{print.tickdata}
 \title{Print a tickdata object}
 \usage{
-print.tickdata(x, ...)
+\method{print}{tickdata}(x, ...)
 }
 \arguments{
 \item{x}{an object of class tickdata, usually, a result of a call to 'tick_data'}
@@ -12,4 +12,3 @@ print.tickdata(x, ...)
 \description{
 Print a tickdata object
 }
-

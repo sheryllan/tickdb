@@ -94,8 +94,10 @@ exch2tz <- function(exchange)
 
 create.query <- function(sc,fields,measurement,group='')
 {
-	do.call(rbind, str_split(sc$contracts$ProductID,fixed('.'))) %>% 
-		as_tibble %>% 
+	a = do.call(rbind,str_split(sc$contracts$ProductID,fixed('.')))
+	a = as.tibble(a)
+		
+		a %>% 
 		transmute(contracts=sc$contracts$ProductID,from=sc$timestamps$nanofrom,
 				  to=sc$timestamps$nanoto, type=V2,product=V3,expiry=V4) %>%
 		rowwise() %>%
@@ -155,20 +157,25 @@ seq.contracts <- function(db,con,product,type,front,rolldays,from,to,periods)
 	to.s   = str_c(str_sub(to,1,4),  str_sub(to,5,6),  str_sub(to,7,8),sep='-')
 
 	suppressMessages(load_quantlib_calendars(from=from.s,to=to.s))
-	bizseq = bizdays(from.s,to.s,exch2ql(exch)) # generate sequence of biz days for exchange
+	bizseq = bizdays::bizdays(from.s,to.s,exch2ql(exch)) # generate sequence of biz days for exchange
 
 	# Generate the sequence of contract per business day
-	contracts = foreach(d=s,.combine=rbind) %do%
+	contracts = list()
+	for(i in 1:length(s))
 	{
-		if(is.bizday(d,exch2ql(exch)))
+		d = s[i]
+		y=x # make a copy of x
+		if(bizdays::is.bizday(d,exch2ql(exch)))
 		{
-			x$dist = x$expdate - d # time to expiry
-			x = x%>% filter(dist>=0) # remove expired contracts
-			x$rank = rank(x$dist) # get rank of distance to expiry
-			x$date = d
-			x %>% filter(rank==front) # select front contract
-		} else NULL
+			y$dist = y$expdate - d # time to expiry
+			y = y[y$dist>=0, ]
+			y$rank = rank(y$dist) # get rank of distance to expiry
+			y$date = d
+			contracts[[length(contracts)+1]] = y[y$rank==front,] # select front contract
+		}
 	}
+	contracts=do.call(rbind,contracts)
+	contracts=contracts[, c('name','time','ExpiryDate','Product','ProductID','expdate','dist','rank','date')]
 
 	# Generate for each day a data.frame of from/to nanoseconds timestamps
 	timestamps = foreach(d=iterators::iter(contracts,by='row'),.combine=rbind) %do%
@@ -246,12 +253,13 @@ make.query <- function(db,con,measurement,product,type,from,to,periods,
 	if(!extended_result)
 	{
 		return(
-			   seq.contracts(db,con,product,type,front,rolldays,from,to,periods) %>%
-				create.query(fields,measurement)
+			   create.query(
+					seq.contracts(db,con,product,type,front,rolldays,from,to,periods),
+					fields,measurement)
 			)
 	} else {
 		sequence = seq.contracts(db,con,product,type,front,rolldays,from,to,periods)
-		query = sequence %>% create.query(fields,measurement)
+		query = create.query(sequence,fields,measurement)
 		return(list(sequence=sequence$contracts,query=query,tz=sequence$tz))
 	}
 }
@@ -398,7 +406,7 @@ sample_price <- function(measurement,product,type,from,to,periods,
 {
 	if(measurement=='book')
 	{
-		fields="last(exch),first(bid1),max(bid1),min(bid1),last(bid1),first(bidv1),max(bidv1),min(bidv1),last(bidv1),first(ask1),max(ask1),min(ask1),last(ask1),first(askv1),max(askv1),min(askv1),last(askv1)"
+		fields="last(exch),first(bid2),max(bid1),min(bid1),last(bid1),first(bidv1),max(bidv1),min(bidv1),last(bidv1),first(ask1),max(ask1),min(ask1),last(ask1),first(askv1),max(askv1),min(askv1),last(askv1)"
 		measurement = 'book'
 	} else if(measurement=='trade')
 	{
@@ -433,8 +441,6 @@ sample_price <- function(measurement,product,type,from,to,periods,
 			data[[i]]$sec  = lubridate::second(with_tz(as.POSIXct(nanotime(data[[i]]$time)),tz=equery$tz))
 		}
 	}
-
-	class(data)="sampleprice"
 
 	return(data)
 }
