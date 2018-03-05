@@ -397,7 +397,7 @@ if(!interactive())
 	repeat
 	{
 		x=grep('R .*csv2influx',system2('ps','x',T,T),value=T)
-		if(length(x)<1)
+		if(length(x)<=1)
 		{
 			break
 		} else {
