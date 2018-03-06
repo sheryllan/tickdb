@@ -1,0 +1,17 @@
+$ python getBookTradeData.py -h
+usage: getBookTradeData.py [-h] [--debug] [--qtg]
+                      product timezone startDate seconds
+
+Get the tick data (trades and books) for a specific set of products around a
+specific timeframe sorted by recv time
+
+positional arguments:
+  product     The comma separated list of the products we are searching for
+  timezone    The timezone of the orderMonitord log: Australia/Sydney
+  startDate   The date and time we want to start looking at: %Y-%m-%dT%H:%M:%S
+  seconds     Amount of seconds after startDate to fetch data for
+
+optional arguments:
+  -h, --help  show this help message and exit
+  --debug     Run in debug mode.
+  --qtg       Use QTG tick data
