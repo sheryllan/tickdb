@@ -1,0 +1,16 @@
+This script is to import qtg name to reactor name mapping data into influx.
+
+Mapping data is generated based on qtg instrument file.
+
+One example of qtg instrument name is GXU8_Index. this script gets the 'GX' part, and maps it to 'FDAX' which
+is from 'trading' column in qtg instrument file.
+
+Special_Reactor_Name in the script can be modified to map 'GX' to a different name. for instance, adding 'GX' : 'DAX' in 
+Special_Reactor_Name can map 'GX' to 'DAX' 
+
+Usage of this script:
+
+Python parse_qtg_inst.py <qtg instrument file> <influx http host> <influx http port> <influx db name>
+
+
+
