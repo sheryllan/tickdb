@@ -3,12 +3,12 @@ decode.header <- function(h)
 	types = rep('c',length(h)) # by default all types are character
 	for(i in 1:length(h)) # then adjust each type
 	{
-		if(str_detect(h[i],"^price|^bid[0-9]|^ask[0-9]"))
+		if(stringr::str_detect(h[i],"^price|^bid[0-9]|^ask[0-9]"))
 			types[i]='d'
-		if(str_detect(h[i],"^volume|^size|^bidv|^askv|^nbid|^nask"))
+		if(stringr::str_detect(h[i],"^volume|^size|^bidv|^askv|^nbid|^nask"))
 			types[i]='i'
 	}
-	str_c(types,collapse='')
+	stringr::str_c(types,collapse='')
 }
 
 # convert a response to a data frame with market data
@@ -19,22 +19,22 @@ convert.influx <- function(response,sample,stype)
 		if(r$status_code==200 & length(r$content)>0)
 		{
 			text = rawToChar(r$content) # convert to text
-			header = decode.header(unlist(str_split(readLines(textConnection(text),1),',')))
+			header = decode.header(unlist(stringr::str_split(readLines(textConnection(text),1),',')))
 			if(!sample) # tick data
 			{
 				data = readr::read_csv(text,col_types=header)
 				# convert or remove some columns
-				idx = which(str_detect(names(data),"name")) # remove column "name"
+				idx = which(stringr::str_detect(names(data),"name")) # remove column "name"
 				if(length(idx)>0)
 					data = data[ , -idx]
-				idx = which(str_detect(names(data),"time")) # convert "time" to recv bit64
+				idx = which(stringr::str_detect(names(data),"time")) # convert "time" to recv bit64
 				if(length(idx)>0)
 				{
 					data$time = as.integer64(data$time)
 					names(data)[idx]='recv'
-					data$date = as.POSIXct(nanotime(data$recv))
+					data$date = as.POSIXct(nanotime::nanotime(data$recv))
 				}
-				idx = which(str_detect(names(data),"exch")) # convert "exch" to bit64
+				idx = which(stringr::str_detect(names(data),"exch")) # convert "exch" to bit64
 				if(length(idx)>0)
 					data$exch = as.integer64(data$exch)
 
@@ -49,22 +49,22 @@ convert.influx <- function(response,sample,stype)
 								'open_askv','max_askv','min_askv','close_askv'),skip=1)
 				} else if(stype=='trade')
 				{
-					data = readr::read_csv(text,col_types='ccccddddiiii',
+					data = readr::read_csv(text,col_types='ccccddddiiiii',
 					col_names=c('name','tags','time','close_exch','open_price','max_price',
 								'min_price','close_price','open_volume','max_volume',
-								'min_volume','close_volume'),skip=1)
+								'min_volume','close_volume','sum_volume'),skip=1)
 				}
 
-				idx = which(str_detect(names(data),"name")) # remove column "name"
+				idx = which(stringr::str_detect(names(data),"name")) # remove column "name"
 				if(length(idx)>0)
 					data = data[ , -idx]
-				idx = which(str_detect(names(data),"tags")) # remove column "tags"
+				idx = which(stringr::str_detect(names(data),"tags")) # remove column "tags"
 				if(length(idx)>0)
 					data = data[ , -idx]
-				idx = which(str_detect(names(data),"time")) # convert "time" to bit64
+				idx = which(stringr::str_detect(names(data),"time")) # convert "time" to bit64
 				if(length(idx)>0)
 					data$time = as.integer64(data$time)
-				idx = which(str_detect(names(data),"close_exch")) # convert "exch" to bit64
+				idx = which(stringr::str_detect(names(data),"close_exch")) # convert "exch" to bit64
 				if(length(idx)>0)
 					data$close_exch = as.integer64(data$close_exch)
 			}
@@ -94,7 +94,7 @@ exch2tz <- function(exchange)
 
 create.query <- function(sc,fields,measurement,group='')
 {
-	a = do.call(rbind,str_split(sc$contracts$ProductID,fixed('.')))
+	a = do.call(rbind,stringr::str_split(sc$contracts$ProductID,stringr::fixed('.')))
 	a = as.tibble(a)
 		
 		a %>% 
@@ -102,11 +102,11 @@ create.query <- function(sc,fields,measurement,group='')
 				  to=sc$timestamps$nanoto, type=V2,product=V3,expiry=V4) %>%
 		rowwise() %>%
 		(function(row)
-			str_c(
+			stringr::str_c(
 				"select ",fields," from ",measurement," where ", "product='",row$product,
 				"' and expiry='",row$expiry,"' and type='",row$type,"' and ",
-				str_c("time>=",row$from, " and time<=",row$to),
-				ifelse(str_length(group)>0, str_c(" group by ",group), "")))
+				stringr::str_c("time>=",row$from, " and time<=",row$to),
+				ifelse(stringr::str_length(group)>0, stringr::str_c(" group by ",group), "")))
 }
 
 # Load the instrument database
@@ -114,13 +114,13 @@ load_idb <- function(db,con,product,type)
 {
 	# Get data from Influx
 	query = paste0('select * from refdata where ProductID=~ /',
-				   str_c("PROD.",type,".",product),
+				   stringr::str_c("PROD.",type,".",product),
 				   '/')
 
 	response = httr::GET(url = "", scheme = con$scheme, hostname = con$host, port = con$port, 
 						 path = "query",
 						 query = list(db=db, u=con$user, p=con$pass, q=query),
-						 add_headers(Accept="application/csv"))
+						 httr::add_headers(Accept="application/csv"))
 	if(response$status_code==200)
 	{
 		text = rawToChar(response$content)
@@ -135,11 +135,12 @@ load_idb <- function(db,con,product,type)
 # generate sequence of contract and business date for a product, and the nanoseconds timestamps of required periods
 seq.contracts <- function(db,con,product,type,front,rolldays,from,to,periods)
 {
-	s = seq(lubridate::ymd(from), lubridate::ymd(to), by='1 day') # sequence of days [from,to]
-	regex = str_c("PROD\\.",type,"\\.",product)
+	# Load the database of all instruments
+	regex = stringr::str_c("PROD\\.",type,"\\.",product)
 	idb = load_idb(db,con,product,type)
-	x=idb[grepl(regex,idb$ProductID) & idb$Type=="F",]
-	x$expdate = lubridate::ymd(x$ExpiryDate) - lubridate::days(rolldays)
+	# Reduce to only the product name and type we're interested in
+	x=idb[grepl(regex,idb$ProductID) & idb$Type==type, ]
+	x$expdate = lubridate::ymd(x$ExpiryDate) - lubridate::days(rolldays) ##########
 
 	# Get exchange name. It must be unique
 	if("Exchange" %in% names(x))
@@ -153,22 +154,24 @@ seq.contracts <- function(db,con,product,type,front,rolldays,from,to,periods)
 	from = as.character(from)
 	to = as.character(to)
 	# change format from yyyymmdd to yyyy-mm-dd
-	from.s = str_c(str_sub(from,1,4),str_sub(from,5,6),str_sub(from,7,8),sep='-')
-	to.s   = str_c(str_sub(to,1,4),  str_sub(to,5,6),  str_sub(to,7,8),sep='-')
-
-	suppressMessages(load_quantlib_calendars(from=from.s,to=to.s))
-	bizseq = bizdays::bizdays(from.s,to.s,exch2ql(exch)) # generate sequence of biz days for exchange
+	from.s = stringr::str_c(stringr::str_sub(from,1,4),stringr::str_sub(from,5,6),stringr::str_sub(from,7,8),sep='-')
+	to.s   = stringr::str_c(stringr::str_sub(to,1,4),  stringr::str_sub(to,5,6),  stringr::str_sub(to,7,8),sep='-')
+	suppressMessages(bizdays::load_quantlib_calendars(from=from.s,to=to.s))
 
 	# Generate the sequence of contract per business day
 	contracts = list()
-	for(i in 1:length(s))
+	for(d in seq(lubridate::ymd(from), lubridate::ymd(to), by='1 day')) # sequence of days [from,to]
 	{
-		d = s[i]
 		y=x # make a copy of x
 		if(bizdays::is.bizday(d,exch2ql(exch)))
 		{
 			y$dist = y$expdate - d # time to expiry
-			y = y[y$dist>=0, ]
+			y = y[y$dist>=0, ] # Rule to select the appropriate contract ##########
+			y=do.call(rbind,lapply( # collapsing down to only one contract per product
+							lapply(unique(y$ExpiryDate),
+								   function(e) y[y$ExpiryDate==e,]), function(x) x[1,]))
+			#######
+
 			y$rank = rank(y$dist) # get rank of distance to expiry
 			y$date = d
 			contracts[[length(contracts)+1]] = y[y$rank==front,] # select front contract
@@ -184,8 +187,8 @@ seq.contracts <- function(db,con,product,type,front,rolldays,from,to,periods)
 		periods %>%
 		rowwise() %>%
 		mutate(date=d$date[1],
-			  nanofrom=as.integer64(nanotime::nanotime(with_tz(as.POSIXct(d$date[1]+hm(from),tz=exch2tz(exch))))),
-			  nanoto  =as.integer64(nanotime::nanotime(with_tz(as.POSIXct(d$date[1]+hm(to),  tz=exch2tz(exch)))))
+			  nanofrom=as.integer64(nanotime::nanotime(lubridate::with_tz(as.POSIXct(d$date[1]+lubridate::hm(from),tz=exch2tz(exch))))),
+			  nanoto  =as.integer64(nanotime::nanotime(lubridate::with_tz(as.POSIXct(d$date[1]+lubridate::hm(to),  tz=exch2tz(exch)))))
 			  )
 	}
 
@@ -244,9 +247,9 @@ make.query <- function(db,con,measurement,product,type,from,to,periods,
 
 		# add option fields
 		if(type=='O')
-			fields = str_c('otype,exch',fields,'strike,cp',sep=',')
+			fields = stringr::str_c('otype,exch',fields,'strike,cp',sep=',')
 		else
-			fields = str_c('otype,exch',fields,sep=',')
+			fields = stringr::str_c('otype,exch',fields,sep=',')
 	}
 
 	# generate queries
@@ -275,7 +278,7 @@ run.query <- function(query,db,sample=F,stype='',con)
 		foreach(q = query) %do%
 		{
 			httr::GET(url = "", scheme = con$scheme, hostname = con$host, port = con$port, path = "query",
-					  query = list(db=db, u=con$user, p=con$pass, q=q), add_headers(Accept="application/csv"))
+					  query = list(db=db, u=con$user, p=con$pass, q=q), httr::add_headers(Accept="application/csv"))
 		}, sample,stype)
 }
 
@@ -315,7 +318,7 @@ tick_data <- function(measurement,product,type,from,to,periods,
 					 verbose=F)
 {
 	# Initialize Influx connection
-	cfg = read_json(config)
+	cfg = jsonlite::read_json(config)
 	con = influx.connection(cfg$host)
 	if(verbose) message("Connection to database established")
 
@@ -328,7 +331,7 @@ tick_data <- function(measurement,product,type,from,to,periods,
 	data = run.query(query,db,con=con)
 	if(verbose) message(sprintf("Received %d results from %d queries",length(data),length(query)))
 
-	class(data)="tickdata"
+	class(data)=c("tickdata",class(data))
 	return(data)
 }
 
@@ -370,18 +373,17 @@ raw_sample <- function(measurement,product,type,expiry,from,to,group,config)
 		measurement = 'book'
 	} else if(measurement=='trade')
 	{
-		fields="last(exch),first(price),max(price),min(price),last(price),first(volume),max(volume),min(volume),last(volume)"
+		fields="last(exch),first(price),max(price),min(price),last(price),first(volume),max(volume),min(volume),last(volume),sum(volume)"
 	}
 
 	# Initialize Influx connection
-	cfg = read_json(config)
+	cfg = jsonlite::read_json(config)
 	con = influx.connection(cfg$host)
 
 	# Create a query
-	query = sprintf("select %s from %s where product='%s' and expiry='%s' and type='%s' and time>=%s and time<=%s group by time(%s)",
+	query = sprintf("select %s from %s where product='%s' and expiry='%s' and type='%s' and time>=\'%s\' and time<=\'%s\' group by time(%s)",
 					fields,measurement,product,expiry,type,from,to,group)
 
-	print(query)
 	# run the sampling query
 	data = run.query(query,cfg$dbname,sample=T,stype=measurement,con=con)
 
@@ -410,11 +412,11 @@ sample_price <- function(measurement,product,type,from,to,periods,
 		measurement = 'book'
 	} else if(measurement=='trade')
 	{
-		fields="last(exch),first(price),max(price),min(price),last(price),first(volume),max(volume),min(volume),last(volume)"
+		fields="last(exch),first(price),max(price),min(price),last(price),first(volume),max(volume),min(volume),last(volume),sum(volume)"
 	}
 
 	# Initialize Influx connection
-	cfg = read_json(config)
+	cfg = jsonlite::read_json(config)
 	con = influx.connection(cfg$host)
 
 	# Create a query
@@ -436,12 +438,13 @@ sample_price <- function(measurement,product,type,from,to,periods,
 			data[[i]]$contract=sequence$ProductID[i]
 			data[[i]]$ExpiryDate=sequence$ExpiryDate[i]
 			data[[i]]$date = sequence$date[i]
-			data[[i]]$hour = lubridate::hour  (with_tz(as.POSIXct(nanotime(data[[i]]$time)),tz=equery$tz))
-			data[[i]]$min  = lubridate::minute(with_tz(as.POSIXct(nanotime(data[[i]]$time)),tz=equery$tz))
-			data[[i]]$sec  = lubridate::second(with_tz(as.POSIXct(nanotime(data[[i]]$time)),tz=equery$tz))
+			data[[i]]$hour = lubridate::hour  (lubridate::with_tz(as.POSIXct(nanotime::nanotime(data[[i]]$time)),tz=equery$tz))
+			data[[i]]$min  = lubridate::minute(lubridate::with_tz(as.POSIXct(nanotime::nanotime(data[[i]]$time)),tz=equery$tz))
+			data[[i]]$sec  = lubridate::second(lubridate::with_tz(as.POSIXct(nanotime::nanotime(data[[i]]$time)),tz=equery$tz))
 		}
 	}
 
+	class(data) = c("sampleprice",class(data))
 	return(data)
 }
 
