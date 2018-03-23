@@ -49,10 +49,10 @@ convert.influx <- function(response,sample,stype)
 								'open_askv','max_askv','min_askv','close_askv'),skip=1)
 				} else if(stype=='trade')
 				{
-					data = readr::read_csv(text,col_types='ccccddddiiii',
+					data = readr::read_csv(text,col_types='ccccddddiiiii',
 					col_names=c('name','tags','time','close_exch','open_price','max_price',
 								'min_price','close_price','open_volume','max_volume',
-								'min_volume','close_volume'),skip=1)
+								'min_volume','close_volume','sum_volume'),skip=1)
 				}
 
 				idx = which(stringr::str_detect(names(data),"name")) # remove column "name"
@@ -135,11 +135,12 @@ load_idb <- function(db,con,product,type)
 # generate sequence of contract and business date for a product, and the nanoseconds timestamps of required periods
 seq.contracts <- function(db,con,product,type,front,rolldays,from,to,periods)
 {
-	s = seq(lubridate::ymd(from), lubridate::ymd(to), by='1 day') # sequence of days [from,to]
+	# Load the database of all instruments
 	regex = stringr::str_c("PROD\\.",type,"\\.",product)
 	idb = load_idb(db,con,product,type)
-	x=idb[grepl(regex,idb$ProductID) & idb$Type=="F",]
-	x$expdate = lubridate::ymd(x$ExpiryDate) - lubridate::days(rolldays)
+	# Reduce to only the product name and type we're interested in
+	x=idb[grepl(regex,idb$ProductID) & idb$Type==type, ]
+	x$expdate = lubridate::ymd(x$ExpiryDate) - lubridate::days(rolldays) ##########
 
 	# Get exchange name. It must be unique
 	if("Exchange" %in% names(x))
@@ -155,20 +156,22 @@ seq.contracts <- function(db,con,product,type,front,rolldays,from,to,periods)
 	# change format from yyyymmdd to yyyy-mm-dd
 	from.s = stringr::str_c(stringr::str_sub(from,1,4),stringr::str_sub(from,5,6),stringr::str_sub(from,7,8),sep='-')
 	to.s   = stringr::str_c(stringr::str_sub(to,1,4),  stringr::str_sub(to,5,6),  stringr::str_sub(to,7,8),sep='-')
-
 	suppressMessages(bizdays::load_quantlib_calendars(from=from.s,to=to.s))
-	bizseq = bizdays::bizdays(from.s,to.s,exch2ql(exch)) # generate sequence of biz days for exchange
 
 	# Generate the sequence of contract per business day
 	contracts = list()
-	for(i in 1:length(s))
+	for(d in seq(lubridate::ymd(from), lubridate::ymd(to), by='1 day')) # sequence of days [from,to]
 	{
-		d = s[i]
 		y=x # make a copy of x
 		if(bizdays::is.bizday(d,exch2ql(exch)))
 		{
 			y$dist = y$expdate - d # time to expiry
-			y = y[y$dist>=0, ]
+			y = y[y$dist>=0, ] # Rule to select the appropriate contract ##########
+			y=do.call(rbind,lapply( # collapsing down to only one contract per product
+							lapply(unique(y$ExpiryDate),
+								   function(e) y[y$ExpiryDate==e,]), function(x) x[1,]))
+			#######
+
 			y$rank = rank(y$dist) # get rank of distance to expiry
 			y$date = d
 			contracts[[length(contracts)+1]] = y[y$rank==front,] # select front contract
@@ -370,7 +373,7 @@ raw_sample <- function(measurement,product,type,expiry,from,to,group,config)
 		measurement = 'book'
 	} else if(measurement=='trade')
 	{
-		fields="last(exch),first(price),max(price),min(price),last(price),first(volume),max(volume),min(volume),last(volume)"
+		fields="last(exch),first(price),max(price),min(price),last(price),first(volume),max(volume),min(volume),last(volume),sum(volume)"
 	}
 
 	# Initialize Influx connection
@@ -378,10 +381,9 @@ raw_sample <- function(measurement,product,type,expiry,from,to,group,config)
 	con = influx.connection(cfg$host)
 
 	# Create a query
-	query = sprintf("select %s from %s where product='%s' and expiry='%s' and type='%s' and time>=%s and time<=%s group by time(%s)",
+	query = sprintf("select %s from %s where product='%s' and expiry='%s' and type='%s' and time>=\'%s\' and time<=\'%s\' group by time(%s)",
 					fields,measurement,product,expiry,type,from,to,group)
 
-	print(query)
 	# run the sampling query
 	data = run.query(query,cfg$dbname,sample=T,stype=measurement,con=con)
 
@@ -410,7 +412,7 @@ sample_price <- function(measurement,product,type,from,to,periods,
 		measurement = 'book'
 	} else if(measurement=='trade')
 	{
-		fields="last(exch),first(price),max(price),min(price),last(price),first(volume),max(volume),min(volume),last(volume)"
+		fields="last(exch),first(price),max(price),min(price),last(price),first(volume),max(volume),min(volume),last(volume),sum(volume)"
 	}
 
 	# Initialize Influx connection
