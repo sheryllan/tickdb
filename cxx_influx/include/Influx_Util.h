@@ -1,4 +1,5 @@
 #pragma once
+#include "lcc_msg/fixed_point.hxx"
 #include <string>
 #include <Poco/Net/HTTPClientSession.h>
 #include <Poco/Net/HTTPRequest.h>
@@ -58,7 +59,7 @@ public:
     {
         _os << COMMA << key_ << EQUALSIGN << value_;
     }
-    void add_fixed_point(const std::string& key_, int64_t int_, uint64_t fraction_);
+    void add_fixed_point(const std::string& key_, const lcc::msg::fixed_point fixed_point_);
     template<class Type>
     void add_field(const std::string& key_, const Type& value_)
     {
@@ -77,7 +78,7 @@ public:
     void clear();
     uint32_t msg_count() const { return _msg_count; }
 private:
-    void add_time_in_nanoseconds(const int64_t time_);
+    void add_time_in_nanoseconds(const int64_t time_, bool is_field_ = true);
     void add_comma_or_space_before_field();
     std::stringstream _os;
     std::string _measurement;

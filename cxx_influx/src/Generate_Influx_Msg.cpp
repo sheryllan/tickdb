@@ -24,6 +24,7 @@ const std::string TAG_PRODUCT("product");
 const std::string TAG_EXPIRY("expiry");
 const std::string TAG_TYPE("type");
 const std::string TAG_MARKET("market");
+const std::string TAG_INDEX("index");
 
 const std::string LEGS("legs");
 const std::string OTYPE("otype");
@@ -147,11 +148,29 @@ void Generate_Influx_Msg::generate_points(const lcc::msg::MarketData& md_)
     
 }
 
-void Generate_Influx_Msg::add_header(const Product& product_)
+uint32_t Generate_Influx_Msg::get_index(const int64_t time_, Recv_Time_Index& time_index_)
+{
+    if (time_ < time_index_._last_recv_time)
+    {
+        CUSTOM_LOG(Log::logger(), logging::trivial::fatal) << "time is not in sequence in " << _qtg_file->_file_path.native()
+              <<  ". prev : " << time_index_._last_recv_time << "; now : " << time_;
+    }
+    if (time_ == time_index_._last_recv_time)
+    {
+        time_index_._recv_time_index++;
+        return time_index_._recv_time_index;
+    }
+    time_index_._last_recv_time = time_;
+    time_index_._recv_time_index = 1;
+    return time_index_._recv_time_index;
+}
+
+void Generate_Influx_Msg::add_header(const Product& product_, const lcc::msg::md_data_header& header_, Recv_Time_Index& time_index_)
 {
     _builder.add_tag(TAG_PRODUCT, product_._name);
     _builder.add_tag(TAG_TYPE, static_cast<char>(product_._type));
     _builder.add_tag(TAG_MARKET, product_._exch);
+    _builder.add_tag(TAG_INDEX, get_index(header_._time_feed_recv, time_index_));
     const Product_Expires * pe = dynamic_cast<const Product_Expires*>(&product_);
     if (pe)
     {
@@ -168,16 +187,16 @@ void Generate_Influx_Msg::add_header(const Product& product_)
 void Generate_Influx_Msg::convert_trade(const lcc::msg::trade& trade_, const lcc::msg::md_data_header& header_
                       , const Product& product_)
 {
-    //invalid last trade, so far, there is no valid trade in QTG dta
+    //invalid last trade, so far, there is no valid trade in QTG data
     if (trade_._last == 0 || trade_._last_qty == 0) return;
     _trade_cnt++;
     _builder.point_begin(MEASUREMENT_TRADE);
-    add_header(product_);
+    add_header(product_, header_, _trade_recv_time_index);
     _builder.add_field(OTYPE, OTYPE_TRADE);
     _builder.add_time_field(EXCH, header_._time_exchange);
     lcc::msg::fixed_point price(trade_._last);
-    _builder.add_fixed_point(TRADE_PRICE, price.integer(), price.fractional());
-    _builder.add_field(TRADE_QTY, static_cast<int64_t>(trade_._last_qty));
+    _builder.add_fixed_point(TRADE_PRICE, price);
+    _builder.add_field(TRADE_QTY, static_cast<float>(trade_._last_qty)); //use float for qty in case we may need to import data for currency.
     _builder.add_field(TRADE_SIDE, 
            static_cast<int64_t>((static_cast<lcc::msg::side>(trade_._side) == lcc::msg::side::buy ? Side::buy : Side::sell)));
 
@@ -193,20 +212,20 @@ void Generate_Influx_Msg::convert_trade(const lcc::msg::amalgamated_trade& amal_
     }
     _trade_summary_cnt++;
     _builder.point_begin(MEASUREMENT_TRADE);
-    add_header(product_);
+    add_header(product_, header_, _trade_recv_time_index);
     _builder.add_field(OTYPE, OTYPE_TRADE_SUMMARY);
     _builder.add_time_field(EXCH, header_._time_exchange);
     if (amal_trade_._total_buy_qty != 0)
     {
         lcc::msg::fixed_point price(amal_trade_._avg_buy_px);
-        _builder.add_fixed_point(TRADE_PRICE, price.integer(), price.fractional());
+        _builder.add_fixed_point(TRADE_PRICE, price);
         _builder.add_field(TRADE_QTY, static_cast<int64_t>(amal_trade_._total_buy_qty));
         _builder.add_field(TRADE_SIDE, static_cast<int64_t>(Side::buy));
     }
     else
     {
         lcc::msg::fixed_point price(amal_trade_._avg_sell_px);
-        _builder.add_fixed_point(TRADE_PRICE, price.integer(), price.fractional());
+        _builder.add_fixed_point(TRADE_PRICE, price);
         _builder.add_field(TRADE_QTY, static_cast<int64_t>(amal_trade_._total_sell_qty));
         _builder.add_field(TRADE_SIDE, static_cast<int64_t>(Side::sell));
     }
@@ -218,7 +237,7 @@ void Generate_Influx_Msg::convert_quote(const lcc::msg::quote& quote_, const lcc
 {
     _book_cnt++;
     _builder.point_begin(MEASUREMENT_BOOK);
-    add_header(product_);
+    add_header(product_, header_, _quote_recv_time_index);
     _builder.add_field(OTYPE, OTYPE_QUOTE);
     _builder.add_time_field(EXCH, header_._time_exchange);
     add_depth_field(quote_._bid, quote_._bid_qty, quote_._bid_orders
@@ -239,8 +258,8 @@ void Generate_Influx_Msg::add_depth_field(const int64_t * const price_, const in
         //empty level, no need to check next level
         if (price_[i] <= 0 || qty_[i] <=0 ) break;
         lcc::msg::fixed_point price(price_[i]);
-        _builder.add_fixed_point(price_fields_[i], price.integer(), price.fractional());
-        _builder.add_field(qty_fields_[i], static_cast<int64_t>(qty_[i]));
+        _builder.add_fixed_point(price_fields_[i], price);
+        _builder.add_field(qty_fields_[i], static_cast<float>(qty_[i])); //make qty float for currency as qty for currently could have decimal.
         _builder.add_field(order_fields_[i], static_cast<int64_t>(order_[i]));
     }
 }

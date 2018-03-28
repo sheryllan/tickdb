@@ -23,7 +23,15 @@ public:
     void generate_points(const Qtg_File& file_, const Msg_Handler&);
 
 private:
-    void add_header(const Product& product_);
+    //recv time is used as timestamp in influx. If different messages have the same receive time,
+    //needs to have index to distinguish between series.
+    struct Recv_Time_Index
+    {
+        int64_t _last_recv_time = 0;
+        uint32_t _recv_time_index = 1;
+    };
+    void add_header(const Product& product_, const lcc::msg::md_data_header&, Recv_Time_Index& time_index_);
+    uint32_t get_index(const int64_t time_, Recv_Time_Index& time_index_);
     void read_file(std::istream&, const Msg_Handler&);
     void process_msg(const Msg_Handler&);
     void generate_points(const lcc::msg::MarketData&);
@@ -41,6 +49,9 @@ private:
     Get_Product _get_product;
     uint32_t _batch_count = INFLUX_BATCH_CNT;
     const Qtg_File* _qtg_file = nullptr;
+
+    Recv_Time_Index _quote_recv_time_index;
+    Recv_Time_Index _trade_recv_time_index;
 };
 
 

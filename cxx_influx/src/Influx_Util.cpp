@@ -79,9 +79,10 @@ std::ostream& add_field(const std::string& field_, const std::string& value_, st
     os_ << field_ << EQUALSIGN << DOUBLEQUOTE << value_ << DOUBLEQUOTE;
     return os_;
 }
-std::ostream& add_fixed_point(const std::string& field_, int64_t int_, uint64_t fraction_, std::ostream& os_)
+std::ostream& add_fixed_point(const std::string& field_, const lcc::msg::fixed_point fixed_point_, std::ostream& os_)
 {
-    os_ << field_ << EQUALSIGN << int_ << "." << fraction_;
+    os_ << field_ << EQUALSIGN << (fixed_point_.is_negative() ? -fixed_point_.integer() : fixed_point_.integer())
+                  << '.' << std::setw(8) << std::setfill('0') << fixed_point_.fractional();
     return os_;
 }
 
@@ -92,7 +93,7 @@ std::ostream& add_field(const std::string& field_, const double value_, std::ost
 }
 std::ostream& add_field(const std::string& field_, const int64_t value_, std::ostream& os_)
 {
-    os_ << field_ << EQUALSIGN << value_;
+    os_ << field_ << EQUALSIGN << value_ << "i";
     return os_;
 }
 
@@ -160,7 +161,7 @@ std::string query_influx(const std::string& http_host_, const uint16_t http_port
               
 }
 
-void Influx_Builder::add_time_in_nanoseconds(const int64_t time_)
+void Influx_Builder::add_time_in_nanoseconds(const int64_t time_, bool is_field_)
 {
     //time should be in nanoseconds, thus there should be 19 digits in time_
     char buffer[20];
@@ -171,7 +172,8 @@ void Influx_Builder::add_time_in_nanoseconds(const int64_t time_)
         buffer[number] = '0';
     }
     buffer[sizeof(buffer) - 1] = 0;
-    _os << buffer;
+    _os << buffer; 
+    if (is_field_) _os << "i";//time field needs to be integer, float type can only have 17 digits at most.
 }
 
 
@@ -199,7 +201,7 @@ void Influx_Builder::point_end(const int64_t time_)
     _os << SPACE;
     if (time_ != 0)
     {
-        add_time_in_nanoseconds(time_);
+        add_time_in_nanoseconds(time_, false);
     }
     else
     {
@@ -225,10 +227,10 @@ void Influx_Builder::add_comma_or_space_before_field()
         _os << COMMA;
     }
 }
-void Influx_Builder::add_fixed_point(const std::string& key_, int64_t int_, uint64_t fraction_)
+void Influx_Builder::add_fixed_point(const std::string& key_, const lcc::msg::fixed_point fixed_point_)
 {
     add_comma_or_space_before_field();
-    cxx_influx::add_fixed_point(key_, int_, fraction_, _os);
+    cxx_influx::add_fixed_point(key_, fixed_point_, _os);
 }
 
 void Influx_Builder::get_influx_msg(std::string& str_)
