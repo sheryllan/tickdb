@@ -219,14 +219,14 @@ void Generate_Influx_Msg::convert_trade(const lcc::msg::amalgamated_trade& amal_
     {
         lcc::msg::fixed_point price(amal_trade_._avg_buy_px);
         _builder.add_fixed_point(TRADE_PRICE, price);
-        _builder.add_field(TRADE_QTY, static_cast<int64_t>(amal_trade_._total_buy_qty));
+        _builder.add_field(TRADE_QTY, static_cast<float>(amal_trade_._total_buy_qty));
         _builder.add_field(TRADE_SIDE, static_cast<int64_t>(Side::buy));
     }
     else
     {
         lcc::msg::fixed_point price(amal_trade_._avg_sell_px);
         _builder.add_fixed_point(TRADE_PRICE, price);
-        _builder.add_field(TRADE_QTY, static_cast<int64_t>(amal_trade_._total_sell_qty));
+        _builder.add_field(TRADE_QTY, static_cast<float>(amal_trade_._total_sell_qty));
         _builder.add_field(TRADE_SIDE, static_cast<int64_t>(Side::sell));
     }
     _builder.point_end(header_._time_feed_recv);
