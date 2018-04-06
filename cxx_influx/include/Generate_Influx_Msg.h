@@ -7,6 +7,7 @@
 #include "String_Pool.h"
 #include <functional>
 #include <array>
+#include <unordered_map>
 
 namespace cxx_influx
 {
@@ -25,11 +26,7 @@ public:
 private:
     //recv time is used as timestamp in influx. If different messages have the same receive time,
     //needs to have index to distinguish between series.
-    struct Recv_Time_Index
-    {
-        int64_t _last_recv_time = 0;
-        uint32_t _recv_time_index = 1;
-    };
+    using Recv_Time_Index = std::unordered_map<int64_t/*recv_time*/, uint32_t/*index*/>;
     void add_header(const Product& product_, const lcc::msg::md_data_header&, Recv_Time_Index& time_index_);
     uint32_t get_index(const int64_t time_, Recv_Time_Index& time_index_);
     void read_file(std::istream&, const Msg_Handler&);

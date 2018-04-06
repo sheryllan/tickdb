@@ -147,12 +147,55 @@ void generate_influx_msg(int argc, char * argv[])
     gim.generate_points(Qtg_File{tick_file, file_size(tick_file), product_id, date}, &print_msg);
         
 }
+
+void generate_influx_msg_m(int argc, char * argv[])
+{
+    if (argc <= 7)
+    {
+        std::cout << "incorrect parameter provided. generate_influx_msg_m <instrument file> <influx http host> <influx http port> <influx db> <files that contains full paths to multiple store tick files, one ticke file per line> <tick count in one influx msg>" << std::endl;
+        return;
+    }
+
+    path tick_file(argv[6]);
+    std::fstream file(tick_file.native(), std::ios::in);
+    if (!file)
+    {
+        std::cout << "Cannot open file " << tick_file.native() << std::endl;
+        return;
+    }
+    cxx_influx::Product_Center pc;
+    pc.load_qtg_instrument_file(argv[2], argv[3], atoi(argv[4]), argv[5]);
+    Product_Filter filter;
+    Get_Product get_product = std::bind(&cxx_influx::Product_Center::get_product, std::cref(pc), std::placeholders::_1);
+    Valid_Product valid_product = [&get_product, &filter](const int32_t product_id_) -> bool
+                                  {
+                                      const Product* product = get_product(product_id_);
+                                      if (product == nullptr) return false;
+                                      return filter.valid_product(*product);
+                                  };
+
+    std::string line;
+    while(std::getline(file, line))
+    {
+        path tick_file(line);
+        std::string file_name(tick_file.filename().string());
+        int32_t product_id, date;
+        if (!is_tick_file(file_name, product_id, date))
+        {
+            std::cout << "file name " << file_name << " does not fit in tick file format." << std::endl;
+            continue;
+        }
+        Generate_Influx_Msg gim(get_product, atoi(argv[7]));
+        gim.generate_points(Qtg_File{tick_file, file_size(tick_file), product_id, date}, &print_msg);
+    }
+}
 void command_format()
 {
     std::cout << "following command input supported." << std::endl;
     std::cout << "load_products <instrument file> <influx http host> <influx http port> <influx db> #try loading instruments." << std::endl;   
     std::cout << "dump_tick_files <instrument file> <influx http host> <influx http port> <influx db> <tick files' dir> <exchanges> <product types> <product names> <begin date> <end date>, the last five parameters are optional." << std::endl;
     std::cout << "generate_influx_msg <instrument file> <influx http host> <influx http port> <influx db> <store tick files> <tick count in one influx msg>" << std::endl;   
+    std::cout << "generate_influx_msg_m <instrument file> <influx http host> <influx http port> <influx db> <files that contains full paths to multiple store tick files, one ticke file per line> <tick count in one influx msg>" << std::endl;   
 }
 int main(int argc, char * argv[])
 {
@@ -181,6 +224,12 @@ try
         generate_influx_msg(argc, argv);       
         return 0;
     }
+    if (strcmp(argv[1], "generate_influx_msg_m") == 0)
+    {
+        generate_influx_msg_m(argc, argv);
+        return 0;
+    }
+
     std::cout << "unknown command." << std::endl;
     return 0;
 }

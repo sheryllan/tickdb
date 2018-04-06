@@ -150,19 +150,14 @@ void Generate_Influx_Msg::generate_points(const lcc::msg::MarketData& md_)
 
 uint32_t Generate_Influx_Msg::get_index(const int64_t time_, Recv_Time_Index& time_index_)
 {
-    if (time_ < time_index_._last_recv_time)
+    uint32_t& index = time_index_[time_];
+    index++;
+    if (index > 1)
     {
-        CUSTOM_LOG(Log::logger(), logging::trivial::fatal) << "time is not in sequence in " << _qtg_file->_file_path.native()
-              <<  ". prev : " << time_index_._last_recv_time << "; now : " << time_;
-    }
-    if (time_ == time_index_._last_recv_time)
-    {
-        time_index_._recv_time_index++;
-        return time_index_._recv_time_index;
-    }
-    time_index_._last_recv_time = time_;
-    time_index_._recv_time_index = 1;
-    return time_index_._recv_time_index;
+        CUSTOM_LOG(Log::logger(), logging::trivial::debug) << "recv time " << time_
+             << " in " << _qtg_file->_file_path.native() << " appears " << index << " time(s).";
+    }  
+    return index; 
 }
 
 void Generate_Influx_Msg::add_header(const Product& product_, const lcc::msg::md_data_header& header_, Recv_Time_Index& time_index_)
