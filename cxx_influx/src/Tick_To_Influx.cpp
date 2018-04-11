@@ -1,4 +1,4 @@
-#include "Store_Tick_To_Influx.h"
+#include "Tick_To_Influx.h"
 #include "Influx_Util.h"
 #include "Generate_Influx_Msg.h"
 #include "Log.h"
@@ -10,15 +10,15 @@ namespace
 {
     thread_local std::unique_ptr<Post_Influx_Msg> t_post_influx;
     thread_local int32_t t_post_size = 0;
-    thread_local int32_t t_product_id = 0;
+    thread_local std::string t_file;
     thread_local int32_t t_date = 0;
 
-    void dump_files(const File_Map& files_)
+    void dump_files(const DateFileMap& files_)
     {
         CUSTOM_LOG(Log::logger(), logging::trivial::debug) << "Files to decode...";
         for (auto& pair : files_)
         {
-            const Qtg_File_Map& files = pair.second;
+            const TickFileMap& files = pair.second;
             for (auto& pair2 : files)
             {
                 CUSTOM_LOG(Log::logger(), logging::trivial::debug) << pair2.second._file_path.native();
@@ -28,15 +28,15 @@ namespace
     }
 }
 
-Store_Tick_To_Influx::Store_Tick_To_Influx(const std::string& http_host_, const uint16_t http_port_
-             , const std::string& influx_db_, const Get_Product& get_product_, const Valid_Product& valid_product_)
+Tick_To_Influx::Tick_To_Influx(const std::string& http_host_, const uint16_t http_port_
+             , const std::string& influx_db_, const Generate_Points& generate_points_)
     : _http_host(http_host_), _http_port(http_port_), _influx_db(influx_db_)
-    , _get_product(get_product_), _valid_product(valid_product_)
+    , _generate_points(generate_points_)
 {
 }
 
 
-void Store_Tick_To_Influx::post_influx(const Influx_Msg& msg_)
+void Tick_To_Influx::post_influx(const Influx_Msg& msg_)
 {
     try
     {
@@ -48,14 +48,14 @@ void Store_Tick_To_Influx::post_influx(const Influx_Msg& msg_)
             CUSTOM_LOG(Log::logger(), logging::trivial::debug) << "posted " << t_post_size << " bytes of influx messages.";
             t_post_size = 0;
         }
-        if (t_product_id != msg_._product_id || t_date != msg_._date)
+        if (t_file != msg_._file || t_date != msg_._date)
         {
-            if (t_product_id != 0 && t_date != 0)
+            if (!t_file.empty() && t_date != 0)
             {
-                CUSTOM_LOG(Log::logger(), logging::trivial::info) << "Finished sending influx data for product " << t_product_id
+                CUSTOM_LOG(Log::logger(), logging::trivial::info) << "Finished sending influx data for file " << t_file
                                                          << " on date " << t_date;
             }
-            t_product_id = msg_._product_id;
+            t_file = msg_._file;
             t_date = msg_._date;
         }
     }
@@ -69,32 +69,31 @@ void Store_Tick_To_Influx::post_influx(const Influx_Msg& msg_)
     }
 }
 
-void Store_Tick_To_Influx::dispatch_influx(const Influx_Msg& msg_)
+void Tick_To_Influx::dispatch_influx(const Influx_Msg& msg_)
 {
     _influx_dispatcher->push(msg_);
 }
 
 
-void Store_Tick_To_Influx::decode_file(const Qtg_File& file_)
+void Tick_To_Influx::decode_file(const TickFile& file_)
 {
-    Generate_Influx_Msg gim(_get_product, _batch_count);
-    gim.generate_points(file_, [this](const Influx_Msg& msg_){this->dispatch_influx(msg_);});
+    _generate_points(file_, [this](const Influx_Msg& msg_){this->dispatch_influx(msg_);});
 }
 
-void Store_Tick_To_Influx::run(const std::string& dir_, uint8_t decode_thread_cnt_, uint8_t post_influx_thread_cnt_
-                         , uint32_t batch_count_, Date_Range range_)
+void Tick_To_Influx::run(const std::string& dir_, const Find_Files_In_Dir& find_files_, uint8_t decode_thread_cnt_
+                         , uint8_t post_influx_thread_cnt_)
 {
     _decode_thread_cnt = decode_thread_cnt_;
-    _batch_count = batch_count_;
-    Find_Files_In_Parallel ffip(dir_, _valid_product, range_);
-    ffip.find_files();
-    CUSTOM_LOG(Log::logger(), logging::trivial::info) << "find " << file_map_count(ffip.files()) << " files to process."
-                  << " total size is " << ffip.file_size();
-    dump_files(ffip.files());
+    DateFileMap tick_files;
+    
+    find_files_(fs::path(dir_), tick_files);   
+    CUSTOM_LOG(Log::logger(), logging::trivial::info) << "find " << file_map_count(tick_files) << " files to process."
+                  << " total size is " << file_map_size(tick_files);
+    dump_files(tick_files);
     _influx_dispatcher.reset(new Influx_Dispath(post_influx_thread_cnt_, [this](const Influx_Msg& msg_){this->post_influx(msg_);}));
     _influx_dispatcher->run();
 
-    decode_files(ffip.files());
+    decode_files(tick_files);
 
     while (!_influx_dispatcher->empty())
     {
@@ -105,14 +104,14 @@ void Store_Tick_To_Influx::run(const std::string& dir_, uint8_t decode_thread_cn
     CUSTOM_LOG(Log::logger(), logging::trivial::info) << "Finished updating influx db.";
 }
 
-void Store_Tick_To_Influx::decode_files(const File_Map& files_)
+void Tick_To_Influx::decode_files(const DateFileMap& files_)
 {
-    Dispatch<Qtg_File, std::function<void(const Qtg_File&)>> dispatch(_decode_thread_cnt
-                                          , [this](const Qtg_File& file_){this->decode_file(file_);});
+    Dispatch<TickFile, std::function<void(const TickFile&)>> dispatch(_decode_thread_cnt
+                                          , [this](const TickFile& file_){this->decode_file(file_);});
     dispatch.run();
     for (auto& pair : files_)
     {
-        const Qtg_File_Map& files = pair.second;
+        const TickFileMap& files = pair.second;
         for (auto& pair2 : files)
         {
             dispatch.push(pair2.second);

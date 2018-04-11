@@ -17,7 +17,7 @@ bool Log::init()
     const char * log_file = getenv("LOG_FILE");
     if (!log_file)
     {
-        log_file = "__store_tick_to_influx.log";
+        log_file = "__cxx_influx__.log";
     }
 
     try

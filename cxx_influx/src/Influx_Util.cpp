@@ -176,6 +176,17 @@ void Influx_Builder::add_time_in_nanoseconds(const int64_t time_, bool is_field_
     if (is_field_) _os << "i";//time field needs to be integer, float type can only have 17 digits at most.
 }
 
+void Influx_Builder::add_int_field(const std::string& key_, const std::string& value_)
+{
+    add_comma_or_space_before_field();
+    _os << key_ << EQUALSIGN << value_ << 'i';
+}
+
+void Influx_Builder::add_float_field(const std::string& key_, const std::string& value_)
+{
+    add_comma_or_space_before_field();
+    _os << key_ << EQUALSIGN << value_;
+}
 
 void Influx_Builder::add_time_field(const std::string& key_, const int64_t time_)
 {
@@ -206,6 +217,17 @@ void Influx_Builder::point_end(const int64_t time_)
     else
     {
         _os << sc::duration_cast<sc::nanoseconds>(sc::system_clock::now().time_since_epoch()).count();
+    }
+}
+
+void Influx_Builder::point_end(const std::string& time_)
+{
+    _space_before_fields_added = false;
+    _os << SPACE;
+    _os << time_;
+    for (int i = 0; i < static_cast<int>(19 - time_.size()); ++i)
+    {
+        _os << '0';
     }
 }
 

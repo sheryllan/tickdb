@@ -46,7 +46,7 @@ Generate_Influx_Msg::Generate_Influx_Msg(const Get_Product& get_product_, uint32
     CUSTOM_LOG(Log::logger(), logging::trivial::info) << "batch count : " << batch_count_;
 }
 
-void Generate_Influx_Msg::generate_points(const Qtg_File& file_, const Msg_Handler& func_)
+void Generate_Influx_Msg::generate_points(const TickFile& file_, const Msg_Handler& func_)
 {
     _qtg_file = &file_;
     std::string file_path(file_._file_path.native());
@@ -117,7 +117,7 @@ void Generate_Influx_Msg::process_msg(const Msg_Handler& func_)
     _builder.get_influx_msg(*str);
     CUSTOM_LOG(Log::logger(), logging::trivial::trace) << "process message, str use count " << str.use_count() << " msg count " << _builder.msg_count() << " str size " << str->size();
     _builder.clear();
-    Influx_Msg msg {_qtg_file->_product_id, _qtg_file->_date, str};
+    Influx_Msg msg {_qtg_file->_file_path.filename().string(), _qtg_file->_date, str};
     func_(msg);
 }
 

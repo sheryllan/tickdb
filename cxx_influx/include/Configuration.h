@@ -7,9 +7,10 @@ namespace cxx_influx
 class Configuration
 {
 public:
+    enum class ImportType { undefined, qtg, reactor };
     bool init();
     
-    std::string _store_tick_dir;
+    std::string _tick_dir;
     std::string _http_host;
     std::string _influx_db;
     std::string _qtg_product_file;
@@ -22,6 +23,7 @@ public:
     uint8_t _decode_thread_cnt = 8;
     uint8_t _post_influx_thread_cnt = 4;
     uint32_t _batch_count = INFLUX_BATCH_CNT;    
+    ImportType _import_type = ImportType::undefined;
     Date_Range _date_range;
 };
 

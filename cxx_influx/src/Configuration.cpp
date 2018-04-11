@@ -3,16 +3,38 @@
 
 namespace cxx_influx
 {
-
 bool Configuration::init()
 {
-    const char *env = getenv("QTG_PRODUCT_FILE");
+    const char *env = getenv("IMPORT_TYPE");
     if (!env)
     {
-        CUSTOM_LOG(Log::logger(), logging::trivial::error) << "QTG_PRODUCT_FILE is not configured.";
+        CUSTOM_LOG(Log::logger(), logging::trivial::error) << "IMPORT_TYPE is not configured. it can either be QTG or REACTOR.";
         return false;
     }
-    _qtg_product_file = env;
+    if (strcasecmp(env, "QTG") == 0)
+    {
+        _import_type = ImportType::qtg;
+    }
+    else if (strcasecmp(env, "REACTOR") == 0)
+    {
+        _import_type = ImportType::reactor;
+    }        
+    else
+    {
+        CUSTOM_LOG(Log::logger(), logging::trivial::error) << "IMPORT_TYPE is not configured correctly. valid values are QTG and REACTOR.";
+        return false;
+    }
+
+    if (_import_type == ImportType::qtg)
+    { 
+        env = getenv("QTG_PRODUCT_FILE");
+        if (!env)
+        {
+            CUSTOM_LOG(Log::logger(), logging::trivial::error) << "QTG_PRODUCT_FILE is not configured.";
+            return false;
+        }
+        _qtg_product_file = env;
+    }
 
     env = getenv("HTTP_HOST");
     if (!env)
@@ -37,13 +59,13 @@ bool Configuration::init()
         return false;
     }
     _influx_db = env;
-    env = getenv("STORE_TICK_DIR");
+    env = getenv("TICK_DIR");
     if (!env)
     {
-        CUSTOM_LOG(Log::logger(), logging::trivial::error) << "STORE_TICK_DIR is not configured.";
+        CUSTOM_LOG(Log::logger(), logging::trivial::error) << "TICK_DIR is not configured.";
         return false;
     }
-    _store_tick_dir = env;
+    _tick_dir = env;
 
     env = getenv("PRODUCT_EXCHCHANGES");
     if (env)
@@ -99,10 +121,13 @@ bool Configuration::init()
         _product_types = env;
     }
     CUSTOM_LOG(Log::logger(), logging::trivial::info) << "HTTP_HOST : " << _http_host << ";HTTP_PORT : " << _http_port
-                     << ";INFLUX_DB : " << _influx_db << ";STORE_TICK_DIR : " << _store_tick_dir
+                     << ";INFLUX_DB : " << _influx_db << ";TICK_DIR : " << _tick_dir
                      << ";QTG_PRODUCT_FILE : " << _qtg_product_file << ";decode thread count : " << _decode_thread_cnt
                      << ";post influx thread count : " << _post_influx_thread_cnt << "; influx batch count : " << _batch_count
-                     << ";begin date : " << _date_range._begin << "; end date : " << _date_range._end;
+                     << ";begin date : " << _date_range._begin << "; end date : " << _date_range._end 
+                     << ";import type : " << ((_import_type == ImportType::qtg) ? "qtg" 
+                                           : (_import_type == ImportType::reactor)
+                                           ? "reactor" : "undefined");
     
     return true; 
     
