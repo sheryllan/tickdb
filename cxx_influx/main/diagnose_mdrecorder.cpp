@@ -2,7 +2,9 @@
 #include "Log.h"
 #include "CSV_To_Influx_Msg.h"
 #include "Find_MDRecorder_Files.h"
+#include <boost/algorithm/string.hpp>
 #include "Poco/Exception.h"
+#include <set>
 #include <iostream>
 #include <regex>
 
@@ -53,9 +55,21 @@ void dump_tick_files(int argc, char * argv[])
     std::string types, names;
     if (argc > 3) types = argv[3];
     if (argc > 4) names = argv[4];
-    Valid_Reactor_Product valid_product = [&types, &names](const char type_, const std::string& product_) -> bool
+    std::set<std::string> product_names;
+    if (!names.empty())
+    {
+        std::vector<std::string> name_vec;
+        boost::algorithm::split(name_vec, names, boost::algorithm::is_any_of(","));
+        for (auto& str : name_vec)
+        {
+            product_names.insert(str);
+        }
+    }
+    Valid_Reactor_Product valid_product = [&types, &product_names](const char type_, const std::string& product_) -> bool
                                           {
-                                              return types.empty() || types.find(type_) != std::string::npos;
+                                              if (!types.empty()) if (types.find(type_) == std::string::npos) return false;
+                                              if (!product_names.empty()) if (product_names.find(product_) == product_names.end()) return false;
+                                              return true;
                                           };
     std::string dir(argv[2]);
     Date_Range range;

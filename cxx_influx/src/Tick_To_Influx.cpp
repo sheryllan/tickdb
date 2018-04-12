@@ -12,7 +12,9 @@ namespace
     thread_local int32_t t_post_size = 0;
     thread_local std::string t_file;
     thread_local int32_t t_date = 0;
-
+    thread_local std::fstream t_output_file;
+    thread_local int32_t t_thread_index = 0;
+    std::atomic<int32_t> g_thread_count;
     void dump_files(const DateFileMap& files_)
     {
         CUSTOM_LOG(Log::logger(), logging::trivial::debug) << "Files to decode...";
@@ -40,6 +42,23 @@ void Tick_To_Influx::post_influx(const Influx_Msg& msg_)
 {
     try
     {
+/*
+        if (t_thread_index == 0)
+        {
+            t_thread_index = g_thread_count.fetch_add(1);
+            std::ostringstream os;
+            os << "thread_influx" << t_thread_index;
+            t_output_file.open(os.str(), std::ios::out);
+            if (!t_output_file)
+            {
+                CUSTOM_LOG(Log::logger(), logging::trivial::error) << "Failed to open " << os.str();
+            }                
+        }            
+ 
+        if (t_output_file)
+        {
+            t_output_file << *msg_._msg << std::endl;
+        }       */
         if (!t_post_influx) t_post_influx.reset(new Post_Influx_Msg(_http_host, _http_port, _influx_db));
         t_post_size += msg_._msg->size();
         t_post_influx->post(*msg_._msg);
@@ -84,6 +103,7 @@ void Tick_To_Influx::decode_file(const TickFile& file_)
 void Tick_To_Influx::run(const std::string& dir_, const Find_Files_In_Dir& find_files_, uint8_t decode_thread_cnt_
                          , uint8_t post_influx_thread_cnt_)
 {
+    g_thread_count = 1;
     _decode_thread_cnt = decode_thread_cnt_;
     DateFileMap tick_files;
     

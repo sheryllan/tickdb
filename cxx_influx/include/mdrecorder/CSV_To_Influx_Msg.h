@@ -21,7 +21,6 @@ class CSVToInfluxMsg
 public:
     CSVToInfluxMsg(uint32_t batch_count_ = INFLUX_BATCH_CNT);
     void generate_points(const TickFile& file_, const Msg_Handler&);
-    static void split(std::vector<std::string>& cols_, const std::string& line);
 private:
     //recv time is used as timestamp in influx. If different messages have the same receive time,
     //needs to have index to distinguish between series.
@@ -43,6 +42,8 @@ private:
     void add_field(const std::string& key_, const std::string& value_);
     Influx_Builder _builder;
     String_Pool _pool; 
+    //doesnot see any improvement with thread_local. 
+    //thread_local static String_Pool _pool; 
     bool _old_format = false;
     size_t _trade_cnt = 0;
     size_t _book_cnt = 0;
@@ -53,6 +54,11 @@ private:
     Recv_Time_Index _trade_recv_time_index;
 
     Msg_Handler _msg_handler;
+
+    //thread_local static std::vector<std::string> _columns;
+    std::vector<std::string> _columns;
+    std::vector<std::string> _product_attributes;
+    //thread_local static std::vector<std::string> _product_attributes;
 };
 
 

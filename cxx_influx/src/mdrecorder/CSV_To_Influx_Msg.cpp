@@ -1,5 +1,6 @@
 #include "CSV_To_Influx_Msg.h"
 #include "Log.h"
+#include "gperftools/profiler.h"
 #include <mutex>
 #include <lzma.h>
 #include <boost/algorithm/string.hpp>
@@ -31,7 +32,8 @@ enum class ProductAttr : uint8_t //PROD.O.GOOG.SEP2018.3000.C.0
     expiry,
     strike,
     call_put,
-    version   
+    version,
+    count
 };
 enum class NewColumn : uint8_t
 {
@@ -281,36 +283,63 @@ decompress(lzma_stream *strm, const char *inname, FILE *infile, std::string& buf
         }
     }
 }
-
-}//end namespace
-namespace cxx_influx
-{
 //can't use boost::algorithm::split as ',' can be contained in product ID.
-void CSVToInfluxMsg::split(std::vector<std::string>& cols_, const std::string& line)
+//also simpler than boost::split thus faster
+template<char seperator>
+size_t csv_split(std::vector<std::string>& cols_, const std::string& line)
 {
-    std::string col;
+    size_t index = 0;
+    std::string* col = &(cols_[index]);
     bool in_quote = false;
     for (auto c : line)
     {
         switch(c)
         {
-        case ',':
-            if (in_quote) col.push_back(c);
-            else cols_.push_back(std::move(col));
+        case seperator:
+            if (in_quote) col->push_back(c);
+            else
+            {
+                ++index;
+                if (index >= cols_.size()) cols_.push_back(std::string());
+                col = &(cols_[index]);
+            }
             break;
         case '"':
             in_quote = !in_quote;
             break;//remove "
         default:
-            col.push_back(c);
+            col->push_back(c);
         }
-    }    
+    }
+    return index + 1;
 }
 
+//simpler thus faster than boost::trim as first, there is normally no space at all
+//and secondly, it's safe to remove all spaces(including speces in middle)
+void remove_space(std::string& str)
+{
+    if (str.empty()) return;
+    if (*str.begin() != ' ' & *str.rbegin() != ' ') return;//this is probably 99999999..% of the case.
+    auto it = str.begin();
+    while (it != str.end())
+    {
+        if (*it == ' ') it = str.erase(it);
+        else ++it;
+    }
+}
+
+}//end namespace
+namespace cxx_influx
+{
+//thread_local String_Pool CSVToInfluxMsg::_pool;
+//thread_local std::vector<std::string> CSVToInfluxMsg::_columns;
+//thread_local std::vector<std::string> CSVToInfluxMsg::_product_attributes;
 CSVToInfluxMsg::CSVToInfluxMsg(uint32_t batch_count_)
     : _batch_count(batch_count_)
 {
     CUSTOM_LOG(Log::logger(), logging::trivial::info) << "batch count : " << batch_count_;
+    _columns.resize(static_cast<uint8_t>(OldColumn::count));
+    _product_attributes.resize(static_cast<uint8_t>(ProductAttr::count));
     static bool init = false;
     if (!init)
     {
@@ -377,6 +406,7 @@ void CSVToInfluxMsg::unzip(const std::string& file_name_)
 
 void CSVToInfluxMsg::generate_points(const TickFile& file_, const Msg_Handler& handler_)
 {
+    //ProfilerStart("./profile");
     _file = &file_;
     _msg_handler = handler_;
     std::string file_path(file_._file_path.native());
@@ -399,12 +429,12 @@ void CSVToInfluxMsg::generate_points(const TickFile& file_, const Msg_Handler& h
             convert_one_line(line);
         }
     }
-
+    //ProfilerStop();
     if (_builder.msg_count() > 0)
     {
         process_msg();
     }
-
+    
     CUSTOM_LOG(Log::logger(), logging::trivial::info) << "generated " << _trade_cnt << " trades. " 
                               << _book_cnt << " quotes.";
 
@@ -456,26 +486,28 @@ bool CSVToInfluxMsg::valid_line(const std::vector<std::string>& cols_, const std
 }
 void CSVToInfluxMsg::convert_one_line(const std::string& line)
 {
-    std::vector<std::string> columns;
-    split(columns, line);
+    std::vector<std::string>& columns = _columns;;
+    for (auto& str : columns) str.clear();
+    size_t cols_cnt = csv_split<','>(columns, line);
     for (auto& col : columns)
     {
-        boost::algorithm::trim(col);//this is unnessary so far. but just in case.
+        remove_space(col);
+//        boost::algorithm::trim(col);//this is unnessary so far. but just in case.
     }
-    if (!valid_line(columns, line)) return;
-
     if (columns[(uint8_t)BookColumnIndex::otype] == OTYPE_QUOTE) // quote
     {
+        if (!valid_line(columns, line)) return;
         convert_quote(columns);
     }
     else if (columns[(uint8_t)BookColumnIndex::otype] == OTYPE_TRADE_SUMMARY) // trade summary
     {
+        if (!valid_line(columns, line)) return;
         convert_trade(columns);
     }
     else if (columns[(uint8_t)BookColumnIndex::otype] == OTYPE)
     {
         //header
-        if (columns.size() == static_cast<size_t>(OldColumn::count))
+        if (cols_cnt == static_cast<size_t>(OldColumn::count))
         {
             if (line.find("market,type,prod") == std::string::npos)
             {
@@ -483,7 +515,7 @@ void CSVToInfluxMsg::convert_one_line(const std::string& line)
             }
             else _old_format = true;
         }
-        else if (columns.size() > static_cast<size_t>(OldColumn::count))
+        else if (cols_cnt > static_cast<size_t>(OldColumn::count))
         {
             CUSTOM_LOG(Log::logger(), logging::trivial::fatal) << "Unknown csv format. too many columns : " << line;
         }
@@ -542,8 +574,10 @@ uint32_t CSVToInfluxMsg::get_index(const std::vector<std::string>& cols_, Recv_T
 
 void CSVToInfluxMsg::add_tags_new(std::vector<std::string>& cols_)
 {
-    std::vector<std::string> product_attributes;
-    boost::algorithm::split(product_attributes, cols_[(uint8_t)NewColumn::product], boost::algorithm::is_any_of("."));
+    std::vector<std::string>& product_attributes = _product_attributes;
+    for (auto& str : product_attributes) str.clear();
+
+    csv_split<'.'>(product_attributes, cols_[(uint8_t)NewColumn::product]);
     size_t size = product_attributes.size();
     if (size > (uint8_t)ProductAttr::type)
         _builder.add_tag(TAG_TYPE, product_attributes[(uint8_t)ProductAttr::type]);
