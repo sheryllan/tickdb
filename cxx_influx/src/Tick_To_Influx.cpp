@@ -78,6 +78,7 @@ void Tick_To_Influx::dispatch_influx(const Influx_Msg& msg_)
 void Tick_To_Influx::decode_file(const TickFile& file_)
 {
     _generate_points(file_, [this](const Influx_Msg& msg_){this->dispatch_influx(msg_);});
+    //_generate_points(file_, [this](const Influx_Msg& msg_){});
 }
 
 void Tick_To_Influx::run(const std::string& dir_, const Find_Files_In_Dir& find_files_, uint8_t decode_thread_cnt_
@@ -109,9 +110,10 @@ void Tick_To_Influx::decode_files(const DateFileMap& files_)
     Dispatch<TickFile, std::function<void(const TickFile&)>> dispatch(_decode_thread_cnt
                                           , [this](const TickFile& file_){this->decode_file(file_);});
     dispatch.run();
-    for (auto& pair : files_)
+    //import new data first.
+    for (auto it = files_.rbegin(); it != files_.rend(); ++it)
     {
-        const TickFileMap& files = pair.second;
+        const TickFileMap& files = it->second;
         for (auto& pair2 : files)
         {
             dispatch.push(pair2.second);

@@ -358,7 +358,6 @@ void CSVToInfluxMsg::unzip(const std::string& file_name_)
 
     bool success = true;
 
-    CUSTOM_LOG(Log::logger(), logging::trivial::info) << "before init decoder.";
     if (!init_decoder(&strm)) 
     {
        return;
@@ -370,10 +369,8 @@ void CSVToInfluxMsg::unzip(const std::string& file_name_)
         return;
     }
     std::string buf;
-    CUSTOM_LOG(Log::logger(), logging::trivial::info) << "before decompress.";
     decompress(&strm, file_name_.data(), infile, buf, [this](std::string& str, bool end)
                                                       {this->convert_decoded_string(str, end);});
-    CUSTOM_LOG(Log::logger(), logging::trivial::info) << "after decompress.";
     fclose(infile);
     lzma_end(&strm);
 }
@@ -415,7 +412,6 @@ void CSVToInfluxMsg::generate_points(const TickFile& file_, const Msg_Handler& h
 
 void CSVToInfluxMsg::convert_decoded_string(std::string& str, bool end)
 {
-    CUSTOM_LOG(Log::logger(), logging::trivial::info) << "decode string " << str.size();
     std::string line;
     size_t offset = 0;
     size_t pos = str.find('\n');
@@ -445,7 +441,18 @@ void CSVToInfluxMsg::process_msg()
     _builder.get_influx_msg(*str);
     _builder.clear();
     Influx_Msg msg{_file->_file_path.filename().string(), _file->_date, str};
+    //Influx_Msg msg{_file->_date, str};
     _msg_handler(msg);
+}
+bool CSVToInfluxMsg::valid_line(const std::vector<std::string>& cols_, const std::string& line) const
+{
+    if (cols_[static_cast<uint8_t>(BookColumnIndex::recv)] == NA)
+    {
+        CUSTOM_LOG(Log::logger(), logging::trivial::warning) << "line with invalid recv time info. "
+                      << line;
+        return false;
+    }
+    return true;
 }
 void CSVToInfluxMsg::convert_one_line(const std::string& line)
 {
@@ -455,6 +462,8 @@ void CSVToInfluxMsg::convert_one_line(const std::string& line)
     {
         boost::algorithm::trim(col);//this is unnessary so far. but just in case.
     }
+    if (!valid_line(columns, line)) return;
+
     if (columns[(uint8_t)BookColumnIndex::otype] == OTYPE_QUOTE) // quote
     {
         convert_quote(columns);
@@ -525,7 +534,7 @@ uint32_t CSVToInfluxMsg::get_index(const std::vector<std::string>& cols_, Recv_T
     index++;
     if (index > 1)
     {
-        CUSTOM_LOG(Log::logger(), logging::trivial::debug) << "recv time " << cols_[(uint8_t)BookColumnIndex::recv]
+        CUSTOM_LOG(Log::logger(), logging::trivial::trace) << "recv time " << cols_[(uint8_t)BookColumnIndex::recv]
              << " in " << _file->_file_path.native() << " appears " << index << " time(s).";
     }
     return index;
@@ -569,12 +578,30 @@ void CSVToInfluxMsg::add_network_ts(const std::vector<std::string>& cols_)
         if (cols_.size() >= static_cast<size_t>(NewColumn::count))
         {
             const std::string& str = cols_[static_cast<size_t>(NewColumn::nicts)];
-            if (str != "0")
+            if (str != "0" && str != NA)
             {
                 _builder.add_int_field(NETWORK_TS, str);
             }
         }
     }
+}
+void CSVToInfluxMsg::add_int_field(const std::string& key_, const std::string& value_)
+{
+    if (key_ == NA) return;
+    _builder.add_int_field(key_, value_);
+}
+
+void CSVToInfluxMsg::add_float_field(const std::string& key_, const std::string& value_)
+{
+    if (key_ == NA) return;
+    _builder.add_float_field(key_, value_);
+}
+
+
+void CSVToInfluxMsg::add_field(const std::string& key_, const std::string& value_)
+{
+    if (key_ == NA) return;
+    _builder.add_field(key_, value_);
 }
 void CSVToInfluxMsg::convert_trade(std::vector<std::string>& cols_)
 {
@@ -583,11 +610,11 @@ void CSVToInfluxMsg::convert_trade(std::vector<std::string>& cols_)
     add_common_tags(cols_, _trade_recv_time_index);
     //side is a key for trade.
     _builder.add_tag(TAG_SIDE, cols_[(uint8_t)TradeColumnIndex::side]);
-    _builder.add_int_field(BOOK_FIELD_ARRAY[static_cast<uint8_t>(BookColumnIndex::exch)], cols_[static_cast<uint8_t>(BookColumnIndex::exch)]);
+    add_int_field(BOOK_FIELD_ARRAY[static_cast<uint8_t>(BookColumnIndex::exch)], cols_[static_cast<uint8_t>(BookColumnIndex::exch)]);
     add_network_ts(cols_); 
-    _builder.add_field(TRADE_PRICE, cols_[(uint8_t)TradeColumnIndex::price]);    
-    _builder.add_field(TRADE_QTY, cols_[(uint8_t)TradeColumnIndex::qty]);    
-    _builder.add_field(OTYPE, OTYPE_TRADE_SUMMARY);   
+    add_float_field(TRADE_PRICE, cols_[(uint8_t)TradeColumnIndex::price]);    
+    add_float_field(TRADE_QTY, cols_[(uint8_t)TradeColumnIndex::qty]); //use float for volume in case there are decimals in cash products' volume.
+    add_field(OTYPE, OTYPE_TRADE_SUMMARY);   
     _builder.point_end(cols_[(uint8_t)BookColumnIndex::recv]);    
 }
 
@@ -596,7 +623,7 @@ void CSVToInfluxMsg::convert_quote(std::vector<std::string>& cols_)
     _book_cnt++;
     _builder.point_begin(MEASUREMENT_BOOK);
     add_common_tags(cols_, _quote_recv_time_index);
-    _builder.add_int_field(BOOK_FIELD_ARRAY[(uint8_t)BookColumnIndex::exch], cols_[(uint8_t)BookColumnIndex::exch]);
+    add_int_field(BOOK_FIELD_ARRAY[(uint8_t)BookColumnIndex::exch], cols_[(uint8_t)BookColumnIndex::exch]);
     add_network_ts(cols_); 
     for (size_t i = (uint8_t)BookColumnIndex::bid1; i < (uint8_t)BookColumnIndex::count; ++i)
     {
@@ -609,7 +636,7 @@ void CSVToInfluxMsg::convert_quote(std::vector<std::string>& cols_)
         }
         else _builder.add_float_field(BOOK_FIELD_ARRAY[i], cols_[i]);//use float for volume in case there are decimals in cash products' volume.
     }              
-    _builder.add_field(OTYPE, OTYPE_QUOTE);    
+    add_field(OTYPE, OTYPE_QUOTE);    
     _builder.point_end(cols_[(uint8_t)BookColumnIndex::recv]);
 }
 

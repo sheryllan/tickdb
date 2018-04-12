@@ -37,6 +37,10 @@ private:
     void convert_quote(std::vector<std::string>& cols_);
     void process_msg();
     void add_network_ts(const std::vector<std::string>& cols_);
+    bool valid_line(const std::vector<std::string>& cols_, const std::string& line) const;
+    void add_int_field(const std::string& key_, const std::string& value_);
+    void add_float_field(const std::string& key_, const std::string& value_);
+    void add_field(const std::string& key_, const std::string& value_);
     Influx_Builder _builder;
     String_Pool _pool; 
     bool _old_format = false;

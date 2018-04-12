@@ -12,7 +12,7 @@ export TICK_DIR=/mnt/tank/backups/london/quants/data/rawdata
 export POST_INFLUX_THREAD_COUNT=8
 #number of threads to decode qtg file. default 8. decoding is faster than posting(influx can't keep up with decoding). 
 #so normally, no need to increase number of thread here.
-#export DECODE_THREAD_COUNT=14
+#export DECODE_THREAD_COUNT=4
 #number of qtg market data records in one influx message. 5000 by default.
 export INFLUX_BATCH_COUNT=15000
 #converts file whose date is bigger than or equal to BEGIN_DATE. default 0000000

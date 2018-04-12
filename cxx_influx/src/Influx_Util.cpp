@@ -283,6 +283,7 @@ Post_Influx_Msg::Post_Influx_Msg(const std::string& http_host, const uint16_t ht
 
 bool Post_Influx_Msg::post(const std::string& influx_msg)
 {
+    //return true;
     return post_http_msg(influx_msg, _uri, _session, true);
 }
 

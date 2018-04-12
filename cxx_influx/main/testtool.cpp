@@ -29,7 +29,7 @@ void print_file(const DateFileMap& files_)
 }
 void print_msg(const Influx_Msg& msg)
 {
-    std::cout << "file = " << msg._file << std::endl;
+    //std::cout << "file = " << msg._file << std::endl;
     std::cout << "date = " << msg._date << std::endl;
     std::cout << *msg._msg << std::endl;
 }
