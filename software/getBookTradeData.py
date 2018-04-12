@@ -116,6 +116,6 @@ if __name__=="__main__":
     if args.csv:
         JOIN=","
     if args.qtg:
-        database="qtg_tick"
+        database="qtg_store_tick"
     query_influx_for_trades(database,args.product,args.timezone,args.startDate,args.seconds,args.debug,expiration,strike,cp)
     
