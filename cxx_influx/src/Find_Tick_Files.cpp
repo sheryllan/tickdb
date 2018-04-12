@@ -75,7 +75,7 @@ void Find_Tick_Files::add_tick_files(const fs::path& dir_)
 
         
             int64_t file_size = fs::file_size(itr->path()); 
-            _files[date].insert(std::make_pair(itr->path().filename().string(), Qtg_File{itr->path(), file_size, product_id, date}));
+            _files[date].insert(std::make_pair(itr->path().filename().string(), TickFile{itr->path(), file_size, date}));
         }
     }
 }
@@ -115,16 +115,23 @@ bool Find_Tick_Files::is_tick_file(const std::string& file_, int32_t& product_id
     return true;
 }
 
-Find_Files_In_Parallel::Find_Files_In_Parallel(const std::string& dir_, const Valid_Product& valid_product_
+Find_Tick_Files_In_Parallel::Find_Tick_Files_In_Parallel(const fs::path& dir_, const Valid_Product& valid_product_
                               , Date_Range range_, uint8_t thread_cnt_)
-    : _dir(dir_), _valid_product(valid_product_), _date_range(range_), _threads(thread_cnt_)
+    : Find_Files_In_Parallel(dir_ 
+                           , [valid_product_, range_](const fs::path& dir_, DateFileMap& files_)
+                             {
+                                 Find_Tick_Files item(valid_product_, range_); 
+                                 item.find_files(dir_); 
+                                 files_.swap(item.files());
+                             }  
+                           , thread_cnt_)
+    , _valid_product(valid_product_), _date_range(range_)
 {
     CUSTOM_LOG(Log::logger(), logging::trivial::info) << "Find files from " << _date_range._begin << " to " << _date_range._end;
 }
 
-void Find_Files_In_Parallel::find_files()
+void Find_Tick_Files_In_Parallel::add_sub_dirs()
 {
-    CUSTOM_LOG(Log::logger(), logging::trivial::info) << "begin to get tick files from  " << _dir;
     std::map<std::string, fs::path> store_tick_directories;
     for (fs::directory_iterator itr(_dir); itr != fs::directory_iterator(); ++itr)
     {
@@ -143,57 +150,9 @@ void Find_Files_In_Parallel::find_files()
     {
         add_product_dir(pair.second);
     }
-    CUSTOM_LOG(Log::logger(), logging::trivial::info) << "dir size." << _dirs.size();
-    init_parallel_parameter();
-
-    run();
-    
-    wait_all();
-    CUSTOM_LOG(Log::logger(), logging::trivial::info) << "start merging files.";
-    merge_files();
-    CUSTOM_LOG(Log::logger(), logging::trivial::info) << "finished getting tick files. files count : " << file_map_count(_files)
-                                << "; file size : " << file_size();
 }
 
-void Find_Files_In_Parallel::init_parallel_parameter()
-{
-    //on each thread, do finding files operation for about LOOP_CNT times at most.
-    static constexpr uint8_t LOOP_CNT = 10;
-    _step_cnt = (_dirs.size() / _threads.size() / LOOP_CNT) + 1;
-    _index = 0;
-    _file_maps.resize(_dirs.size());
-}
-
-void Find_Files_In_Parallel::wait_all()
-{
-    for (size_t i = 0; i < _threads.size(); ++i)
-    {
-        _threads[i].join();
-    }   
-}
-
-void Find_Files_In_Parallel::merge_files()
-{
-    if (_file_maps.empty()) return;
-
-    _files = std::move(_file_maps[0]);
-    for (size_t i = 1; i < _file_maps.size(); ++i)
-    {
-        merge_files(_file_maps[i], _files);
-    }
-    _file_maps.clear();
-}
-
-void Find_Files_In_Parallel::merge_files(const File_Map& dest_, File_Map& src_)
-{
-    for (auto& pair : dest_)
-    {
-        int32_t date = pair.first;
-        const Qtg_File_Map& name_map = pair.second;
-        src_[date].insert(name_map.begin(), name_map.end());
-    }
-}
-void Find_Files_In_Parallel::add_product_dir(const fs::path& dir_, std::queue<fs::path>& queue_)
+void Find_Tick_Files_In_Parallel::add_product_dir(const fs::path& dir_, std::queue<fs::path>& queue_)
 {
     static const std::regex regex("[0-9]+");
     try
@@ -230,7 +189,7 @@ void Find_Files_In_Parallel::add_product_dir(const fs::path& dir_, std::queue<fs
 
 }
 
-void Find_Files_In_Parallel::add_product_dir(const fs::path& dir_)
+void Find_Tick_Files_In_Parallel::add_product_dir(const fs::path& dir_)
 {
     if (_parallel_at_store_tick_dir_level)
     {
@@ -249,7 +208,7 @@ void Find_Files_In_Parallel::add_product_dir(const fs::path& dir_)
 
 }
 
-void Find_Files_In_Parallel::add_dir(const std::string& dir_, std::map<std::string, fs::path>& store_tick_directories_)
+void Find_Tick_Files_In_Parallel::add_dir(const std::string& dir_, std::map<std::string, fs::path>& store_tick_directories_)
 {
     auto it = store_tick_directories_.find(dir_);
     if (it != store_tick_directories_.end())
@@ -258,38 +217,4 @@ void Find_Files_In_Parallel::add_dir(const std::string& dir_, std::map<std::stri
         store_tick_directories_.erase(it);
     }
 }
-void Find_Files_In_Parallel::process_dirs()
-{
-    while (true)
-    {
-        int index = _index.fetch_add(_step_cnt);
-        if (index >= _dirs.size()) return;  
-        uint64_t file_count = 0;
-        uint64_t file_size = 0; 
-        CUSTOM_LOG(Log::logger(), logging::trivial::info) << "iterate dir : " << _dirs[index];
-        size_t i = 0;
-        for (; i < _step_cnt; ++i)
-        {
-            if ( (index + i) >= _dirs.size()) break;
-            
-            Find_Tick_Files item(_valid_product, _date_range);
-            const fs::path& dir = _dirs[index+i];
-            item.find_files(dir);
-            file_size += item.file_size();
-            file_count += file_map_count(item.files());        
-            _file_maps[index + i].swap(item.files());
-        }
-        CUSTOM_LOG(Log::logger(), logging::trivial::info) << "Finished iterating dir : " << _dirs[index + i -1] 
-                  << "; file count : " << file_count << " file size : " << file_size << " bytes.";
-    }
-}
-
-void Find_Files_In_Parallel::run()
-{
-    for (size_t i = 0; i < _threads.size(); ++i)
-    {
-        _threads[i] = std::thread([this]{this->process_dirs();});
-    }
-}
-
 }

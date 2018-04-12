@@ -66,10 +66,16 @@ public:
         add_comma_or_space_before_field();
         cxx_influx::add_field(key_, value_, _os);
     }
+    //add integer that has been converted to string.
+    void add_int_field(const std::string& key_, const std::string& value_);
+    //add float that has been converted to string.
+    void add_float_field(const std::string& key_, const std::string& value_);
     //time_ will be converted to in nanoseconds if it's not.
     void add_time_field(const std::string& key_, const int64_t time_);
     //0 means using current time.
     void point_end(const int64_t time_ = 0);
+    //time is already converted in md recorder.
+    void point_end(const std::string& time_);
     //point_end adds extra 0 to make sure passed in time_ is in nanoseconds
     //point_end_time_asis uses the value passed in directly.
     void point_end_time_asis(const int64_t time_);

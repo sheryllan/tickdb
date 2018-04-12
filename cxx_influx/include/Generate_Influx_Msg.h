@@ -21,7 +21,7 @@ class Generate_Influx_Msg
 public:
     using Msg_Handler = std::function<void(const Influx_Msg&)>;
     Generate_Influx_Msg(const Get_Product&, uint32_t batch_count_ = INFLUX_BATCH_CNT);
-    void generate_points(const Qtg_File& file_, const Msg_Handler&);
+    void generate_points(const TickFile& file_, const Msg_Handler&);
 
 private:
     //recv time is used as timestamp in influx. If different messages have the same receive time,
@@ -45,7 +45,7 @@ private:
     size_t _book_cnt = 0;
     Get_Product _get_product;
     uint32_t _batch_count = INFLUX_BATCH_CNT;
-    const Qtg_File* _qtg_file = nullptr;
+    const TickFile* _qtg_file = nullptr;
 
     Recv_Time_Index _quote_recv_time_index;
     Recv_Time_Index _trade_recv_time_index;

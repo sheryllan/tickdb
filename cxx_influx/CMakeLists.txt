@@ -7,7 +7,7 @@ cmake_minimum_required(VERSION 2.8)
 if(REACTOR_BUILD)
 	#list(APPEND CMAKE_PREFIX_PATH ${CMAKE_SOURCE_DIR}/protobuf $ENV{RS_BUILDKIT}/boost $ENV{RS_BUILDKIT}/python2)
 	list(APPEND CMAKE_PREFIX_PATH $ENV{RS_BUILDKIT}/boost $ENV{RS_BUILDKIT}/poco $ENV{RS_BUILDKIT}/tbb 
-                       ./reactor/libs $ENV{RS_BUILDKIT}/perftools $ENV{RS_BUILDKIT}/libunwind)
+                       ./reactor/libs $ENV{RS_BUILDKIT}/perftools $ENV{RS_BUILDKIT}/libunwind $ENV{RS_BUILDKIT}/xz)
 
     
 
@@ -111,6 +111,10 @@ find_path(GPERF_INCLUDE_DIR NAMES gperftools/profiler.h)
 #find unwind
 find_library(UNWIND_LIB NAMES unwind)
 
+#find lzma
+find_library(LZMA_LIB NAMES liblzma.a)
+find_path(LZMA_INCLUDE_DIR NAMES lzma.h)
+
 # -------
 # Options
 # -------
@@ -143,6 +147,7 @@ endif()
 # ----------------------------
 include_directories(${PROJECT_SOURCE_DIR})
 include_directories(include)
+include_directories(include/mdrecorder)
 include_directories(3rd-party)
 include_directories(products/include)
 include_directories(reactor/include)
@@ -150,6 +155,7 @@ include_directories(reactor/include/lcc_msg)
 include_directories(${BZIP2_INCLUDE_DIR})
 include_directories(${Poco_INCLUDE_DIR})
 include_directories(${GPERF_INCLUDE_DIR})
+include_directories(${LZMA_INCLUDE_DIR})
 include_directories(${TBB_INCLUDE_DIR})
 #foreach(rdir ${RINSIDE_INCLUDE_DIR})
 #	include_directories(${rdir})
@@ -173,11 +179,11 @@ endif()
 # -----------------------------
 # Define libraries and binaries
 # -----------------------------
-file(GLOB ticktool_HDR "include/*.h")
-file(GLOB ticktool_SRC "src/*.cpp" "products/src/*.cpp")
+file(GLOB ticktool_SRC "src/*.cpp" "src/mdrecorder/*.cpp" "products/src/*.cpp")
 
-set(qtg2influx_MAIN_SRC "main/main.cpp")
+set(tick2influx_SRC "main/main.cpp")
 set(testtool_dir_src "main/testtool.cpp")
+set(diagnose_mdrecorder_src "main/diagnose_mdrecorder.cpp")
 set(resendfailedmsg_dir_src "main/resendfailedmsg.cpp")
 set(import_refdata_src "main/import_refdata.cpp")
 add_library(ticktool_obj OBJECT ${ticktool_SRC})
@@ -187,8 +193,9 @@ add_library(ticktool SHARED $<TARGET_OBJECTS:ticktool_obj>)
 add_library(ticktoolstatic STATIC $<TARGET_OBJECTS:ticktool_obj>)
 set_target_properties(ticktoolstatic PROPERTIES OUTPUT_NAME ticktool)
 
-add_executable(qtg2influx ${qtg2influx_MAIN_SRC})
+add_executable(tick2influx ${tick2influx_SRC})
 add_executable(testtool ${testtool_dir_src})
+add_executable(diagnose_mdrecorder ${diagnose_mdrecorder_src})
 add_executable(resendfailedmsg ${resendfailedmsg_dir_src})
 add_executable(import_refdata ${import_refdata_src})
 
@@ -199,9 +206,9 @@ add_executable(import_refdata ${import_refdata_src})
 target_link_libraries(ticktool asm  pthread)
 set(ticklib -Wl,--whole-archive ticktool -Wl,--no-whole-archive)
 
-target_link_libraries(qtg2influx -lrt ${GPERF_LIB} ${UNWIND_LIB} ticktoolstatic ${LCC_MSG_LIBRARY}  ${Boost_LIBRARIES} ${TBB_LIBRARY} ${PocoNet_LIBRARY} PocoUtil PocoFoundation pthread)
-
+target_link_libraries(tick2influx -lrt ${GPERF_LIB} ${UNWIND_LIB} ticktoolstatic ${LZMA_LIB} ${LCC_MSG_LIBRARY}  ${Boost_LIBRARIES} ${TBB_LIBRARY} ${PocoNet_LIBRARY} PocoUtil PocoFoundation pthread)
 target_link_libraries(testtool -lrt ${GPERF_LIB} ${UNWIND_LIB} ticktoolstatic ${LCC_MSG_LIBRARY} ${Boost_LIBRARIES} ${TBB_LIBRARY} ${PocoNet_LIBRARY} PocoUtil PocoFoundation  pthread)
+target_link_libraries(diagnose_mdrecorder -lrt ${GPERF_LIB} ${UNWIND_LIB} ticktoolstatic ${LZMA_LIB} ${LCC_MSG_LIBRARY} ${Boost_LIBRARIES} ${TBB_LIBRARY} ${PocoNet_LIBRARY} PocoUtil PocoFoundation  pthread)
 target_link_libraries(resendfailedmsg -lrt ${GPERF_LIB} ${UNWIND_LIB} ticktoolstatic ${LCC_MSG_LIBRARY} ${Boost_LIBRARIES} ${TBB_LIBRARY} ${PocoNet_LIBRARY} PocoUtil PocoFoundation  pthread)
 target_link_libraries(import_refdata -lrt ${GPERF_LIB} ${UNWIND_LIB} ticktoolstatic ${LCC_MSG_LIBRARY} ${Boost_LIBRARIES} ${TBB_LIBRARY} ${PocoNet_LIBRARY} PocoUtil PocoFoundation  pthread)
 

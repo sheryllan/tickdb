@@ -17,7 +17,7 @@ namespace
     const std::regex g_regex("([0-9]+)\\.([0-9]+)\\.dat");
 }
 
-void print_file(const cxx_influx::File_Map& files_)
+void print_file(const DateFileMap& files_)
 {
     for (auto& pair : files_)
     {
@@ -29,7 +29,7 @@ void print_file(const cxx_influx::File_Map& files_)
 }
 void print_msg(const Influx_Msg& msg)
 {
-    std::cout << "product = " << msg._product_id << std::endl;
+    //std::cout << "file = " << msg._file << std::endl;
     std::cout << "date = " << msg._date << std::endl;
     std::cout << *msg._msg << std::endl;
 }
@@ -94,7 +94,7 @@ void dump_tick_files(int argc, char * argv[])
 
     std::string path_ss(argv[6]);
     uint8_t t_cnt = 16;
-    cxx_influx::Find_Files_In_Parallel ftf(path_ss, valid_product, range, t_cnt);
+    cxx_influx::Find_Tick_Files_In_Parallel ftf(fs::path(path_ss), valid_product, range, t_cnt);
     ftf.find_files();
 
     print_file(ftf.files());
@@ -144,7 +144,7 @@ void generate_influx_msg(int argc, char * argv[])
                                   };
     Generate_Influx_Msg gim(get_product, atoi(argv[7]));
     
-    gim.generate_points(Qtg_File{tick_file, file_size(tick_file), product_id, date}, &print_msg);
+    gim.generate_points(TickFile{tick_file, file_size(tick_file), date}, &print_msg);
         
 }
 
@@ -186,7 +186,7 @@ void generate_influx_msg_m(int argc, char * argv[])
             continue;
         }
         Generate_Influx_Msg gim(get_product, atoi(argv[7]));
-        gim.generate_points(Qtg_File{tick_file, file_size(tick_file), product_id, date}, &print_msg);
+        gim.generate_points(TickFile{tick_file, file_size(tick_file), date}, &print_msg);
     }
 }
 void command_format()
