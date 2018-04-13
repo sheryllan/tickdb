@@ -13,6 +13,7 @@ namespace
     thread_local int32_t t_post_size = 0;
     thread_local std::fstream t_output_file;
     thread_local int32_t t_thread_index = 0;
+    thread_local int32_t t_thread_file_count = 0;
     std::atomic<int32_t> g_thread_count;
     void dump_files(const DateFileMap& files_)
     {
@@ -49,6 +50,7 @@ void Tick_To_Influx::post_influx(const Influx_Msg& msg_)
 {
     try
     {
+         t_post_size += msg_._msg->size();
         //for testing purpose.
         if (g_write_to_files)
         {
@@ -56,7 +58,7 @@ void Tick_To_Influx::post_influx(const Influx_Msg& msg_)
             {
                 t_thread_index = g_thread_count.fetch_add(1);
                 std::ostringstream os;
-                os << "influx_messages_on_thread" << t_thread_index;
+                os << "influx_messages_on_thread" << t_thread_index << "_" << t_thread_file_count;
                 t_output_file.open(os.str(), std::ios::out);
                 if (!t_output_file)
                 {
@@ -68,11 +70,23 @@ void Tick_To_Influx::post_influx(const Influx_Msg& msg_)
             {
                 t_output_file << *msg_._msg << std::endl;
             }
+
+            if (t_post_size > 1024 * 1024 * 1024 * 60)//save into another file.
+            {
+                t_output_file.close();
+                t_thread_file_count++;
+                std::ostringstream os;
+                os << "influx_messages_on_thread" << t_thread_index << "_" << t_thread_file_count;
+                t_output_file.open(os.str(), std::ios::out);
+                if (!t_output_file)
+                {
+                    CUSTOM_LOG(Log::logger(), logging::trivial::error) << "Failed to open " << os.str();
+                }
+            }
         }
         else
         {
             if (!t_post_influx) t_post_influx.reset(new Post_Influx_Msg(_http_host, _http_port, _influx_db));
-            t_post_size += msg_._msg->size();
             t_post_influx->post(msg_);
             if (t_post_size > 1024 * 1024 * 10) //send out more than 10M data
             {

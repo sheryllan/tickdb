@@ -142,8 +142,8 @@ bool Configuration::init()
     }
     CUSTOM_LOG(Log::logger(), logging::trivial::info) << "HTTP_HOST : " << _http_host << ";HTTP_PORT : " << _http_port
                      << ";INFLUX_DB : " << _influx_db << ";TICK_DIR : " << _tick_dir
-                     << ";QTG_PRODUCT_FILE : " << _qtg_product_file << ";decode thread count : " << _decode_thread_cnt
-                     << ";post influx thread count : " << _post_influx_thread_cnt << "; influx batch count : " << _batch_count
+                     << ";QTG_PRODUCT_FILE : " << _qtg_product_file << ";decode thread count : " << static_cast<size_t>(_decode_thread_cnt)
+                     << ";post influx thread count : " << static_cast<size_t>(_post_influx_thread_cnt) << "; influx batch count : " << _batch_count
                      << ";PRODUCT_NAMES : " << _product_names << ";PRODUCT_TYPES : " << _product_types
                      << ";begin date : " << _date_range._begin << "; end date : " << _date_range._end 
                      << ";import type : " << ((_import_type == ImportType::qtg) ? "qtg" 
