@@ -38,27 +38,6 @@ std::string url_encode(const std::string & src_)
     }
     return result;
 }*/
-std::string url_encode(const std::string &value) 
-{
-    std::ostringstream escaped;
-    escaped.fill('0');
-    escaped << std::hex;
-
-    for (std::string::const_iterator i = value.begin(), n = value.end(); i != n; ++i) 
-    {
-        std::string::value_type c = (*i);
-        if (std::isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~') 
-        {
-            escaped << c;
-            continue;
-        }
-        escaped << std::uppercase;
-        escaped << '%' << std::setw(2) << int((unsigned char) c);
-        escaped << std::nouppercase;
-    }
-
-    return escaped.str();
-}
 }
 
 Product_Name_Map::Product_Name_Map(const std::string& http_host_, int16_t http_port_, const std::string& db_)

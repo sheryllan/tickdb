@@ -30,6 +30,7 @@ public:
     uint8_t _decode_thread_cnt = 8;
     uint8_t _post_influx_thread_cnt = 8;
     uint32_t _batch_count = INFLUX_BATCH_CNT;    
+    bool _filter_processed_files = true;
     ImportType _import_type = ImportType::undefined;
     Date_Range _date_range;
     std::unordered_map<std::string, std::string> _reactor_source_config;

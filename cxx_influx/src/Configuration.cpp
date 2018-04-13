@@ -81,6 +81,12 @@ bool Configuration::init()
     }
     _tick_dir = env;
 
+    env = getenv("FILTER_PROCESSED_FILES");
+    if (env)
+    {
+        _filter_processed_files = strcasecmp(env, "TRUE");
+    }
+
     env = getenv("PRODUCT_EXCHCHANGES");
     if (env)
     {

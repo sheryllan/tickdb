@@ -43,7 +43,7 @@ void qtg_to_influx(Configuration& config)
                                      find.find_files();
                                      files_.swap(find.files());
                                  });
-    stti.run(config._tick_dir, find_files, config._decode_thread_cnt, config._post_influx_thread_cnt);
+    stti.run(config._tick_dir, find_files, config._filter_processed_files, config._date_range, config._decode_thread_cnt, config._post_influx_thread_cnt);
 }
 void reactor_to_influx(Configuration& config)
 {
@@ -83,7 +83,7 @@ void reactor_to_influx(Configuration& config)
                                      files_.swap(find.files());
                                  });
     Tick_To_Influx ttf(config._http_host, config._http_port, config._influx_db, generate_points);
-    ttf.run(config._tick_dir, find_files, config._decode_thread_cnt, config._post_influx_thread_cnt);
+    ttf.run(config._tick_dir, find_files, config._filter_processed_files, config._date_range, config._decode_thread_cnt, config._post_influx_thread_cnt);
     
 }
 

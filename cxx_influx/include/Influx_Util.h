@@ -15,6 +15,8 @@ extern const std::string SPACE;
 extern const std::string EQUALSIGN;
 extern const std::string DOUBLEQUOTE;
 
+std::string url_encode(const std::string &value);
+
 struct Tag
 {
     std::string key;
