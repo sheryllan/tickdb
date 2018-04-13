@@ -1,17 +1,25 @@
-$ python getBookTradeData.py -h
-usage: getBookTradeData.py [-h] [--debug] [--qtg]
-                      product timezone startDate seconds
+usage: getBookTradeData.py [-h] [--expiration EXPIRATION] [--strike STRIKE]
+                           [--cp CP] [--debug] [--qtg] [--csv]
+                           product timezone startDate seconds
 
 Get the tick data (trades and books) for a specific set of products around a
 specific timeframe sorted by recv time
 
 positional arguments:
-  product     The comma separated list of the products we are searching for
-  timezone    The timezone of the orderMonitord log: Australia/Sydney
-  startDate   The date and time we want to start looking at: %Y-%m-%dT%H:%M:%S
-  seconds     Amount of seconds after startDate to fetch data for
+  product               The comma separated list of the products we are
+                        searching for
+  timezone              The timezone of the orderMonitord log:
+                        Australia/Sydney
+  startDate             The date and time we want to start looking at:
+                        %Y-%m-%dT%H:%M:%S
+  seconds               Amount of seconds after startDate to fetch data for
 
 optional arguments:
-  -h, --help  show this help message and exit
-  --debug     Run in debug mode.
-  --qtg       Use QTG tick data
+  -h, --help            show this help message and exit
+  --expiration EXPIRATION
+                        The expiration to get data for.
+  --strike STRIKE       The strike to get data for.
+  --cp CP               The call or put to get data for.
+  --debug               Run in debug mode.
+  --qtg                 Use QTG tick data
+  --csv                 Run in debug mode.
