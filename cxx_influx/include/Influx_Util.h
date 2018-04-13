@@ -1,5 +1,6 @@
 #pragma once
 #include "lcc_msg/fixed_point.hxx"
+#include "Types.h"
 #include <string>
 #include <Poco/Net/HTTPClientSession.h>
 #include <Poco/Net/HTTPRequest.h>
@@ -32,14 +33,14 @@ struct Field
 using Tags = std::vector<Tag>;
 using Fields = std::vector<Field>;
 
-std::string generate_influx_msg(const std::string& measurment, const Tags& tags, const Fields& fields, int64_t timeStamp = 0);
+std::string generate_influx_msg(const std::string& measurment_, const Tags& tags_, const Fields& fields_, int64_t timeStamp_ = 0);
 
-std::ostream& add_field(const std::string& field, const std::string& value, std::ostream&);
-std::ostream& add_field(const std::string& field, const double value, std::ostream&);
-std::ostream& add_field(const std::string& field, const int64_t value, std::ostream&);
-std::ostream& add_field(const std::string& field, const bool value, std::ostream& os);
+std::ostream& add_field(const std::string& field_, const std::string& value_, std::ostream&);
+std::ostream& add_field(const std::string& field_, const double value_, std::ostream&);
+std::ostream& add_field(const std::string& field_, const int64_t value_, std::ostream&);
+std::ostream& add_field(const std::string& field_, const bool value_, std::ostream& os);
 
-std::string build_influx_url(const std::string& http_host, const uint16_t http_port, const std::string& db_name
+std::string build_influx_url(const std::string& http_host_, const uint16_t http_port_, const std::string& db_name_
                       , const std::string& cmd_ = "write");
 bool post_http_msg(const std::string& influx_msg_, const std::string& http_host_, const uint16_t http_port_
                        , const std::string& db_name_);
@@ -95,13 +96,14 @@ private:
 class Post_Influx_Msg
 {
 public:
-    Post_Influx_Msg(const std::string& http_host, const uint16_t http_port, const std::string& db_name);
-    bool post(const std::string& influx_msg);
+    Post_Influx_Msg(const std::string& http_host_, const uint16_t http_port_, const std::string& db_name_);
+    bool post(const std::string& msg_);
+    bool post(const Influx_Msg& influx_msg_);
 private:    
     std::string _uri;
     Poco::Net::HTTPClientSession _session;
 };
-bool post_http_msg(const std::string& influx_msg, const std::string& uri, Poco::Net::HTTPClientSession& client, bool keep_alive);
+bool post_http_msg(const std::string& influx_msg_, const std::string& uri_, Poco::Net::HTTPClientSession& client_, bool keep_alive_);
 
 std::string query_influx(const std::string& http_host_, const uint16_t http_port_, const std::string& db_name_
                      , const std::string& sql_);

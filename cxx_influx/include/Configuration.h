@@ -1,8 +1,15 @@
 #pragma once
-#include <string>
 #include "Types.h"
+#include <string>
+#include <unordered_map>
 namespace cxx_influx
 {
+enum class ReactorSourceColumn
+{
+    product,
+    source,
+    count
+};
 
 class Configuration
 {
@@ -21,10 +28,13 @@ public:
     std::string _excluded_product_names;
     uint16_t _http_port = 0;
     uint8_t _decode_thread_cnt = 8;
-    uint8_t _post_influx_thread_cnt = 4;
+    uint8_t _post_influx_thread_cnt = 8;
     uint32_t _batch_count = INFLUX_BATCH_CNT;    
     ImportType _import_type = ImportType::undefined;
     Date_Range _date_range;
+    std::unordered_map<std::string, std::string> _reactor_source_config;
+private:
+    bool parse_reactor_source_file(const std::string& file_path_);
 };
 
 

@@ -1,5 +1,6 @@
 #include "Configuration.h"
 #include "Log.h"
+#include <boost/algorithm/string.hpp>
 
 namespace cxx_influx
 {
@@ -34,6 +35,19 @@ bool Configuration::init()
             return false;
         }
         _qtg_product_file = env;
+    }
+    else
+    {
+        env = getenv("REACTOR_SOURCE_FILE");
+        if (!env)
+        {
+            CUSTOM_LOG(Log::logger(), logging::trivial::error) << "REACTOR_SOURCE_FILE is not configured.";
+            return false;
+        }
+        if (!parse_reactor_source_file(env))
+        {
+            return false;
+        }
     }
 
     env = getenv("HTTP_HOST");
@@ -124,6 +138,7 @@ bool Configuration::init()
                      << ";INFLUX_DB : " << _influx_db << ";TICK_DIR : " << _tick_dir
                      << ";QTG_PRODUCT_FILE : " << _qtg_product_file << ";decode thread count : " << _decode_thread_cnt
                      << ";post influx thread count : " << _post_influx_thread_cnt << "; influx batch count : " << _batch_count
+                     << ";PRODUCT_NAMES : " << _product_names << ";PRODUCT_TYPES : " << _product_types
                      << ";begin date : " << _date_range._begin << "; end date : " << _date_range._end 
                      << ";import type : " << ((_import_type == ImportType::qtg) ? "qtg" 
                                            : (_import_type == ImportType::reactor)
@@ -131,6 +146,38 @@ bool Configuration::init()
     
     return true; 
     
+}
+
+bool Configuration::parse_reactor_source_file(const std::string& file_path_)
+{
+    std::fstream file(file_path_);
+    if (!file)
+    {
+        CUSTOM_LOG(Log::logger(), logging::trivial::error) << "Failed to open reactor source config file " << file_path_;
+        return false;
+    }
+    std::string line;
+    while(std::getline(file, line))
+    {
+        boost::algorithm::trim(line);
+        if (line.empty()) continue;
+        std::vector<std::string> cols;
+        boost::algorithm::split(cols, line, boost::algorithm::is_any_of(","));
+        for (auto& str : cols)
+        {
+            boost::algorithm::trim(str);
+        }
+        if (cols.size() < static_cast<size_t>(ReactorSourceColumn::count))
+        {
+            CUSTOM_LOG(Log::logger(), logging::trivial::error) << "Invalid format of reactor source config file " << file_path_;
+            return false;
+        }
+        if (cols[static_cast<size_t>(ReactorSourceColumn::product)] == "product")
+        {
+            continue;//header;            
+        }             
+        _reactor_source_config[cols[static_cast<size_t>(ReactorSourceColumn::product)]] = cols[static_cast<size_t>(ReactorSourceColumn::source)]; 
+    }
 }
 
 

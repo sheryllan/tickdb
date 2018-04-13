@@ -10,8 +10,6 @@ namespace
 {
     thread_local std::unique_ptr<Post_Influx_Msg> t_post_influx;
     thread_local int32_t t_post_size = 0;
-    thread_local std::string t_file;
-    thread_local int32_t t_date = 0;
     thread_local std::fstream t_output_file;
     thread_local int32_t t_thread_index = 0;
     std::atomic<int32_t> g_thread_count;
@@ -61,21 +59,16 @@ void Tick_To_Influx::post_influx(const Influx_Msg& msg_)
         }       */
         if (!t_post_influx) t_post_influx.reset(new Post_Influx_Msg(_http_host, _http_port, _influx_db));
         t_post_size += msg_._msg->size();
-        t_post_influx->post(*msg_._msg);
+        t_post_influx->post(msg_);
         if (t_post_size > 1024 * 1024 * 10) //send out more than 10M data
         {
             CUSTOM_LOG(Log::logger(), logging::trivial::debug) << "posted " << t_post_size << " bytes of influx messages.";
             t_post_size = 0;
         }
-        if (t_file != msg_._file || t_date != msg_._date)
+        if (msg_._last)
         {
-            if (!t_file.empty() && t_date != 0)
-            {
-                CUSTOM_LOG(Log::logger(), logging::trivial::info) << "Finished sending influx data for file " << t_file
-                                                         << " on date " << t_date;
-            }
-            t_file = msg_._file;
-            t_date = msg_._date;
+            //there could still be messages from this file queuing on other threads
+            CUSTOM_LOG(Log::logger(), logging::trivial::info) << "Finished sending influx data for file " << msg_._file;
         }
     }
     catch(std::exception& e)

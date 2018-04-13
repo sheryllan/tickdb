@@ -47,10 +47,12 @@ void qtg_to_influx(Configuration& config)
 }
 void reactor_to_influx(Configuration& config)
 {
-    std::vector<std::string> product_names;
+    std::set<std::string> product_names;
     if (!config._product_names.empty())
     {
-        boost::algorithm::split(product_names, config._product_names, boost::algorithm::is_any_of(","));
+        std::vector<std::string> tmp;
+        boost::algorithm::split(tmp, config._product_names, boost::algorithm::is_any_of(","));
+        for (auto& str : tmp) product_names.insert(str);
     }
     Valid_Reactor_Product valid_product = [&config, &product_names](const char type_, const std::string& product_) -> bool
                                           {
@@ -60,20 +62,23 @@ void reactor_to_influx(Configuration& config)
                                               }
                                               if (!product_names.empty())
                                               {
-                                                  auto it = std::find(product_names.begin(), product_names.end(), product_);
-                                                  if (it == product_names.end()) return false;
+                                                  if (product_names.find(product_) == product_names.end()) return false;
                                               }
                                               return true;
                                           };
+    Get_Source get_source = [&config](const std::string& product_) -> std::string
+                            {
+                                return config._reactor_source_config[product_];
+                            };        
 
     Generate_Points generate_points([&config](const TickFile& file_, const Msg_Handler& handler_)
                                     {
                                         CSVToInfluxMsg cti(config._batch_count);
                                         cti.generate_points(file_, handler_);
                                     });
-    Find_Files_In_Dir find_files([&valid_product, &config](const fs::path& dir_, DateFileMap& files_)
+    Find_Files_In_Dir find_files([&valid_product, &get_source, &config](const fs::path& dir_, DateFileMap& files_)
                                  {
-                                     Find_MD_Files_In_Parallel find(dir_, valid_product, config._date_range);
+                                     Find_MD_Files_In_Parallel find(dir_, valid_product, get_source, config._date_range);
                                      find.find_files();
                                      files_.swap(find.files());
                                  });

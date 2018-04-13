@@ -30,7 +30,7 @@ private:
     void add_header(const Product& product_, const lcc::msg::md_data_header&, Recv_Time_Index& time_index_);
     uint32_t get_index(const int64_t time_, Recv_Time_Index& time_index_);
     void read_file(std::istream&, const Msg_Handler&);
-    void process_msg(const Msg_Handler&);
+    void process_msg(const Msg_Handler&, bool last_ = false);
     void generate_points(const lcc::msg::MarketData&);
     void convert_trade(const lcc::msg::trade&, const lcc::msg::md_data_header&, const Product& product_);
     void convert_trade(const lcc::msg::amalgamated_trade&, const lcc::msg::md_data_header&, const Product& product_);

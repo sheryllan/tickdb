@@ -17,17 +17,18 @@ namespace cxx_influx
 class Find_MD_Files
 {
 public:
-    Find_MD_Files(const Valid_Reactor_Product&, Date_Range range_ = Date_Range());
+    Find_MD_Files(const Valid_Reactor_Product&, const Get_Source&, Date_Range range_ = Date_Range());
     void find_files(const fs::path& dir_);
     DateFileMap& files() { return _files; }
     const DateFileMap& files() const { return _files; }
     const uint64_t file_size() const { return file_map_size(_files); }
+    static bool extract_product_type_date(const std::string& file_, std::string& product_, char& type_, int32_t& date_);
 private:
     void add_tick_files(const fs::path& dir_);
-    bool extract_product_type_date(const std::string& file_, std::string& product_, char& type_, int32_t& datae_);
     DateFileMap _files;
-    Date_Range _date_range;
     Valid_Reactor_Product _valid_product;
+    Get_Source _get_source;
+    Date_Range _date_range;
     fs::path _dir;
 };
 
@@ -35,7 +36,8 @@ private:
 class Find_MD_Files_In_Parallel : public Find_Files_In_Parallel
 {
 public:
-    Find_MD_Files_In_Parallel(const fs::path& dir_, const Valid_Reactor_Product&, Date_Range range_ = Date_Range(), uint8_t thread_cnt_ = 8);
+    Find_MD_Files_In_Parallel(const fs::path& dir_, const Valid_Reactor_Product&, const Get_Source&
+                   , Date_Range range_ = Date_Range(), uint8_t thread_cnt_ = 8);
     void add_sub_dirs() override;
 private:
     Date_Range _date_range;

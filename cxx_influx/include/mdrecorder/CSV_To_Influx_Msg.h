@@ -34,7 +34,7 @@ private:
     void add_common_tags(std::vector<std::string>& cols_, Recv_Time_Index& time_index_);
     void convert_trade(std::vector<std::string>& cols_);
     void convert_quote(std::vector<std::string>& cols_);
-    void process_msg();
+    void process_msg(bool last_ = false);
     void add_network_ts(const std::vector<std::string>& cols_);
     bool valid_line(const std::vector<std::string>& cols_, const std::string& line) const;
     void add_int_field(const std::string& key_, const std::string& value_);
@@ -44,12 +44,12 @@ private:
     String_Pool _pool; 
     //doesnot see any improvement with thread_local. 
     //thread_local static String_Pool _pool; 
+    std::string _source;
     bool _old_format = false;
     size_t _trade_cnt = 0;
     size_t _book_cnt = 0;
     uint32_t _batch_count = INFLUX_BATCH_CNT;
     const TickFile* _file = nullptr;
-
     Recv_Time_Index _quote_recv_time_index;
     Recv_Time_Index _trade_recv_time_index;
 

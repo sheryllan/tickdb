@@ -104,21 +104,20 @@ void Generate_Influx_Msg::read_file(std::istream& in_, const Msg_Handler& func_)
 
     if (_builder.msg_count() > 0)
     {
-        process_msg(func_);        
+        process_msg(func_, true);        
     }
     //ProfilerStop();
     CUSTOM_LOG(Log::logger(), logging::trivial::info) << "generated " << _trade_cnt << " trades. " << _trade_summary_cnt << " trade summaries. "
-                              << _book_cnt << " quotes.";
+                              << _book_cnt << " quotes from " << _qtg_file->_file_path.native();
 }
 
-void Generate_Influx_Msg::process_msg(const Msg_Handler& func_)
+void Generate_Influx_Msg::process_msg(const Msg_Handler& func_, bool last_)
 {
     str_ptr str = _pool.get_str_ptr();
     _builder.get_influx_msg(*str);
     CUSTOM_LOG(Log::logger(), logging::trivial::trace) << "process message, str use count " << str.use_count() << " msg count " << _builder.msg_count() << " str size " << str->size();
     _builder.clear();
-    Influx_Msg msg {_qtg_file->_file_path.filename().string(), _qtg_file->_date, str};
-    //Influx_Msg msg {_qtg_file->_date, str};
+    Influx_Msg msg {_qtg_file->_file_path.filename().string(), _qtg_file->_date, last_, str};
     func_(msg);
 }
 

@@ -59,6 +59,7 @@ const std::string TAG_STRIKE("strike");
 const std::string TAG_MARKET("market");
 const std::string TAG_INDEX("index");
 const std::string TAG_SIDE("side");
+const std::string TAG_SOURCE("source");
 
 const std::string OTYPE("otype");
 const std::string TRADE_PRICE("price");
@@ -286,9 +287,10 @@ decompress(lzma_stream *strm, const char *inname, FILE *infile, std::string& buf
 //can't use boost::algorithm::split as ',' can be contained in product ID.
 //also simpler than boost::split thus faster
 template<char seperator>
-size_t csv_split(std::vector<std::string>& cols_, const std::string& line)
+size_t internal_split(std::vector<std::string>& cols_, const std::string& line)
 {
     size_t index = 0;
+    if (index >= cols_.size()) cols_.push_back(std::string());
     std::string* col = &(cols_[index]);
     bool in_quote = false;
     for (auto c : line)
@@ -314,18 +316,12 @@ size_t csv_split(std::vector<std::string>& cols_, const std::string& line)
     return index + 1;
 }
 
-//simpler thus faster than boost::trim as first, there is normally no space at all
-//and secondly, it's safe to remove all spaces(including speces in middle)
-void remove_space(std::string& str)
+//check if it's nessary to do trim first. faster than calling boost trim directly.
+void trim(std::string& str)
 {
     if (str.empty()) return;
-    if (*str.begin() != ' ' & *str.rbegin() != ' ') return;//this is probably 99999999..% of the case.
-    auto it = str.begin();
-    while (it != str.end())
-    {
-        if (*it == ' ') it = str.erase(it);
-        else ++it;
-    }
+    if (*str.begin() != ' ' & *str.rbegin() != ' ') return;//this is probably 99.999999..% of the case.
+    boost::algorithm::trim(str);
 }
 
 }//end namespace
@@ -337,7 +333,6 @@ namespace cxx_influx
 CSVToInfluxMsg::CSVToInfluxMsg(uint32_t batch_count_)
     : _batch_count(batch_count_)
 {
-    CUSTOM_LOG(Log::logger(), logging::trivial::info) << "batch count : " << batch_count_;
     _columns.resize(static_cast<uint8_t>(OldColumn::count));
     _product_attributes.resize(static_cast<uint8_t>(ProductAttr::count));
     static bool init = false;
@@ -406,11 +401,18 @@ void CSVToInfluxMsg::unzip(const std::string& file_name_)
 
 void CSVToInfluxMsg::generate_points(const TickFile& file_, const Msg_Handler& handler_)
 {
+    if (file_._reactor_source.empty())
+    {
+        CUSTOM_LOG(Log::logger(), logging::trivial::error) << "No source for file " << file_._file_path.native();
+        return;            
+    }
+    _source = file_._reactor_source;
     //ProfilerStart("./profile");
     _file = &file_;
     _msg_handler = handler_;
     std::string file_path(file_._file_path.native());
-    CUSTOM_LOG(Log::logger(), logging::trivial::info) << "Opened file " << file_path << " to generate influx data.";
+    CUSTOM_LOG(Log::logger(), logging::trivial::info) << "Opened file " << file_path << " to generate influx data."
+                                << "source : " << _source << " batch count : " << _batch_count;
     if (boost::algorithm::ends_with(file_path, ".xz"))
     {
         unzip(file_path);
@@ -432,11 +434,11 @@ void CSVToInfluxMsg::generate_points(const TickFile& file_, const Msg_Handler& h
     //ProfilerStop();
     if (_builder.msg_count() > 0)
     {
-        process_msg();
+        process_msg(true);
     }
     
     CUSTOM_LOG(Log::logger(), logging::trivial::info) << "generated " << _trade_cnt << " trades. " 
-                              << _book_cnt << " quotes.";
+                              << _book_cnt << " quotes from " << file_path;
 
 }
 
@@ -465,12 +467,12 @@ void CSVToInfluxMsg::convert_decoded_string(std::string& str, bool end)
     }
     else str.erase(0, offset);
 }
-void CSVToInfluxMsg::process_msg()
+void CSVToInfluxMsg::process_msg(bool last_)
 {
     str_ptr str = _pool.get_str_ptr();
     _builder.get_influx_msg(*str);
     _builder.clear();
-    Influx_Msg msg{_file->_file_path.filename().string(), _file->_date, str};
+    Influx_Msg msg{_file->_file_path.filename().string(), _file->_date, last_, str};
     //Influx_Msg msg{_file->_date, str};
     _msg_handler(msg);
 }
@@ -488,11 +490,10 @@ void CSVToInfluxMsg::convert_one_line(const std::string& line)
 {
     std::vector<std::string>& columns = _columns;;
     for (auto& str : columns) str.clear();
-    size_t cols_cnt = csv_split<','>(columns, line);
+    size_t cols_cnt = internal_split<','>(columns, line);
     for (auto& col : columns)
     {
-        remove_space(col);
-//        boost::algorithm::trim(col);//this is unnessary so far. but just in case.
+        trim(col);
     }
     if (columns[(uint8_t)BookColumnIndex::otype] == OTYPE_QUOTE) // quote
     {
@@ -577,8 +578,7 @@ void CSVToInfluxMsg::add_tags_new(std::vector<std::string>& cols_)
     std::vector<std::string>& product_attributes = _product_attributes;
     for (auto& str : product_attributes) str.clear();
 
-    csv_split<'.'>(product_attributes, cols_[(uint8_t)NewColumn::product]);
-    size_t size = product_attributes.size();
+    size_t size = internal_split<'.'>(product_attributes, cols_[(uint8_t)NewColumn::product]);
     if (size > (uint8_t)ProductAttr::type)
         _builder.add_tag(TAG_TYPE, product_attributes[(uint8_t)ProductAttr::type]);
     if (size > (uint8_t)ProductAttr::product)
@@ -604,6 +604,7 @@ void CSVToInfluxMsg::add_common_tags(std::vector<std::string>& cols_, Recv_Time_
         add_tags_new(cols_);
     }
     _builder.add_tag(TAG_INDEX, get_index(cols_, time_index_));
+    _builder.add_tag(TAG_SOURCE, _source);
 }
 void CSVToInfluxMsg::add_network_ts(const std::vector<std::string>& cols_)
 {
@@ -612,7 +613,7 @@ void CSVToInfluxMsg::add_network_ts(const std::vector<std::string>& cols_)
         if (cols_.size() >= static_cast<size_t>(NewColumn::count))
         {
             const std::string& str = cols_[static_cast<size_t>(NewColumn::nicts)];
-            if (str != "0" && str != NA)
+            if (!str.empty() && str != "0" && str != NA)
             {
                 _builder.add_int_field(NETWORK_TS, str);
             }
@@ -621,20 +622,20 @@ void CSVToInfluxMsg::add_network_ts(const std::vector<std::string>& cols_)
 }
 void CSVToInfluxMsg::add_int_field(const std::string& key_, const std::string& value_)
 {
-    if (key_ == NA) return;
+    if (value_.empty() | value_ == NA) return;
     _builder.add_int_field(key_, value_);
 }
 
 void CSVToInfluxMsg::add_float_field(const std::string& key_, const std::string& value_)
 {
-    if (key_ == NA) return;
+    if (value_.empty() | value_ == NA) return;
     _builder.add_float_field(key_, value_);
 }
 
 
 void CSVToInfluxMsg::add_field(const std::string& key_, const std::string& value_)
 {
-    if (key_ == NA) return;
+    if (value_.empty() | value_ == NA) return;
     _builder.add_field(key_, value_);
 }
 void CSVToInfluxMsg::convert_trade(std::vector<std::string>& cols_)
@@ -661,7 +662,7 @@ void CSVToInfluxMsg::convert_quote(std::vector<std::string>& cols_)
     add_network_ts(cols_); 
     for (size_t i = (uint8_t)BookColumnIndex::bid1; i < (uint8_t)BookColumnIndex::count; ++i)
     {
-        if (cols_[i] == NA) continue;
+        if (cols_[i].empty() | cols_[i] == NA) continue;
 
         if ((i >= (uint8_t)BookColumnIndex::nbid1 && i <= (uint8_t)BookColumnIndex::nbid5) 
          || (i >= (uint8_t)BookColumnIndex::nask1 && i <= (uint8_t)BookColumnIndex::nask5))

@@ -9,8 +9,8 @@ namespace cxx_influx
 {
 namespace fs = boost::filesystem;
 
-Find_MD_Files::Find_MD_Files(const Valid_Reactor_Product& valid_product_, Date_Range range_)
-    : _valid_product(valid_product_), _date_range(range_)
+Find_MD_Files::Find_MD_Files(const Valid_Reactor_Product& valid_product_, const Get_Source& get_source_, Date_Range range_)
+    : _valid_product(valid_product_), _get_source(get_source_), _date_range(range_)
 {
 }
 
@@ -67,7 +67,7 @@ bool Find_MD_Files::extract_product_type_date(const std::string& file_, std::str
             date_ = std::atoi(it->data());
             break;
         case 2: 
-            if (it->size() == 1)//type E, I, S, C
+            if (it->size() == 1)//type E, I, S, C...
             {
                 if (*it == "S") return false;//strategy is not supported
                 type_ = *it->begin();
@@ -113,20 +113,27 @@ void Find_MD_Files::add_tick_files(const fs::path& dir_)
                                                        << "type:" << type << ".product:" << product << ".date:" << date;
                     continue;
                 }
+                std::string source = _get_source(product);
+                if (source.empty())
+                {
+                    CUSTOM_LOG(Log::logger(), logging::trivial::error) << "File " << itr->path().native() 
+                          << " is ignored as source not configured for product " << product;
+                    continue;
+                }
                 CUSTOM_LOG(Log::logger(), logging::trivial::trace) << "found file " << itr->path().native() << std::endl;
                 int64_t file_size = fs::file_size(itr->path()); 
-                _files[date].insert(std::make_pair(itr->path().filename().string(), TickFile{itr->path(), file_size, date}));
+                _files[date].insert(std::make_pair(itr->path().filename().string(), TickFile{itr->path(), file_size, date, source}));
             }
         }
     }
 }
 
 Find_MD_Files_In_Parallel::Find_MD_Files_In_Parallel(const fs::path& dir_, const Valid_Reactor_Product& valid_product_
-                              , Date_Range range_, uint8_t thread_cnt_)
+                              , const Get_Source& get_source_, Date_Range range_, uint8_t thread_cnt_)
     : Find_Files_In_Parallel(dir_
-                           , [&valid_product_, range_](const fs::path& dir_, DateFileMap& files_)
+                           , [&valid_product_, &get_source_, range_](const fs::path& dir_, DateFileMap& files_)
                              {
-                                 Find_MD_Files item(valid_product_, range_);
+                                 Find_MD_Files item(valid_product_, get_source_, range_);
                                  item.find_files(dir_);
                                  files_.swap(item.files());
                              }

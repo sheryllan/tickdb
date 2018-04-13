@@ -14,6 +14,7 @@ class Product;
 using str_ptr = std::shared_ptr<std::string>;
 using Get_Product = std::function<const Product * (int32_t)>;
 using Valid_Product = std::function<bool(const int32_t id_)>;
+using Get_Source = std::function<std::string(const std::string& product_)>;
 
 using Valid_Reactor_Product = std::function<bool(const char type_, const std::string& product_)>;
 static constexpr const uint32_t INFLUX_BATCH_CNT = 5000;
@@ -29,6 +30,7 @@ struct Influx_Msg
 {
     std::string _file;
     int32_t _date = 0;
+    bool _last = false; //is this message the last one of all messages generated from a file
     str_ptr _msg;
 };
 
@@ -37,6 +39,7 @@ struct TickFile
     fs::path _file_path;
     int64_t _file_size = 0;//it's expensive to call file_size on each path.
     int32_t _date = 0;
+    std::string _reactor_source;//used only for md recorder file.
 };
 using Msg_Handler = std::function<void(const Influx_Msg&)>;
 using Generate_Points = std::function<void(const TickFile&, const Msg_Handler&)>;
