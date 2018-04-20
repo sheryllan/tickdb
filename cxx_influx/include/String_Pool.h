@@ -11,12 +11,12 @@ namespace cxx_influx
 class String_Pool
 {
 public:
-    static constexpr unsigned int SIZE = 8;
-    String_Pool();
+    String_Pool(size_t size_ = 8);
     str_ptr get_str_ptr();
     static str_ptr make_str_ptr();
 private:
     size_t _last = 0;
-    std::array<str_ptr, SIZE> _pool;
+    size_t _size = 0;
+    std::vector<str_ptr> _pool;
 };
 }

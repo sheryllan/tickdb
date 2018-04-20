@@ -45,7 +45,7 @@ enum class NewColumn : uint8_t
 enum class OldColumn : uint8_t
 {
     market = BookColumnIndex::count,
-    type,prod,series,strike,call_put,count
+    type,prod,series,strike,call_put,version,count
 };
 std::array<std::string, static_cast<uint8_t>(BookColumnIndex::count)> BOOK_FIELD_ARRAY;
 const std::string MEASUREMENT_BOOK("book");
@@ -55,6 +55,7 @@ const std::string TAG_PRODUCT("product");
 const std::string TAG_EXPIRY("expiry");
 const std::string TAG_TYPE("type");
 const std::string TAG_CALLPUT("cp");
+const std::string TAG_VERSION("version");
 const std::string TAG_STRIKE("strike");
 const std::string TAG_MARKET("market");
 const std::string TAG_INDEX("index");
@@ -66,6 +67,7 @@ const std::string TRADE_PRICE("price");
 const std::string TRADE_QTY("volume");
 const std::string OTYPE_QUOTE("Q");
 const std::string OTYPE_TRADE_SUMMARY("S");
+const std::string OTYPE_TRADE("T"); //T is used in mdrecorder files that were generated in 2016
 const std::string NA("NA");
 const std::string NETWORK_TS("nicts");
 
@@ -480,7 +482,8 @@ bool CSVToInfluxMsg::valid_line(const std::vector<std::string>& cols_, const std
 {
     if (cols_[static_cast<uint8_t>(BookColumnIndex::recv)] == NA)
     {
-        CUSTOM_LOG(Log::logger(), logging::trivial::warning) << "line with invalid recv time info. "
+        //too many lines like this. make it trade not warning.
+        CUSTOM_LOG(Log::logger(), logging::trivial::trace) << "line with invalid recv time info. "
                       << line;
         return false;
     }
@@ -490,7 +493,7 @@ void CSVToInfluxMsg::convert_one_line(const std::string& line)
 {
     std::vector<std::string>& columns = _columns;;
     for (auto& str : columns) str.clear();
-    size_t cols_cnt = internal_split<','>(columns, line);
+    _cols_cnt = internal_split<','>(columns, line);
     for (auto& col : columns)
     {
         trim(col);
@@ -500,25 +503,23 @@ void CSVToInfluxMsg::convert_one_line(const std::string& line)
         if (!valid_line(columns, line)) return;
         convert_quote(columns);
     }
-    else if (columns[(uint8_t)BookColumnIndex::otype] == OTYPE_TRADE_SUMMARY) // trade summary
+    else if (columns[(uint8_t)BookColumnIndex::otype] == OTYPE_TRADE_SUMMARY || columns[(uint8_t)BookColumnIndex::otype] == OTYPE_TRADE) // trade summary
     {
         if (!valid_line(columns, line)) return;
+        //check  /mnt/tank/backups/london/quants/data/rawdata/20160506/TNG-HKFE-QTG-Shim-A50-F-JUN2016-20160506-093423.csv.xz search for 'T,'
+        // there are only
         convert_trade(columns);
     }
     else if (columns[(uint8_t)BookColumnIndex::otype] == OTYPE)
     {
         //header
-        if (cols_cnt == static_cast<size_t>(OldColumn::count))
+        if (_cols_cnt >= static_cast<size_t>(OldColumn::count))
         {
             if (line.find("market,type,prod") == std::string::npos)
             {
-                CUSTOM_LOG(Log::logger(), logging::trivial::fatal) << "Unknown csv format. it should be old format, but cannot find market,type,prod in " << line;       
+                CUSTOM_LOG(Log::logger(), logging::trivial::fatal) << "Unknown csv format. it should be old format, but cannot find market,type,prod in.treats it as new format. " << line;       
             }
             else _old_format = true;
-        }
-        else if (cols_cnt > static_cast<size_t>(OldColumn::count))
-        {
-            CUSTOM_LOG(Log::logger(), logging::trivial::fatal) << "Unknown csv format. too many columns : " << line;
         }
     }
     else
@@ -550,8 +551,9 @@ void replace_comma_with_dot_in_strike(std::string& str)
 }
 void CSVToInfluxMsg::add_tags_old(std::vector<std::string>& cols_)
 {
-    _builder.add_tag(TAG_TYPE, cols_[(uint8_t)OldColumn::type]);
+    //add product tag first so resendfailedmsg can work for both qtg tick and reactor tick
     _builder.add_tag(TAG_PRODUCT, cols_[(uint8_t)OldColumn::prod]);
+    _builder.add_tag(TAG_TYPE, cols_[(uint8_t)OldColumn::type]);
     if (cols_[(uint8_t)OldColumn::series] != NA) _builder.add_tag(TAG_EXPIRY, cols_[(uint8_t)OldColumn::series]);
     if (cols_[(uint8_t)OldColumn::strike] != NA) 
     {
@@ -559,6 +561,7 @@ void CSVToInfluxMsg::add_tags_old(std::vector<std::string>& cols_)
         _builder.add_tag(TAG_STRIKE, cols_[(uint8_t)OldColumn::strike]);    
     }
     if (cols_[(uint8_t)OldColumn::call_put] != NA) _builder.add_tag(TAG_CALLPUT, cols_[(uint8_t)OldColumn::call_put]);    
+    if (cols_[static_cast<uint8_t>(OldColumn::version)] != NA) _builder.add_tag(TAG_VERSION, cols_[static_cast<uint8_t>(OldColumn::version)]);
 }
 
 uint32_t CSVToInfluxMsg::get_index(const std::vector<std::string>& cols_, Recv_Time_Index& time_index_)
@@ -578,11 +581,22 @@ void CSVToInfluxMsg::add_tags_new(std::vector<std::string>& cols_)
     std::vector<std::string>& product_attributes = _product_attributes;
     for (auto& str : product_attributes) str.clear();
 
-    size_t size = internal_split<'.'>(product_attributes, cols_[(uint8_t)NewColumn::product]);
-    if (size > (uint8_t)ProductAttr::type)
-        _builder.add_tag(TAG_TYPE, product_attributes[(uint8_t)ProductAttr::type]);
+    uint8_t product_index = static_cast<uint8_t>(NewColumn::product);
+    if (_cols_cnt < static_cast<size_t>(BookColumnIndex::count))
+    {
+        std::ostringstream os;
+        for (auto& str : cols_) os << str << ',';
+        CUSTOM_LOG(Log::logger(), logging::trivial::warning) << "too few columns, some old mdrecorder files use fewer columns for trade report." << os.str();
+        //check /mnt/tank/backups/london/quants/data/rawdata/20160506/TNG-HKFE-QTG-Shim-A50-F-JUN2016-20160506-093423.csv.xz search for 'T'
+        //there are only 28 columns for trade and the last column is used to store "product id"
+        product_index = 27;
+    }
+    size_t size = internal_split<'.'>(product_attributes, cols_[product_index]);
+    //add product tag first so resendfailedmsg can work for both qtg tick and reactor tick
     if (size > (uint8_t)ProductAttr::product)
         _builder.add_tag(TAG_PRODUCT, product_attributes[(uint8_t)ProductAttr::product]);
+    if (size > (uint8_t)ProductAttr::type)
+        _builder.add_tag(TAG_TYPE, product_attributes[(uint8_t)ProductAttr::type]);
     if (size > (uint8_t)ProductAttr::expiry)
         _builder.add_tag(TAG_EXPIRY, product_attributes[(uint8_t)ProductAttr::expiry]);
     if (size > (uint8_t)ProductAttr::strike)
@@ -592,6 +606,8 @@ void CSVToInfluxMsg::add_tags_new(std::vector<std::string>& cols_)
     }
     if (size > (uint8_t)ProductAttr::call_put)
         _builder.add_tag(TAG_CALLPUT, product_attributes[(uint8_t)ProductAttr::call_put]);
+    if (size > static_cast<uint8_t>(ProductAttr::version))
+        _builder.add_tag(TAG_VERSION, product_attributes[static_cast<uint8_t>(ProductAttr::version)]);
 }
 void CSVToInfluxMsg::add_common_tags(std::vector<std::string>& cols_, Recv_Time_Index& time_index_)
 {
@@ -649,7 +665,7 @@ void CSVToInfluxMsg::convert_trade(std::vector<std::string>& cols_)
     add_network_ts(cols_); 
     add_float_field(TRADE_PRICE, cols_[(uint8_t)TradeColumnIndex::price]);    
     add_float_field(TRADE_QTY, cols_[(uint8_t)TradeColumnIndex::qty]); //use float for volume in case there are decimals in cash products' volume.
-    add_field(OTYPE, OTYPE_TRADE_SUMMARY);   
+    add_field(OTYPE, cols_[static_cast<uint8_t>(BookColumnIndex::otype)]);   
     _builder.point_end(cols_[(uint8_t)BookColumnIndex::recv]);    
 }
 
@@ -671,7 +687,7 @@ void CSVToInfluxMsg::convert_quote(std::vector<std::string>& cols_)
         }
         else _builder.add_float_field(BOOK_FIELD_ARRAY[i], cols_[i]);//use float for volume in case there are decimals in cash products' volume.
     }              
-    add_field(OTYPE, OTYPE_QUOTE);    
+    add_field(OTYPE, cols_[static_cast<uint8_t>(BookColumnIndex::otype)]);    
     _builder.point_end(cols_[(uint8_t)BookColumnIndex::recv]);
 }
 

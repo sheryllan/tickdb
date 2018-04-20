@@ -10,10 +10,10 @@ using json = nlohmann::json;
 namespace
 {
     thread_local std::unique_ptr<Post_Influx_Msg> t_post_influx;
-    thread_local int32_t t_post_size = 0;
+    thread_local int64_t t_post_size = 0;
+    thread_local int32_t t_file_date = 0;
     thread_local std::fstream t_output_file;
     thread_local int32_t t_thread_index = 0;
-    thread_local int32_t t_thread_file_count = 0;
     std::atomic<int32_t> g_thread_count;
     void dump_files(const DateFileMap& files_)
     {
@@ -26,9 +26,54 @@ namespace
                 CUSTOM_LOG(Log::logger(), logging::trivial::debug) << pair2.second._file_path.native();
             }
         }
-        CUSTOM_LOG(Log::logger(), logging::trivial::debug) << "Fles to decode...Done";
+        CUSTOM_LOG(Log::logger(), logging::trivial::debug) << "Files to decode...Done";
     }
     bool g_write_to_files = false;
+
+    void write_to_files(const Influx_Msg& msg_)
+    {
+        t_post_size += msg_._msg->size();
+        if (t_thread_index == 0)
+        {
+            t_thread_index = g_thread_count.fetch_add(1);
+            std::ostringstream os;
+            os << "influx_messages_on_thread" << t_thread_index << "_" << msg_._date;
+            CUSTOM_LOG(Log::logger(), logging::trivial::info) << "Open file " << os.str() << " on thread " 
+                   << t_thread_index << ":" << std::this_thread::get_id();
+            t_output_file.open(os.str(), std::ios::out | std::ios::app);
+            if (!t_output_file)
+            {
+                CUSTOM_LOG(Log::logger(), logging::trivial::error) << "Failed to open " << os.str();
+            }
+        }
+
+        if (t_output_file)
+        {
+            t_output_file << *msg_._msg << std::endl;
+        }
+        if (t_file_date != 0 && t_file_date != msg_._date)
+        {
+            t_post_size = 0;
+            t_output_file.close();
+            CUSTOM_LOG(Log::logger(), logging::trivial::info) << "Finished writing to disk for date " << t_file_date
+                                 << "; total size is " << t_post_size;
+            std::ostringstream os;
+            os << "influx_messages_on_thread" << t_thread_index << "_" << msg_._date;
+            CUSTOM_LOG(Log::logger(), logging::trivial::info) << "Open file " << os.str() << " on thread " 
+                   << t_thread_index << ":" << std::this_thread::get_id();
+            t_output_file.open(os.str(), std::ios::out | std::ios::app);
+            if (!t_output_file)
+            {
+                CUSTOM_LOG(Log::logger(), logging::trivial::error) << "Failed to open " << os.str();
+            }
+        }
+        t_file_date = msg_._date;
+        if (msg_._last)
+        {
+            CUSTOM_LOG(Log::logger(), logging::trivial::info) << "Finished writing to disk for " << msg_._file;
+        }
+
+    }
 }
 
 Tick_To_Influx::Tick_To_Influx(const std::string& http_host_, const uint16_t http_port_
@@ -50,49 +95,18 @@ void Tick_To_Influx::post_influx(const Influx_Msg& msg_)
 {
     try
     {
-         t_post_size += msg_._msg->size();
-        //for testing purpose.
-        if (g_write_to_files)
+        if (g_write_to_files) //write influx messages to disk which can be sent seperately.
         {
-            if (t_thread_index == 0)
-            {
-                t_thread_index = g_thread_count.fetch_add(1);
-                std::ostringstream os;
-                os << "influx_messages_on_thread" << t_thread_index << "_" << t_thread_file_count;
-                t_output_file.open(os.str(), std::ios::out);
-                if (!t_output_file)
-                {
-                    CUSTOM_LOG(Log::logger(), logging::trivial::error) << "Failed to open " << os.str();
-                }                
-            }            
-     
-            if (t_output_file)
-            {
-                t_output_file << *msg_._msg << std::endl;
-            }
-
-            if (t_post_size > 1024 * 1024 * 1024 * 60)//save into another file.
-            {
-                t_output_file.close();
-                t_thread_file_count++;
-                std::ostringstream os;
-                os << "influx_messages_on_thread" << t_thread_index << "_" << t_thread_file_count;
-                t_output_file.open(os.str(), std::ios::out);
-                if (!t_output_file)
-                {
-                    CUSTOM_LOG(Log::logger(), logging::trivial::error) << "Failed to open " << os.str();
-                }
-            }
+            write_to_files(msg_);
+            return;
         }
-        else
+        t_post_size += msg_._msg->size();
+        if (!t_post_influx) t_post_influx.reset(new Post_Influx_Msg(_http_host, _http_port, _influx_db));
+        t_post_influx->post(msg_);
+        if (t_post_size > 1024 * 1024 * 10) //send out more than 10M data
         {
-            if (!t_post_influx) t_post_influx.reset(new Post_Influx_Msg(_http_host, _http_port, _influx_db));
-            t_post_influx->post(msg_);
-            if (t_post_size > 1024 * 1024 * 10) //send out more than 10M data
-            {
-                CUSTOM_LOG(Log::logger(), logging::trivial::debug) << "posted " << t_post_size << " bytes of influx messages.";
-                t_post_size = 0;
-            }
+            CUSTOM_LOG(Log::logger(), logging::trivial::debug) << "posted " << t_post_size << " bytes of influx messages.";
+            t_post_size = 0;
         }
         if (msg_._last)
         {
@@ -154,9 +168,14 @@ void Tick_To_Influx::decode_file(const TickFile& file_)
 }*/
 void Tick_To_Influx::get_processed_files(Date_Range range_)
 {
+    get_processed_files(_processed_files, _http_host, _http_port, _influx_db, range_);
+}
+void Tick_To_Influx::get_processed_files(Processed_Files& processed_files_, const std::string& http_host_, uint16_t http_port_
+                                  , const std::string& influx_db_, Date_Range range_)
+{
     std::ostringstream os;
     os << "select file,date from processed_files where time >= " << range_._begin << " and time <= " << range_._end;
-    std::string ret = query_influx(_http_host, _http_port, _influx_db, url_encode(os.str()));
+    std::string ret = query_influx(http_host_, http_port_, influx_db_, url_encode(os.str()));
     if (ret.empty())
     {
         CUSTOM_LOG(Log::logger(), logging::trivial::info) << "No processed files queried.";
@@ -173,7 +192,7 @@ void Tick_To_Influx::get_processed_files(Date_Range range_)
             const std::string& file = v[1];
             const int64_t date = v[2];
             CUSTOM_LOG(Log::logger(), logging::trivial::info) << "Processed file : " << file << "; date : " << date;
-            _processed_files[date].insert(file);
+            processed_files_[date].insert(file);
         }
     }
     catch(std::exception& e)
@@ -206,24 +225,15 @@ void Tick_To_Influx::remove_processed_files(DateFileMap& tick_files_)
         }
     }
 }
-void Tick_To_Influx::run(const std::string& dir_, const Find_Files_In_Dir& find_files_, bool filter_processed_files_, Date_Range range_
-                , uint8_t decode_thread_cnt_, uint8_t post_influx_thread_cnt_)
+void Tick_To_Influx::process_files(const DateFileMap& tick_files_, uint8_t decode_thread_cnt_, uint8_t post_influx_thread_cnt_)
 {
-    get_processed_files(range_);
     g_thread_count = 1;
     _decode_thread_cnt = decode_thread_cnt_;
-    DateFileMap tick_files;
-    
-    find_files_(fs::path(dir_), tick_files);   
-    CUSTOM_LOG(Log::logger(), logging::trivial::info) << "find " << file_map_count(tick_files) << " files to process."
-                  << " total size is " << file_map_size(tick_files);
-    if (filter_processed_files_) remove_processed_files(tick_files);
-
-    dump_files(tick_files);
+    dump_files(tick_files_);
     _influx_dispatcher.reset(new Influx_Dispath(post_influx_thread_cnt_, [this](const Influx_Msg& msg_){this->post_influx(msg_);}));
     _influx_dispatcher->run();
 
-    decode_files(tick_files);
+    decode_files(tick_files_);
 
     while (!_influx_dispatcher->empty())
     {
@@ -232,6 +242,19 @@ void Tick_To_Influx::run(const std::string& dir_, const Find_Files_In_Dir& find_
     _influx_dispatcher->stop();
     _influx_dispatcher->wait();
     CUSTOM_LOG(Log::logger(), logging::trivial::info) << "Finished updating influx db.";
+    
+}
+void Tick_To_Influx::run(const std::string& dir_, const Find_Files_In_Dir& find_files_, bool filter_processed_files_, Date_Range range_
+                , uint8_t decode_thread_cnt_, uint8_t post_influx_thread_cnt_)
+{
+    get_processed_files(range_);
+    DateFileMap tick_files;
+    
+    find_files_(fs::path(dir_), tick_files);   
+    CUSTOM_LOG(Log::logger(), logging::trivial::info) << "find " << file_map_count(tick_files) << " files to process."
+                  << " total size is " << file_map_size(tick_files);
+    if (filter_processed_files_) remove_processed_files(tick_files);
+    process_files(tick_files, decode_thread_cnt_, post_influx_thread_cnt_);
     update_processed_files(tick_files);
     CUSTOM_LOG(Log::logger(), logging::trivial::info) << "Finished updating processed files in influx db.";
 }
@@ -259,7 +282,6 @@ void Tick_To_Influx::decode_files(const DateFileMap& files_)
     CUSTOM_LOG(Log::logger(), logging::trivial::info) << "Finished decoding all files.";
     
 }
-
 void Tick_To_Influx::update_processed_files(const DateFileMap& tick_files_)
 {
     for (auto& pair : tick_files_)
@@ -270,10 +292,15 @@ void Tick_To_Influx::update_processed_files(const DateFileMap& tick_files_)
             _processed_files[pair.first].insert(pair2.first);
         }
     }
+    update_processed_files(_processed_files, _http_host, _http_port, _influx_db);
+}
+void Tick_To_Influx::update_processed_files(const Processed_Files& processed_files_, const std::string& http_host_
+                                          , uint16_t http_port_, const std::string& influx_db_)
+{
     Influx_Builder builder;    
-    Post_Influx_Msg post(_http_host, _http_port, _influx_db);
+    Post_Influx_Msg post(http_host_, http_port_, influx_db_);
     std::string influx_msg;
-    for (auto& pair : _processed_files)
+    for (auto& pair : processed_files_)
     {
         size_t index = 0;
         for (auto& file : pair.second)

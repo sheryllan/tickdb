@@ -84,7 +84,7 @@ bool Configuration::init()
     env = getenv("FILTER_PROCESSED_FILES");
     if (env)
     {
-        _filter_processed_files = strcasecmp(env, "TRUE");
+        _filter_processed_files = strcasecmp(env, "TRUE") == 0;
     }
 
     env = getenv("PRODUCT_EXCHCHANGES");
@@ -146,6 +146,7 @@ bool Configuration::init()
                      << ";post influx thread count : " << static_cast<size_t>(_post_influx_thread_cnt) << "; influx batch count : " << _batch_count
                      << ";PRODUCT_NAMES : " << _product_names << ";PRODUCT_TYPES : " << _product_types
                      << ";begin date : " << _date_range._begin << "; end date : " << _date_range._end 
+                     << ";filter processed file : " << _filter_processed_files
                      << ";import type : " << ((_import_type == ImportType::qtg) ? "qtg" 
                                            : (_import_type == ImportType::reactor)
                                            ? "reactor" : "undefined");

@@ -54,7 +54,7 @@ private:
     Recv_Time_Index _trade_recv_time_index;
 
     Msg_Handler _msg_handler;
-
+    size_t _cols_cnt;
     //thread_local static std::vector<std::string> _columns;
     std::vector<std::string> _columns;
     std::vector<std::string> _product_attributes;
