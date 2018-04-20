@@ -23,7 +23,7 @@ public:
            , Date_Range range_, uint8_t decode_thread_cnt_ = 8, uint8_t post_influx_thread_cnt_ = 8);
     void process_files(const DateFileMap& tick_files_, uint8_t decode_thread_cnt_ = 8, uint8_t post_influx_thread_cnt_ = 8);
 private:
-    using Influx_Dispath = Dispatch<Influx_Msg, std::function<void(const Influx_Msg&)>>;
+    using Influx_Dispatch = Dispatch<Influx_Msg, std::function<void(const Influx_Msg&)>>;
     void dispatch_influx(const Influx_Msg&);
     void post_influx(const Influx_Msg&);
     void decode_file(const TickFile&);
@@ -32,7 +32,7 @@ private:
     void remove_processed_files(DateFileMap&);
     void update_processed_files(const DateFileMap& tick_files_);
     uint8_t _decode_thread_cnt = 8;
-    std::unique_ptr<Influx_Dispath> _influx_dispatcher;
+    std::unique_ptr<Influx_Dispatch> _influx_dispatcher;
     std::string _http_host;
     std::string _influx_db;
     Generate_Points _generate_points;

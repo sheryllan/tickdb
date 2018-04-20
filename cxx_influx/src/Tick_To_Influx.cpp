@@ -230,7 +230,7 @@ void Tick_To_Influx::process_files(const DateFileMap& tick_files_, uint8_t decod
     g_thread_count = 1;
     _decode_thread_cnt = decode_thread_cnt_;
     dump_files(tick_files_);
-    _influx_dispatcher.reset(new Influx_Dispath(post_influx_thread_cnt_, [this](const Influx_Msg& msg_){this->post_influx(msg_);}));
+    _influx_dispatcher.reset(new Influx_Dispatch(post_influx_thread_cnt_, [this](const Influx_Msg& msg_){this->post_influx(msg_);}));
     _influx_dispatcher->run();
 
     decode_files(tick_files_);

@@ -81,7 +81,7 @@ void dump_tick_files(int argc, char * argv[])
 {
     if (argc <= 2)
     {
-        std::cout << "incorrect parameter provided. dump_tick_files  <mdrecorder files' dir> <product types> <product names> <begin date> <end date>, the last foure parameters are optional." << std::endl;
+        std::cout << "incorrect parameter provided. dump_tick_files  <mdrecorder files' dir> <product types> <product names> <begin date> <end date>, the last four parameters are optional." << std::endl;
         return;
     }
     std::string types, names;
@@ -99,8 +99,8 @@ void dump_tick_files(int argc, char * argv[])
     }
     Valid_Reactor_Product valid_product = [&types, &product_names](const char type_, const std::string& product_) -> bool
                                           {
-                                              if (!types.empty()) if (types.find(type_) == std::string::npos) return false;
-                                              if (!product_names.empty()) if (product_names.find(product_) == product_names.end()) return false;
+                                              if (!types.empty() && types.find(type_) == std::string::npos) return false;
+                                              if (!product_names.empty() && product_names.find(product_) == product_names.end()) return false;
                                               return true;
                                           };
     Get_Source get_source = [](const std::string& product_)
