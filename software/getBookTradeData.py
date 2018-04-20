@@ -59,7 +59,7 @@ def query_influx_for_trades(database,product,timezone,startDate,seconds,debug,ex
     if debug: print(query)
     a=client.query(query)
     i=0
-    if a.raw.has_key('series'):
+    if 'series'in a.raw:
         cols=a.raw['series'][0]['columns']
         vals=a.raw['series'][0]['values']
         #Get trades
@@ -69,7 +69,7 @@ def query_influx_for_trades(database,product,timezone,startDate,seconds,debug,ex
             query_trades ="SELECT time,type,product,expiry,strike,cp,side,volume,price,otype,exch FROM trade WHERE product='"+product+"'"+additionals+" AND time >= "+ str(Decimal(unix_time_nanos(search_date)))+ " AND time <= " + str(Decimal(unix_time_nanos(search_date+timedelta(0,seconds)))) +" tz('"+timezone+"')"
         if debug: print(query_trades)
         b=client.query(query_trades)
-        if b.raw.has_key('series'):
+        if 'series' in b.raw:
             trade_cols=b.raw['series'][0]['columns']
             trade_vals=b.raw['series'][0]['values']
             print(JOIN.join([str(item) for item in cols+["trade"]+trade_cols])) #print the headers but use the trade column
@@ -104,7 +104,7 @@ if __name__=="__main__":
     parser.add_argument('--cp',help="The call or put to get data for.")
     parser.add_argument('--debug',dest='debug',help="Run in debug mode.",action='store_true')
     parser.add_argument('--qtg',dest='qtg',help="Use QTG tick data",action='store_true')
-    parser.add_argument('--csv',dest='csv',help="Run in debug mode.",action='store_true')
+    parser.add_argument('--csv',dest='csv',help="Output the data in a csv format instead of the read friendly version.",action='store_true')
     args = parser.parse_args()
     expiration=None
     strike=None
