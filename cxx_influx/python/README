@@ -1,4 +1,4 @@
-This script is to import qtg name to reactor name mapping data into influx.
+parse_qtg_inst.py is to import qtg name to reactor name mapping data into influx.
 
 Mapping data is generated based on qtg instrument file.
 
@@ -12,5 +12,18 @@ Usage of this script:
 
 Python parse_qtg_inst.py <qtg instrument file> <influx http host> <influx http port> <influx db name>
 
+validation.py is used to validate if data in influx is the same as the data in a mdrecorder file. python3 is required to run this script.
+this script takes following steps to do verification.
+ 1. loads mdrecorder file first 
+ 2. query data from influx based on information such as product, time range, product type, expiry from the mdrecorder file. 
+ 3. compare data in mdrecorder file with data from influx
+ 4. quits if there is any mismatch found.
+
+Please be noted that this script may consume a lot of memory as one mdrecorder file's data could be in GB.
+
+Usage of validation.py, the last two arguments are optional. if not set, this script checks all records in a mdrecorder file.
+
+  python3 validation.py <http host> <http port> <influx_db> <files that contains paths to multiple mdrecorder files, one file per line> <check at most N of books> <check at most N of trades>
+  python3 validation.py <http host> <http port> <influx_db> -s <one single mdrecorder file> <check at most N of books> <check at most N of trades>
 
 
