@@ -45,6 +45,7 @@ void read_log(const std::string& file_, size_t batch_count_, size_t thread_cnt_)
     post_dispatch.run();
     size_t batch_count = 0;
     size_t pos = 0;
+    size_t count = 0;
     while(std::getline(file, line))
     {
         if ((pos = line.find("book,product")) != std::string::npos)
@@ -59,6 +60,7 @@ void read_log(const std::string& file_, size_t batch_count_, size_t thread_cnt_)
         }
         if (batch_count == batch_count_)
         {
+            count += batch_count;
             str_ptr str = str_pool.get_str_ptr();
             read_msg(*str, os);
             post_dispatch.push(str);
@@ -68,6 +70,7 @@ void read_log(const std::string& file_, size_t batch_count_, size_t thread_cnt_)
     }
     if (batch_count > 0)
     {
+        count += batch_count;
         str_ptr str = str_pool.get_str_ptr();
         read_msg(*str, os);
         post_dispatch.push(str);
@@ -78,7 +81,7 @@ void read_log(const std::string& file_, size_t batch_count_, size_t thread_cnt_)
     }
     post_dispatch.stop();
     post_dispatch.wait();
-    BOOST_LOG_SEV(cxx_influx::Log::logger(), cxx_influx::logging::trivial::info) << "Finished sending " << file_;   
+    BOOST_LOG_SEV(cxx_influx::Log::logger(), cxx_influx::logging::trivial::info) << "Finished sending " << file_ << "." << count << " points in total.";   
 }
 }
 int main(int argc, char * argv[])

@@ -19,7 +19,12 @@ class TradeColumn(Enum):
     time, cp, exch, expiry, index, nicts, otype, price, product, side, source, strike, type, volume=range(14)
 class BookColumn(Enum):
     time,ask1,ask2,ask3,ask4,ask5,askv1,askv2,askv3,askv4,askv5,bid1,bid2,bid3,bid4,bid5,bidv1,bidv2,bidv3,bidv4,bidv5,cp,exch \
-    ,expiry,index,version,nask1,nask2,nask3,nask4,nask5,nbid1,nbid2,nbid3,nbid4,nbid5,nicts,otype,product,source,strike,type=range(42)
+    ,expiry,index,version,nask1,nask2,nask3,nask4,nask5,nbid1,nbid2,nbid3,nbid4,nbid5,nicts,otype,product,source\
+    ,desc,strike,type=range(43)
+class RowData:
+    def __init__(self, cols_, desc_):
+        self._cols = cols_
+        self._desc = desc_
 class ValidateInfluxData:
     NA = "NA"
     Trade = "T"
@@ -41,6 +46,8 @@ class ValidateInfluxData:
         self._product_name = ''
         self._expiry = None
         self._index = 0
+        self._pending_columns = []
+        self._current_recv_time = ''
     def max_book_number_reached(self):
         return self._max_book_number != 0 and len(self._book_columns) >= self._max_book_number
     def max_trade_number_reached(self):
@@ -58,12 +65,12 @@ class ValidateInfluxData:
             print(str(datetime.now()), "No valid book found")
             return
         if self._old_format:
-            self._product_type = self._book_columns[0][OldColumn.type.value]
-            self._product_name = self._book_columns[0][OldColumn.prod.value]
-            if self._book_columns[0][OldColumn.series.value] != ValidateInfluxData.NA:
-                self._expiry = self._book_columns[0][OldColumn.series.value]
+            self._product_type = self._book_columns[0]._cols[OldColumn.type.value]
+            self._product_name = self._book_columns[0]._cols[OldColumn.prod.value]
+            if self._book_columns[0]._cols[OldColumn.series.value] != ValidateInfluxData.NA:
+                self._expiry = self._book_columns[0]._cols[OldColumn.series.value]
         else:
-            product_attr = self._book_columns[0][self.get_product_index_in_new_format(self._book_columns[0])].split('.')
+            product_attr = self._book_columns[0]._cols[self.get_product_index_in_new_format(self._book_columns[0]._cols)].split('.')
             self._product_type = product_attr[1] #PROD.O.GOOG.SEP2018.3000.C.0
             self._product_name = product_attr[2]
             if len(product_attr) > 3:
@@ -72,12 +79,12 @@ class ValidateInfluxData:
     def run(self):
         self.parse(self._file_name)
         if len(self._trade_columns) > 0:
-            trade_begin = self._trade_columns[0][CommonColumn.recv.value]
-            trade_end = self._trade_columns[-1][CommonColumn.recv.value]
+            trade_begin = self._trade_columns[0]._cols[CommonColumn.recv.value]
+            trade_end = self._trade_columns[-1]._cols[CommonColumn.recv.value]
             self.compare_with_influx(trade_begin, trade_end, ValidateInfluxData.Trade_Measurement)
         if len(self._book_columns) > 0:
-            book_begin = self._book_columns[0][CommonColumn.recv.value]
-            book_end = self._book_columns[-1][CommonColumn.recv.value]
+            book_begin = self._book_columns[0]._cols[CommonColumn.recv.value]
+            book_end = self._book_columns[-1]._cols[CommonColumn.recv.value]
             self.compare_with_influx(book_begin, book_end, ValidateInfluxData.Book_Measurement)
     def get_product_index_in_new_format(self, cols_):
         if len(cols_) < CommonColumn.count.value:
@@ -88,8 +95,19 @@ class ValidateInfluxData:
         else:
             return NewColumn.product.value
                 
-    def get_key(self, cols_):
-        return cols_[CommonColumn.recv.value]
+    def get_key(self, row_data_):
+        return row_data_._cols[CommonColumn.recv.value]
+    def process_pending_columns(self, time_, desc_):
+        for cols in self._pending_columns:
+            cols[CommonColumn.recv.value] = time_
+            if cols[CommonColumn.otype.value] == ValidateInfluxData.Trade or cols[CommonColumn.otype.value] == ValidateInfluxData.Trade_Summary:
+                self._trade_columns.append(RowData(cols, desc_))
+            elif cols[CommonColumn.otype.value] == ValidateInfluxData.Depth:
+                self._book_columns.append(RowData(cols, desc_))
+        self._pending_columns = []
+    def invalid_recv_time(self, time_):
+        #time should be in nanoseconds. and if it starts with 2. it's at least in 2033.
+        return len(time_) != 19 or time_[0] != '1';
     def split(self, line_):
         cols = list(csv.reader([line_]))[0]
         cols = [col.strip() for col in cols] #trim spaces
@@ -97,18 +115,32 @@ class ValidateInfluxData:
             if len(cols) >= OldColumn.count.value:
                 self._old_format = True
             return #header
-        if cols[CommonColumn.recv.value] == ValidateInfluxData.NA: #no recv time. ignored
-            return
+        description = ''
+        if cols[CommonColumn.recv.value] == ValidateInfluxData.NA or self.invalid_recv_time(cols[CommonColumn.recv.value]): 
+            if self._current_recv_time != '':
+                description = 'nr_use_prev_time'
+                cols[CommonColumn.recv.value] = self._current_recv_time
+            elif cols[CommonColumn.exch.value] != ValidateInfluxData.NA:
+                self.process_pending_columns(cols[CommonColumn.exch.value], "nr_use_next_exch_time")
+                description = 'nr_use_exch_time'
+                cols[CommonColumn.recv.value] = cols[CommonColumn.exch.value]
+            else:
+                self._pending_columns.append(cols)
+                return
+        else:
+            self.process_pending_columns(cols[CommonColumn.recv.value], 'nr_use_next_recv_time')
+            self._current_recv_time = cols[CommonColumn.recv.value]
         if not self._old_format:
             cols[self.get_product_index_in_new_format(cols)] = cols[self.get_product_index_in_new_format(cols)].replace('"', '')#product id is double quoted in csv file
+
         if cols[CommonColumn.otype.value] == ValidateInfluxData.Trade or cols[CommonColumn.otype.value] == ValidateInfluxData.Trade_Summary:
             if self.max_trade_number_reached():
                 return
-            self._trade_columns.append(cols)
+            self._trade_columns.append(RowData(cols, description))
         elif cols[CommonColumn.otype.value] == ValidateInfluxData.Depth:
             if self.max_book_number_reached():
                 return
-            self._book_columns.append(cols)
+            self._book_columns.append(RowData(cols, description))
     def compare_with_influx(self, begin_, end_, measurement):
         statement = "select * from {} where type = '{}' and product = '{}' and time >= {} and time <= {}"  \
                     .format(measurement, self._product_type, self._product_name, begin_, end_)
@@ -142,6 +174,19 @@ class ValidateInfluxData:
             self.compare_books(influx_values, influx_columns)
         else:
            self.compare_trades(influx_values, influx_columns)
+    def compare_description(self, desc_, values_in_influx_, influx_column_index_):
+            desc_in_influx = None
+            if BookColumn.desc.name in influx_column_index_:
+                desc_in_influx = values_in_influx_[influx_column_index_[BookColumn.desc.name]]
+            if desc_ == '':
+                if desc_in_influx is not None:
+                    print("Description should be empty. but it has value {} in influx. index {}".format(desc_in_influx, self._index))
+                    quit()
+            else:
+                if desc_in_influx != desc_:
+                    print("Description is {} in file {}. index : {}. but {} in influx."\
+                         .format(desc_, self._file_name, self._index, desc_in_influx))
+                    quit()
     def compare_books(self, book_in_influx_, influx_book_column_):
         print(str(datetime.now()), "Start comparing books in file with books in influx.")
         if self._max_book_number != 0:
@@ -154,7 +199,8 @@ class ValidateInfluxData:
             quit()
         for index in range(len(self._book_columns)):
             self._index = index
-            self.compare_book(self._book_columns[index], book_in_influx_[index], influx_book_column_)
+            self.compare_book(self._book_columns[index]._cols, book_in_influx_[index], influx_book_column_)
+            self.compare_description(self._book_columns[index]._desc, book_in_influx_[index], influx_book_column_)
             
         print(str(datetime.now()), "Finished comparing {} books in file with books in influx. no mismatch found.".format(len(self._book_columns)))
     #this funtion checks if a column exsits in influx first before doing comparison
@@ -228,20 +274,26 @@ class ValidateInfluxData:
         self.compare_column_ck(nicts, book_in_influx_, influx_book_columns_, BookColumn.nicts.name, NewColumn.nicts.name, True)
     def compare_trades(self, trades_in_influx_, influx_trade_columns_):
         print(str(datetime.now()), "Start comparing trades in file with trades in influx.")
-        if len(self._trade_columns) != len(trades_in_influx_):
+        if self._max_trade_number != 0:
+            if len(self._trade_columns) > len(trades_in_influx_):
+                 print("there are {} lines for treade in file {} but {} lines in influx db." \
+                 .format(len(self._book_columns), self._file_name, len(book_in_influx_)))
+        elif len(self._trade_columns) != len(trades_in_influx_):
             print("there are {} lines for trade in file {} but {} lines in influx db".format(len(self._trade_columns), self._file_name, len(trades_in_influx_)))
             quit()
         for index in range(len(self._trade_columns)):
-            self.compare_trade(self._trade_columns[index], trades_in_influx_[index], influx_trade_columns_)
+            self._index = index
+            self.compare_trade(self._trade_columns[index]._cols, trades_in_influx_[index], influx_trade_columns_)
+            self.compare_description(self._trade_columns[index]._desc, trades_in_influx_[index], influx_trade_columns_)
         print(str(datetime.now()), "Finished comparing {} trades in file with trades in influx. no mismatch found.".format(len(self._trade_columns)))
         
     def compare_trade(self, trade_in_file_, trade_in_influx_, influx_trade_columns_):
-        self.compare_column_ck(trade_in_file_[CommonColumn.otype.value], trade_in_influx_, influx_trade_columns_, TradeColumn.otype.name, CommonColumn.otype.name, False)
+        self.compare_column_ck(trade_in_file_[CommonColumn.otype.value], trade_in_influx_, influx_trade_columns_, TradeColumn.otype.name, CommonColumn.otype.name, True)
         self.compare_column_ck(trade_in_file_[CommonColumn.recv.value], trade_in_influx_, influx_trade_columns_, TradeColumn.time.name, CommonColumn.recv.name, False)
-        self.compare_column_ck(trade_in_file_[CommonColumn.exch.value], trade_in_influx_, influx_trade_columns_, TradeColumn.exch.name, CommonColumn.exch.name, False)
-        self.compare_column_ck(trade_in_file_[Trade_SummaryColumn.price.value], trade_in_influx_, influx_trade_columns_, TradeColumn.price.name, Trade_SummaryColumn.price.name, False)
-        self.compare_column_ck(trade_in_file_[Trade_SummaryColumn.volume.value], trade_in_influx_, influx_trade_columns_, TradeColumn.volume.name, Trade_SummaryColumn.volume.name, False)
-        self.compare_column_ck(trade_in_file_[Trade_SummaryColumn.side.value], trade_in_influx_, influx_trade_columns_, TradeColumn.side.name, Trade_SummaryColumn.side.name, False)
+        self.compare_column_ck(trade_in_file_[CommonColumn.exch.value], trade_in_influx_, influx_trade_columns_, TradeColumn.exch.name, CommonColumn.exch.name, True)
+        self.compare_column_ck(trade_in_file_[Trade_SummaryColumn.price.value], trade_in_influx_, influx_trade_columns_, TradeColumn.price.name, Trade_SummaryColumn.price.name, True)
+        self.compare_column_ck(trade_in_file_[Trade_SummaryColumn.volume.value], trade_in_influx_, influx_trade_columns_, TradeColumn.volume.name, Trade_SummaryColumn.volume.name, True)
+        self.compare_column_ck(trade_in_file_[Trade_SummaryColumn.side.value], trade_in_influx_, influx_trade_columns_, TradeColumn.side.name, Trade_SummaryColumn.side.name, True)
         if self._old_format:
             self.compare_old_product(trade_in_file_, trade_in_influx_, influx_trade_columns_)
         else:

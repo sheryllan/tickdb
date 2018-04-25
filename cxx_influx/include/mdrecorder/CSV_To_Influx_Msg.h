@@ -36,10 +36,12 @@ private:
     void convert_quote(std::vector<std::string>& cols_);
     void process_msg(bool last_ = false);
     void add_network_ts(const std::vector<std::string>& cols_);
-    bool valid_line(const std::vector<std::string>& cols_, const std::string& line) const;
+    bool set_recv_time(std::vector<std::string>& cols_, const std::string& line);
     void add_int_field(const std::string& key_, const std::string& value_);
     void add_float_field(const std::string& key_, const std::string& value_);
     void add_field(const std::string& key_, const std::string& value_);
+    void process_pending_lines(const std::string& time_, const std::string& description_);
+    bool invalid_recv_time(const std::string& time_, const std::string& line_);
     Influx_Builder _builder;
     String_Pool _pool; 
     //doesnot see any improvement with thread_local. 
@@ -55,6 +57,11 @@ private:
 
     Msg_Handler _msg_handler;
     size_t _cols_cnt;
+    std::string _current_recv_time;
+    size_t _no_recvtime_log_count = 0;
+
+    std::vector<std::vector<std::string>> _pending_columns;
+    std::string _description;
     //thread_local static std::vector<std::string> _columns;
     std::vector<std::string> _columns;
     std::vector<std::string> _product_attributes;

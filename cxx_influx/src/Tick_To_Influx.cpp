@@ -221,7 +221,8 @@ void Tick_To_Influx::remove_processed_files(DateFileMap& tick_files_)
             {
                 CUSTOM_LOG(Log::logger(), logging::trivial::info) << it_tick->first << " is already processed";
                 it_tick = files.erase(it_tick);
-            }            
+            }           
+            else ++it_tick;
         }
     }
 }

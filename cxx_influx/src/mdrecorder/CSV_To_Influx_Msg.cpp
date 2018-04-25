@@ -70,6 +70,7 @@ const std::string OTYPE_TRADE_SUMMARY("S");
 const std::string OTYPE_TRADE("T"); //T is used in mdrecorder files that were generated in 2016
 const std::string NA("NA");
 const std::string NETWORK_TS("nicts");
+const std::string DESCRIPTION("desc");
 
 enum Side { buy = 0, sell = 1 };
 
@@ -438,6 +439,11 @@ void CSVToInfluxMsg::generate_points(const TickFile& file_, const Msg_Handler& h
     {
         process_msg(true);
     }
+    if (!_pending_columns.empty())
+    {
+        CUSTOM_LOG(Log::logger(), logging::trivial::error) << _pending_columns.size() << " of lines have no time info in " << _file->_file_path.native()
+                             << ". thus can't be imported into influx, worth doing a check. some old mdrecorder files have no time info.";
+    }
     
     CUSTOM_LOG(Log::logger(), logging::trivial::info) << "generated " << _trade_cnt << " trades. " 
                               << _book_cnt << " quotes from " << file_path;
@@ -478,34 +484,90 @@ void CSVToInfluxMsg::process_msg(bool last_)
     //Influx_Msg msg{_file->_date, str};
     _msg_handler(msg);
 }
-bool CSVToInfluxMsg::valid_line(const std::vector<std::string>& cols_, const std::string& line) const
+void CSVToInfluxMsg::process_pending_lines(const std::string& time_, const std::string& description_)
 {
-    if (cols_[static_cast<uint8_t>(BookColumnIndex::recv)] == NA)
+    _description = description_;
+    for (auto& cols : _pending_columns)
+    {
+        cols[static_cast<uint8_t>(BookColumnIndex::recv)] = time_;
+        if (cols[static_cast<uint8_t>(BookColumnIndex::otype)] == OTYPE_QUOTE)
+        {
+            convert_quote(cols);
+        }
+        else
+        {
+            convert_trade(cols);
+        }
+    }
+    _pending_columns.clear();
+    _description.clear();
+}
+bool CSVToInfluxMsg::invalid_recv_time(const std::string& time_, const std::string& line_)
+{
+    //time must be in nanoseconds
+    //time must start with 1. if it starts with 2. it's at least 2033 May 18 11:33:20.
+    if (time_.size() != 19 || time_[0] != '1')
+    {
+        CUSTOM_LOG(Log::logger(), logging::trivial::error) << "invalid time found, either too small or too large. " << time_;
+        return true;
+    }
+    return false;
+}
+bool CSVToInfluxMsg::set_recv_time(std::vector<std::string>& cols_, const std::string& line_)
+{
+    if (cols_[static_cast<uint8_t>(BookColumnIndex::recv)] == NA || invalid_recv_time(cols_[static_cast<uint8_t>(BookColumnIndex::recv)], line_))
     {
         //too many lines like this. make it trade not warning.
         CUSTOM_LOG(Log::logger(), logging::trivial::trace) << "line with invalid recv time info. "
-                      << line;
-        return false;
+                      << line_;
+        if (!_current_recv_time.empty())
+        {
+            cols_[static_cast<uint8_t>(BookColumnIndex::recv)] = _current_recv_time;
+            _description = "nr_use_prev_time";//no recv time, use the last valid recv time 
+        }
+        else if (cols_[static_cast<uint8_t>(BookColumnIndex::exch)] != NA)
+        {
+            process_pending_lines(cols_[static_cast<uint8_t>(BookColumnIndex::exch)], "nr_use_next_exch_time");       
+            _description = "nr_use_exch_time";
+            cols_[static_cast<uint8_t>(BookColumnIndex::recv)] = cols_[static_cast<uint8_t>(BookColumnIndex::exch)];
+        }
+        else //no exch time, no recv time. wait till a valid time come up
+        {
+            if (_no_recvtime_log_count++ < 10)
+            {
+                CUSTOM_LOG(Log::logger(), logging::trivial::error) << "line with invalid recv and exch time info. no valid recv time found in previous too. log 10 lines most to avoid spamming the log "
+                          << line_;
+            }
+            _pending_columns.push_back(cols_);
+            return false;                        
+        }            
+    }
+    else 
+    {
+        _current_recv_time = cols_[static_cast<uint8_t>(BookColumnIndex::recv)];
+        process_pending_lines(_current_recv_time, "nr_use_next_recv_time");
     }
     return true;
 }
-void CSVToInfluxMsg::convert_one_line(const std::string& line)
+void CSVToInfluxMsg::convert_one_line(const std::string& line_)
 {
+    CUSTOM_LOG(Log::logger(), logging::trivial::trace) << "line : " << line_;
+    _description.clear();
     std::vector<std::string>& columns = _columns;;
     for (auto& str : columns) str.clear();
-    _cols_cnt = internal_split<','>(columns, line);
+    _cols_cnt = internal_split<','>(columns, line_);
     for (auto& col : columns)
     {
         trim(col);
     }
     if (columns[(uint8_t)BookColumnIndex::otype] == OTYPE_QUOTE) // quote
     {
-        if (!valid_line(columns, line)) return;
+        if (!set_recv_time(columns, line_)) return;
         convert_quote(columns);
     }
     else if (columns[(uint8_t)BookColumnIndex::otype] == OTYPE_TRADE_SUMMARY || columns[(uint8_t)BookColumnIndex::otype] == OTYPE_TRADE) // trade summary
     {
-        if (!valid_line(columns, line)) return;
+        if (!set_recv_time(columns, line_)) return;
         //check  /mnt/tank/backups/london/quants/data/rawdata/20160506/TNG-HKFE-QTG-Shim-A50-F-JUN2016-20160506-093423.csv.xz search for 'T,'
         // there are only
         convert_trade(columns);
@@ -515,16 +577,16 @@ void CSVToInfluxMsg::convert_one_line(const std::string& line)
         //header
         if (_cols_cnt >= static_cast<size_t>(OldColumn::count))
         {
-            if (line.find("market,type,prod") == std::string::npos)
+            if (line_.find("market,type,prod") == std::string::npos)
             {
-                CUSTOM_LOG(Log::logger(), logging::trivial::fatal) << "Unknown csv format. it should be old format, but cannot find market,type,prod in.treats it as new format. " << line;       
+                CUSTOM_LOG(Log::logger(), logging::trivial::fatal) << "Unknown csv format. it should be old format, but cannot find market,type,prod in.treats it as new format. " << line_;       
             }
             else _old_format = true;
         }
     }
     else
     {
-        CUSTOM_LOG(Log::logger(), logging::trivial::error) << "unknown otype " << columns[(uint8_t)BookColumnIndex::otype] << " in " << line;
+        CUSTOM_LOG(Log::logger(), logging::trivial::error) << "unknown otype " << columns[(uint8_t)BookColumnIndex::otype] << " in " << line_;
     }
 
     if (_builder.msg_count() >= _batch_count)
@@ -537,9 +599,9 @@ namespace
 {
 //decimal strikes in reator uses comma instead of dot
 //one example is SIM.O.GOOG.SEP2018.109,45.C.0
-void replace_comma_with_dot_in_strike(std::string& str)
+void replace_comma_with_dot_in_strike(std::string& str_)
 {
-    for (auto& c : str)
+    for (auto& c : str_)
     {
         if (c == ',')
         {
@@ -666,6 +728,7 @@ void CSVToInfluxMsg::convert_trade(std::vector<std::string>& cols_)
     add_float_field(TRADE_PRICE, cols_[(uint8_t)TradeColumnIndex::price]);    
     add_float_field(TRADE_QTY, cols_[(uint8_t)TradeColumnIndex::qty]); //use float for volume in case there are decimals in cash products' volume.
     add_field(OTYPE, cols_[static_cast<uint8_t>(BookColumnIndex::otype)]);   
+    add_field(DESCRIPTION, _description);
     _builder.point_end(cols_[(uint8_t)BookColumnIndex::recv]);    
 }
 
@@ -688,6 +751,7 @@ void CSVToInfluxMsg::convert_quote(std::vector<std::string>& cols_)
         else _builder.add_float_field(BOOK_FIELD_ARRAY[i], cols_[i]);//use float for volume in case there are decimals in cash products' volume.
     }              
     add_field(OTYPE, cols_[static_cast<uint8_t>(BookColumnIndex::otype)]);    
+    add_field(DESCRIPTION, _description);
     _builder.point_end(cols_[(uint8_t)BookColumnIndex::recv]);
 }
 
