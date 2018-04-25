@@ -1,0 +1,22 @@
+{
+	"host" : "192.168.55.49",
+	"dbname" : "liquid_tick",
+	"capturedir": "/mnt/tank/backups/london/quants/data/rawdata",
+	"contracts" : [ 
+"-ES-F-",
+"-FDAX-F-",
+"-FESX-F-",
+"-FGBL-F-",
+"-FGBM-F-",
+"-FGBS-F-",
+"-LIFFELR-F-",
+"-LIFFELRT-F-",
+"-OESX-O-",
+"-OGBL-O-",
+"-OGBM-O-",
+"-XJO-F-",
+"-XJO-O-"
+   	],
+
+	"logfile": "/home/influx/influx.log"
+}

@@ -20,7 +20,7 @@ j=enableJIT(3)
 options(readr.show_progress=F)
 WAIT = 3 # seconds between each attempt to write the same chunk in InfluxDB
 COUNT= 100# Number of tries before we give up on a chunk of data
-NBCORES=8
+NBCORES=20
 
 sourceCpp("cpaste.cpp")
 
@@ -52,7 +52,8 @@ read_csv_file <- function(f)
 	
 	# Check if old style header
 	x = xzfile(f)
-	header = all(c("series","strike","call_put") %in% unlist(str_split(readLines(x,1),',')))
+	hdr = unlist(str_split(readLines(x,1),','))
+	header = all(c("series","strike","call_put") %in% hdr)
 	if(header) # old style
 	{
 		csvnames = c(csvnames,"market","type","prod","series","strike","call_put","version")
@@ -61,6 +62,13 @@ read_csv_file <- function(f)
 	} else { # new style
 		csvnames = c(csvnames,'product','state')
 		csvformat <- "cccnnnnniiiiiiiiiinnnnniiiiiiiiiicc"
+
+		if('nicts' %in% hdr)
+		{
+			csvnames = c(csvnames,'nicts')
+			csvformat <- str_c(csvformat,'i')
+		}
+
 		style = "new"
 	}
 
@@ -311,7 +319,7 @@ update_database <- function(config)
 
 	# create a database
 	printf("%s - Starting database session\n",Sys.time())
-	con = influxdbr2::influx_connection(host="127.0.0.1",port=8086)
+	con = influxdbr2::influx_connection(cfg$host,port=8086,user='',pass='')
 	response = create_database(con,cfg$dbname) 
 	
 	# find new files and process them
@@ -319,16 +327,16 @@ update_database <- function(config)
 	N = length(newfiles)
 	printf("%s - %d new files will be added\n",Sys.time(),N)
 
-	options(cores=8)
-#	foreach(f=newfiles) %dopar%
-	for(f in newfiles)
+	options(cores=6)
+	foreach(f=newfiles) %dopar%
+#	for(f in newfiles)
 	{
 		t0=Sys.time()
 		printf("%s - processing %s\n",Sys.time(),f)
 		param = decompose_filename(basename(f)) # get parameters from file name
-		if(file.access(f,mode=0)==0 & file.access(f,mode=4)==0) # ignore non-readable files
+		if(file.access(f,mode=0)==0 && file.access(f,mode=4)==0) # ignore non-readable files
 		{
-			df = tryCatch(read_csv_file(f),error=function(e) F)  # read data
+			df = tryCatch(read_csv_file(f),error=function(e) FALSE)  # read data
 			gc()
 			if(is.data.frame(df))
 			{
