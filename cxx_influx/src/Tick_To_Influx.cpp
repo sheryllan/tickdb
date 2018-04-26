@@ -217,9 +217,9 @@ void Tick_To_Influx::remove_processed_files(DateFileMap& tick_files_)
         auto it_tick = files.begin();
         while(it_tick != files.end())
         {
-            if (processed_files.find(it_tick->first) != processed_files.end())
+            if (processed_files.find(it_tick->second._file_path.native()) != processed_files.end())
             {
-                CUSTOM_LOG(Log::logger(), logging::trivial::info) << it_tick->first << " is already processed";
+                CUSTOM_LOG(Log::logger(), logging::trivial::info) << it_tick->second._file_path.native() << " is already processed";
                 it_tick = files.erase(it_tick);
             }           
             else ++it_tick;
@@ -290,7 +290,13 @@ void Tick_To_Influx::update_processed_files(const DateFileMap& tick_files_)
         const TickFileMap& files = pair.second;
         for (auto& pair2 : files)
         {
-            _processed_files[pair.first].insert(pair2.first);
+            //uses full path instead of just filename. because in qtg store tick, same files could exist in multiple directories with different content
+            //one example is 7663.20180419.dat.gz, it can be found under  /mnt/QT/StoreTickCHIA/7663/201804  and  /mnt/QT/StoreTickPOAmal/7663/201804/ with different content
+            //StoreTickCHIA is for date recorded offsite(in chicago). 
+            //offsite data has exactly the same depth, trade messages as local data (data recorded in colo site), only differences are timeMultRecv/Put(multicast receiving time. pushing time)
+            //local data has no timeMultRecv/Put information.
+            //timeMultRecv/Put are not used. so it's safe to import both offsite data and local data into influx.
+            _processed_files[pair.first].insert(pair2.second._file_path.native());
         }
     }
     update_processed_files(_processed_files, _http_host, _http_port, _influx_db);

@@ -22,9 +22,30 @@ class BookColumn(Enum):
     ,expiry,index,version,nask1,nask2,nask3,nask4,nask5,nbid1,nbid2,nbid3,nbid4,nbid5,nicts,otype,product,source\
     ,desc,strike,type=range(43)
 class RowData:
+    def get_key(self):
+        return self._cols[CommonColumn.recv.value]
     def __init__(self, cols_, desc_):
         self._cols = cols_
         self._desc = desc_
+
+class FixedListForRowData(list):
+    def __init__(self, max_len_):
+        self._max_len = max_len_
+        self._sorted = False
+    def append(self, row_data_):
+        if len(self) >= self._max_len:
+            if not self._sorted:#sort only once.
+                self._sorted = True
+                sorted(self, key = RowData.get_key)
+            if row_data_.get_key() >= self[-1].get_key():
+                return #bigger than all elements, no need to insert
+            list.append(self, row_data_)
+            sorted(self, key = RowData.get_key)
+            self[self._max_len - len(self):] = []
+        else:
+            list.append(self, row_data_)#it's quite slow to do sort here multiple times.
+
+
 class ValidateInfluxData:
     NA = "NA"
     Trade = "T"
@@ -39,8 +60,14 @@ class ValidateInfluxData:
     _max_trade_number = 0
     def __init__(self, file_name_):
         self._file_name = file_name_
-        self._trade_columns = []
-        self._book_columns = []
+        if self._max_book_number > 0:
+            self._book_columns = FixedListForRowData(self._max_book_number)
+        else:
+            self._book_columns = []
+        if self._max_trade_number > 0:
+            self._trade_columns = FixedListForRowData(self._max_trade_number)
+        else:
+            self._trade_columns = []
         self._old_format = False
         self._product_type = ''
         self._product_name = ''
@@ -48,19 +75,13 @@ class ValidateInfluxData:
         self._index = 0
         self._pending_columns = []
         self._current_recv_time = ''
-    def max_book_number_reached(self):
-        return self._max_book_number != 0 and len(self._book_columns) >= self._max_book_number
-    def max_trade_number_reached(self):
-        return self._max_trade_number != 0 and len(self._trade_columns) >= self._max_trade_number
     def parse(self, file_name_):
         print(str(datetime.now()), "Start parsing mdrecorder file", self._file_name)
         f = lzma.open(file_name_)
         for line in f:
             self.split(line.decode('utf8'))
-            if self.max_trade_number_reached() and self.max_book_number_reached():
-                break
-        self._trade_columns = sorted(self._trade_columns, key=self.get_key)
-        self._book_columns = sorted(self._book_columns, key=self.get_key)
+        self._trade_columns = sorted(self._trade_columns, key=RowData.get_key)
+        self._book_columns = sorted(self._book_columns, key=RowData.get_key)
         if len(self._book_columns) == 0:
             print(str(datetime.now()), "No valid book found")
             return
@@ -134,12 +155,8 @@ class ValidateInfluxData:
             cols[self.get_product_index_in_new_format(cols)] = cols[self.get_product_index_in_new_format(cols)].replace('"', '')#product id is double quoted in csv file
 
         if cols[CommonColumn.otype.value] == ValidateInfluxData.Trade or cols[CommonColumn.otype.value] == ValidateInfluxData.Trade_Summary:
-            if self.max_trade_number_reached():
-                return
             self._trade_columns.append(RowData(cols, description))
         elif cols[CommonColumn.otype.value] == ValidateInfluxData.Depth:
-            if self.max_book_number_reached():
-                return
             self._book_columns.append(RowData(cols, description))
     def compare_with_influx(self, begin_, end_, measurement):
         statement = "select * from {} where type = '{}' and product = '{}' and time >= {} and time <= {}"  \
