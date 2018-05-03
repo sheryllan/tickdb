@@ -24,7 +24,8 @@ public:
 private:
     //recv time is used as timestamp in influx. If different messages have the same receive time,
     //needs to have index to distinguish between series.
-    using Recv_Time_Index = std::unordered_map<std::string/*recv_time*/, uint32_t/*index*/>;
+    //the key is recv_time or strike+callput+version+recv_time for option
+    using Recv_Time_Index = std::unordered_map<std::string, uint32_t/*index*/>;
     void unzip(const std::string& file_name_);
     void convert_decoded_string(std::string& str, bool end);
     void convert_one_line(const std::string& line); 
@@ -65,6 +66,7 @@ private:
     //thread_local static std::vector<std::string> _columns;
     std::vector<std::string> _columns;
     std::vector<std::string> _product_attributes;
+    std::string _product_index_key;
     //thread_local static std::vector<std::string> _product_attributes;
 };
 

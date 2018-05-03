@@ -553,6 +553,7 @@ void CSVToInfluxMsg::convert_one_line(const std::string& line_)
 {
     CUSTOM_LOG(Log::logger(), logging::trivial::trace) << "line : " << line_;
     _description.clear();
+    _product_index_key.clear();
     std::vector<std::string>& columns = _columns;;
     for (auto& str : columns) str.clear();
     _cols_cnt = internal_split<','>(columns, line_);
@@ -628,12 +629,13 @@ void CSVToInfluxMsg::add_tags_old(std::vector<std::string>& cols_)
 
 uint32_t CSVToInfluxMsg::get_index(const std::vector<std::string>& cols_, Recv_Time_Index& time_index_)
 {
-    uint32_t& index = time_index_[cols_[(uint8_t)BookColumnIndex::recv]];
+    _product_index_key.append(cols_[static_cast<uint8_t>(BookColumnIndex::recv)]);
+    uint32_t& index = time_index_[_product_index_key];
     index++;
     if (index > 1)
     {
         CUSTOM_LOG(Log::logger(), logging::trivial::trace) << "recv time " << cols_[(uint8_t)BookColumnIndex::recv]
-             << " in " << _file->_file_path.native() << " appears " << index << " time(s).";
+             << " in " << _file->_file_path.native() << " appears " << index << " time(s) for the same product.";
     }
     return index;
 }
@@ -665,11 +667,18 @@ void CSVToInfluxMsg::add_tags_new(std::vector<std::string>& cols_)
     {
         replace_comma_with_dot_in_strike(product_attributes[(uint8_t)ProductAttr::strike]); 
         _builder.add_tag(TAG_STRIKE, product_attributes[(uint8_t)ProductAttr::strike]);
+        _product_index_key.append(product_attributes[(uint8_t)ProductAttr::strike]);
     }
     if (size > (uint8_t)ProductAttr::call_put)
+    {
         _builder.add_tag(TAG_CALLPUT, product_attributes[(uint8_t)ProductAttr::call_put]);
+        _product_index_key.append(product_attributes[(uint8_t)ProductAttr::call_put]);
+    }
     if (size > static_cast<uint8_t>(ProductAttr::version))
+    {
         _builder.add_tag(TAG_VERSION, product_attributes[static_cast<uint8_t>(ProductAttr::version)]);
+        _product_index_key.append(product_attributes[static_cast<uint8_t>(ProductAttr::version)]);
+    }
 }
 void CSVToInfluxMsg::add_common_tags(std::vector<std::string>& cols_, Recv_Time_Index& time_index_)
 {
