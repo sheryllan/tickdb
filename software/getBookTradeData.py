@@ -39,13 +39,15 @@ def convert_utc_time(str_time):
         return unix_time_nanos(date)+int(remainder)*int(10**(9-len(remainder)))
 
     
-def query_influx_for_trades(database,product,timezone,startDate,seconds,debug,expiration=None,strike=None,cp=None):        
+def query_influx_for_trades(database,product,timezone,startDate,seconds,debug,books,trades,type=None,expiration=None,strike=None,cp=None):        
     utc=pytz.timezone('UTC')
     log_timezone=pytz.timezone(timezone)
     search_date=log_timezone.localize(startDate)#.astimezone(utc)
     client = influxdb.InfluxDBClient(host='192.168.55.49',port=8086,database=database)
     #Get books
     additionals=""
+    if type is not None:
+        additionals+=" AND type='"+type+"'"
     if expiration is not None:
         additionals+=" AND expiry='"+expiration+"'"
     if strike is not None:
@@ -72,25 +74,40 @@ def query_influx_for_trades(database,product,timezone,startDate,seconds,debug,ex
         if 'series' in b.raw:
             trade_cols=b.raw['series'][0]['columns']
             trade_vals=b.raw['series'][0]['values']
-            print(JOIN.join([str(item) for item in cols+["trade"]+trade_cols])) #print the headers but use the trade column
-            for val in vals:
-                if i<len(trade_vals):
-                    while(i<len(trade_vals) and trade_vals[i][0]<=val[0]):#convert_utc_time(trade_vals[i][0])<=convert_utc_time(val[0])):
-                        if trade_vals[i][-1]==val[-3]:
-                            val[-3]=convert_long_utc_time(val[-3],timezone)
-                            trade_vals[i][-1]=convert_long_utc_time(trade_vals[i][-1],timezone)
-                            val=val+["TRADE"]+trade_vals[i]
-                        else:
-                            trade_vals[i][-1]=convert_long_utc_time(trade_vals[i][-1],timezone)
-                            print(JOIN.join([str(item) for item in ["" for col in cols]+["TRADE"]+trade_vals[i]]))
-                        i+=1
-                if "TRADE" not in val:
+            if books and trades:
+                print(JOIN.join([str(item) for item in cols+["trade"]+trade_cols])) #print the headers but use the trade column
+            elif books:
+                print(JOIN.join([str(item) for item in cols])) #print the headers for books only
+            elif trades:
+                print(JOIN.join([str(item) for item in trade_cols])) #print the headers for trades only
+            if books and trades:
+                for val in vals:
+                    if i<len(trade_vals):
+                        while(i<len(trade_vals) and trade_vals[i][0]<=val[0]):#convert_utc_time(trade_vals[i][0])<=convert_utc_time(val[0])):
+                            if trade_vals[i][-1]==val[-3]:
+                                val[-3]=convert_long_utc_time(val[-3],timezone)
+                                trade_vals[i][-1]=convert_long_utc_time(trade_vals[i][-1],timezone)
+                                val=val+["TRADE"]+trade_vals[i]
+                            else:
+                                trade_vals[i][-1]=convert_long_utc_time(trade_vals[i][-1],timezone)
+                                print(JOIN.join([str(item) for item in ["" for col in cols]+["TRADE"]+trade_vals[i]]))
+                            i+=1
+                    if "TRADE" not in val:
+                        val[-3]=convert_long_utc_time(val[-3],timezone)
+                    print(JOIN.join([str(item) for item in val]))
+            elif books:
+                for val in vals:
                     val[-3]=convert_long_utc_time(val[-3],timezone)
-                print(JOIN.join([str(item) for item in val]))
+                    print(JOIN.join([str(item) for item in val]))
+            elif trades:
+                for val in trade_vals:
+                    val[-1]=convert_long_utc_time(val[-1],timezone)
+                    print(JOIN.join([str(item) for item in val]))
         else:
             for val in vals:
                 val[-3]=convert_long_utc_time(val[-3],timezone)
-                print(JOIN.join([str(item) for item in val]))
+                if books:
+                    print(JOIN.join([str(item) for item in val]))
                 
     
 if __name__=="__main__":
@@ -99,16 +116,25 @@ if __name__=="__main__":
     parser.add_argument('timezone', help='The timezone of the orderMonitord log: Australia/Sydney')
     parser.add_argument('startDate', help='The date and time we want to start looking at: %%Y-%%m-%%dT%%H:%%M:%%S',type=valid_date)
     parser.add_argument('seconds',type=float,default=60,help='Amount of seconds after startDate to fetch data for')
+    parser.add_argument('--type',help="The type to get data for.")
     parser.add_argument('--expiration',help="The expiration to get data for.")
     parser.add_argument('--strike',help="The strike to get data for.")
     parser.add_argument('--cp',help="The call or put to get data for.")
+    parser.add_argument('--books',dest='books',help="Display the books only",action='store_true')
+    parser.add_argument('--trades',dest='trades',help="Display the trades only",action='store_true')
     parser.add_argument('--debug',dest='debug',help="Run in debug mode.",action='store_true')
     parser.add_argument('--qtg',dest='qtg',help="Use QTG tick data",action='store_true')
     parser.add_argument('--csv',dest='csv',help="Output the data in a csv format instead of the read friendly version.",action='store_true')
     args = parser.parse_args()
+    books=True
+    trades=True
     expiration=None
+    type=None
     strike=None
     cp=None
+    if args.books: trades=False
+    if args.trades: books=False
+    if args.type: type=args.type
     if args.expiration: expiration=args.expiration
     if args.strike: strike=args.strike
     if args.cp: cp=args.cp
@@ -117,5 +143,5 @@ if __name__=="__main__":
         JOIN=","
     if args.qtg:
         database="qtg_store_tick"
-    query_influx_for_trades(database,args.product,args.timezone,args.startDate,args.seconds,args.debug,expiration,strike,cp)
+    query_influx_for_trades(database,args.product,args.timezone,args.startDate,args.seconds,args.debug,books,trades,type,expiration,strike,cp)
     
