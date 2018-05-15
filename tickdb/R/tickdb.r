@@ -160,8 +160,10 @@ seq.contracts <- function(db,con,product,type,front,rolldays,from,to,periods)
 
 	# Generate the sequence of contract per business day
 	contracts = list()
-	for(d in seq(lubridate::ymd(from), lubridate::ymd(to), by='1 day')) # sequence of days [from,to]
+	.seqd = seq.Date(lubridate::ymd(from), lubridate::ymd(to), by='1 day')
+	for(i in seq_along(.seqd))
 	{
+		d=.seqd[i]
 		y=x # make a copy of x
 		if(bizdays::is.bizday(d,exch2ql(exch)))
 		{
