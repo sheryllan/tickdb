@@ -103,7 +103,7 @@ void dump_tick_files(int argc, char * argv[])
                                               if (!product_names.empty() && product_names.find(product_) == product_names.end()) return false;
                                               return true;
                                           };
-    Get_Source get_source = [](const std::string& product_)
+    Get_Source get_source = [](const std::string& product_, const std::string& file_name_)
                             {
                                 return "doesnot matter";
                             };
@@ -131,12 +131,12 @@ void generate_influx_msg_m(int argc, char * argv[])
         std::cout << "Cannot open file " << tick_file.native() << std::endl;
         return;
     }
-    std::unordered_map<std::string, std::string> source_config;
-    if (!parse_reactor_source_file(argv[3], source_config)) return;
-    Get_Source get_source = [&source_config](const std::string& product_)
-                            {
-                                return source_config[product_];
-                            };
+    Configuration config;
+    if (!config.parse_reactor_source_file(argv[3]))
+    {
+        std::cout << "Failed to parse source config file " << argv[3] << std::endl;
+        return;
+    }
     size_t batch_count = atoi(argv[4]);
     Generate_Points generate_points = [batch_count](const TickFile& file_, const Msg_Handler& handler_)
                                     {
@@ -158,8 +158,14 @@ void generate_influx_msg_m(int argc, char * argv[])
             std::cout << "Invalid mdrecorder file " << file_name << std::endl;
             continue;
         }
+        std::string source = config.get_source(product, file_name);
+        if (source.empty())
+        {
+            std::cout << "no source for " << file_name << ". skip" << std::endl;
+            continue;
+        }
         //date does not matter here
-        tick_files[0][file_name] = TickFile{tick_file, file_size(tick_file), 0/*make all messages write to one file on one thread*/, source_config[product]};
+        tick_files[0][file_name] = TickFile{tick_file, file_size(tick_file), 0/*make all messages write to one file on one thread*/, source};
     }
     setenv("WRITE_TO_FILE", "TRUE", 1);
     Tick_To_Influx ttf("", 0, "", generate_points);
@@ -338,7 +344,7 @@ void select_files_for_validation(int argc, char * argv[])
                                           {
                                               return true;
                                           };
-    Get_Source get_source = [](const std::string& product_)
+    Get_Source get_source = [](const std::string& product_, const std::string& file_name_)
                             {
                                 return "doesnot matter";
                             };
@@ -353,7 +359,7 @@ void select_files_for_validation(int argc, char * argv[])
 void command_format()
 {
     std::cout << "following command input supported." << std::endl;
-    std::cout << "add_processed_files <files that contains full paths to multiple mdrecorder files, one tick file per line> <influx http host> <http port> <influx db>";
+    std::cout << "add_processed_files <files that contains full paths to multiple mdrecorder files, one tick file per line> <influx http host> <http port> <influx db>" << std::endl;
     std::cout << "dump_tick_files <mdrecorder files' dir> <product types> <product names> <begin date> <end date>, the last foure parameters are optional." << std::endl;
     std::cout << "generate_influx_msg <mdrecorder files> <source> <tick count in one influx msg>" << std::endl;   
     std::cout << "generate_influx_msg_m <files that contains full paths to multiple store tick files, one ticke file per line> <source config file> <tick count in one influx msg> <decode thread count, default 4> <write thread count default 4> last two are optional" << std::endl;   

@@ -14,7 +14,7 @@ class Product;
 using str_ptr = std::shared_ptr<std::string>;
 using Get_Product = std::function<const Product * (int32_t)>;
 using Valid_Product = std::function<bool(const int32_t id_)>;
-using Get_Source = std::function<std::string(const std::string& product_)>;
+using Get_Source = std::function<std::string(const std::string& product_, const std::string& file_name_)>;
 
 using Valid_Reactor_Product = std::function<bool(const char type_, const std::string& product_)>;
 static constexpr const uint32_t INFLUX_BATCH_CNT = 5000;
@@ -71,6 +71,23 @@ inline size_t file_map_size(const DateFileMap& files_)
     }
     return size;
 }
+
+inline bool not_generate_quotes()
+{
+    static bool init = false;
+    static bool not_generate_quotes = false;
+    if (!init)
+    {
+        init = true;
+        const char * env = getenv("NOT_GENERATE_QUOTES");
+        if (env)
+        {
+            not_generate_quotes = true;
+        }
+    }
+    return not_generate_quotes;
+};
+
 
 
 

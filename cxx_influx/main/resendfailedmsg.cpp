@@ -38,6 +38,7 @@ void post_msg(const str_ptr& msg_)
 void read_log(const std::string& file_, size_t batch_count_, size_t thread_cnt_)
 {
     std::fstream file(file_);
+    BOOST_LOG_SEV(cxx_influx::Log::logger(), cxx_influx::logging::trivial::info) << "resend messages in " << file_;
     std::stringstream os;
     std::string line;
     String_Pool str_pool(thread_cnt_ * 10);

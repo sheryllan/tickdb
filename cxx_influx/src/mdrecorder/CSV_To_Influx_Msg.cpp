@@ -65,9 +65,21 @@ const std::string TAG_SOURCE("source");
 const std::string OTYPE("otype");
 const std::string TRADE_PRICE("price");
 const std::string TRADE_QTY("volume");
-const std::string OTYPE_QUOTE("Q");
-const std::string OTYPE_TRADE_SUMMARY("S");
-const std::string OTYPE_TRADE("T"); //T is used in mdrecorder files that were generated in 2016
+//A: Add level (which always implies a order add)
+//V: Change volume in a level
+//D: Delete level
+//H: Delete from level 1 to level n included
+//F: delete from level l to the end
+//Z: Undisclosed
+//O: overlay = change price of a level
+//T: Tradea causes depth change
+//Q: Quote
+const std::string OTYPE_QUOTE("QAVDHFZOT");
+//S: Execution summary
+//P: Spread (leg trade)
+//U: OTC trade
+const std::string OTYPE_TRADE("SPU");
+const std::string OTYPE_OLD_TRADE("T"); //T is used for trade in mdrecorder files  that were generated in 2016 (or before 2018)
 const std::string NA("NA");
 const std::string NETWORK_TS("nicts");
 const std::string DESCRIPTION("desc");
@@ -490,7 +502,7 @@ void CSVToInfluxMsg::process_pending_lines(const std::string& time_, const std::
     for (auto& cols : _pending_columns)
     {
         cols[static_cast<uint8_t>(BookColumnIndex::recv)] = time_;
-        if (cols[static_cast<uint8_t>(BookColumnIndex::otype)] == OTYPE_QUOTE)
+        if (is_quote(cols[static_cast<uint8_t>(BookColumnIndex::otype)]))
         {
             convert_quote(cols);
         }
@@ -549,6 +561,33 @@ bool CSVToInfluxMsg::set_recv_time(std::vector<std::string>& cols_, const std::s
     }
     return true;
 }
+bool CSVToInfluxMsg::is_quote(const std::string& otype_)
+{
+    if (otype_.size() == 1 & OTYPE_QUOTE.find(otype_[0]) != std::string::npos)
+    {
+        if (otype_ == OTYPE_OLD_TRADE && _file->_date < 20180401)//T is not used for depth until 20180508 in Rtt2018Fixes.00.02. make the data 20180401 to be safer.
+        {
+            return false;
+        }
+        return true;
+    }        
+    else return false;
+}
+bool CSVToInfluxMsg::is_trade(const std::string& otype_)
+{
+    if (otype_.size() == 1 & OTYPE_TRADE.find(otype_[0]) != std::string::npos)
+    {
+        return true;
+    }
+    else
+    {
+        if (otype_ == OTYPE_OLD_TRADE && _file->_date < 20180401)
+        {
+            return true;
+        }
+        return false;
+    }
+}
 void CSVToInfluxMsg::convert_one_line(const std::string& line_)
 {
     CUSTOM_LOG(Log::logger(), logging::trivial::trace) << "line : " << line_;
@@ -561,19 +600,18 @@ void CSVToInfluxMsg::convert_one_line(const std::string& line_)
     {
         trim(col);
     }
-    if (columns[(uint8_t)BookColumnIndex::otype] == OTYPE_QUOTE) // quote
+    const std::string& otype = columns[static_cast<uint8_t>(BookColumnIndex::otype)];
+    if (is_quote(otype))
     {
         if (!set_recv_time(columns, line_)) return;
         convert_quote(columns);
     }
-    else if (columns[(uint8_t)BookColumnIndex::otype] == OTYPE_TRADE_SUMMARY || columns[(uint8_t)BookColumnIndex::otype] == OTYPE_TRADE) // trade summary
+    else if (is_trade(otype))
     {
         if (!set_recv_time(columns, line_)) return;
-        //check  /mnt/tank/backups/london/quants/data/rawdata/20160506/TNG-HKFE-QTG-Shim-A50-F-JUN2016-20160506-093423.csv.xz search for 'T,'
-        // there are only
         convert_trade(columns);
     }
-    else if (columns[(uint8_t)BookColumnIndex::otype] == OTYPE)
+    else if (otype == OTYPE)
     {
         //header
         if (_cols_cnt >= static_cast<size_t>(OldColumn::count))
@@ -587,7 +625,7 @@ void CSVToInfluxMsg::convert_one_line(const std::string& line_)
     }
     else
     {
-        CUSTOM_LOG(Log::logger(), logging::trivial::error) << "unknown otype " << columns[(uint8_t)BookColumnIndex::otype] << " in " << line_;
+        CUSTOM_LOG(Log::logger(), logging::trivial::error) << "unknown otype " << otype << " in " << line_;
     }
 
     if (_builder.msg_count() >= _batch_count)
@@ -743,6 +781,8 @@ void CSVToInfluxMsg::convert_trade(std::vector<std::string>& cols_)
 
 void CSVToInfluxMsg::convert_quote(std::vector<std::string>& cols_)
 {
+    if (not_generate_quotes()) return;
+
     _book_cnt++;
     _builder.point_begin(MEASUREMENT_BOOK);
     add_common_tags(cols_, _quote_recv_time_index);

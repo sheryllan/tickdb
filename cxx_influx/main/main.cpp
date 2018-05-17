@@ -66,9 +66,9 @@ void reactor_to_influx(Configuration& config)
                                               }
                                               return true;
                                           };
-    Get_Source get_source = [&config](const std::string& product_) -> std::string
+    Get_Source get_source = [&config](const std::string& product_, const std::string& file_name_) -> std::string
                             {
-                                return config._reactor_source_config[product_];
+                                return config.get_source(product_, file_name_);
                             };        
 
     Generate_Points generate_points([&config](const TickFile& file_, const Msg_Handler& handler_)

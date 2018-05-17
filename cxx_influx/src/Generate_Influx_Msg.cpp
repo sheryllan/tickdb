@@ -40,6 +40,7 @@ const std::string OTYPE_TRADE_SUMMARY("S");
 enum Side { buy = 0, sell = 1 };
 
 }
+
 Generate_Influx_Msg::Generate_Influx_Msg(const Get_Product& get_product_, uint32_t batch_count_)
     : _get_product(get_product_), _batch_count(batch_count_)
 {
@@ -77,7 +78,6 @@ void Generate_Influx_Msg::generate_points(const TickFile& file_, const Msg_Handl
 void Generate_Influx_Msg::read_file(std::istream& in_, const Msg_Handler& func_)
 {
     //ProfilerStart("./profile");
-    size_t count = 0;
     while(!in_.eof() && in_)
     {
         lcc::msg::MarketData md;
@@ -95,8 +95,7 @@ void Generate_Influx_Msg::read_file(std::istream& in_, const Msg_Handler& func_)
         CUSTOM_LOG(Log::logger(), logging::trivial::trace) << "header :" << md._header.to_debug_string()
                               << "; body: " << md._data.to_debug_string();
         generate_points(md);
-        count++;
-        if(count % _batch_count == 0)
+        if(_builder.msg_count() >= _batch_count)
         {
             process_msg(func_);
         }
@@ -115,7 +114,7 @@ void Generate_Influx_Msg::process_msg(const Msg_Handler& func_, bool last_)
 {
     str_ptr str = _pool.get_str_ptr();
     _builder.get_influx_msg(*str);
-    CUSTOM_LOG(Log::logger(), logging::trivial::trace) << "process message, str use count " << str.use_count() << " msg count " << _builder.msg_count() << " str size " << str->size();
+    CUSTOM_LOG(Log::logger(), logging::trivial::info) << "process message, str use count " << str.use_count() << " msg count " << _builder.msg_count() << " str size " << str->size();
     _builder.clear();
     Influx_Msg msg {_qtg_file->_file_path.filename().string(), _qtg_file->_date, last_, str};
     func_(msg);
@@ -131,8 +130,11 @@ void Generate_Influx_Msg::generate_points(const lcc::msg::MarketData& md_)
         return;
     }
 
-    if (md_._data._header._data_type == static_cast<char>(lcc::msg::md_data_type::quote)
-        || md_._data._header._data_type == static_cast<char>(lcc::msg::md_data_type::trade))
+    if (md_._data._header._data_type == static_cast<char>(lcc::msg::md_data_type::quote))
+    {
+        convert_quote(md_._data._quote, md_._data._header, *product);
+    }
+    else if (md_._data._header._data_type == static_cast<char>(lcc::msg::md_data_type::trade))
     {
         convert_quote(md_._data._quote, md_._data._header, *product);
         convert_trade(md_._data._trade, md_._data._header, *product);
@@ -230,6 +232,8 @@ void Generate_Influx_Msg::convert_trade(const lcc::msg::amalgamated_trade& amal_
 void Generate_Influx_Msg::convert_quote(const lcc::msg::quote& quote_, const lcc::msg::md_data_header& header_
                                   , const Product& product_)
 {
+    if (not_generate_quotes()) return;
+
     _book_cnt++;
     _builder.point_begin(MEASUREMENT_BOOK);
     add_header(product_, header_, _quote_recv_time_index);

@@ -43,6 +43,8 @@ private:
     void add_field(const std::string& key_, const std::string& value_);
     void process_pending_lines(const std::string& time_, const std::string& description_);
     bool invalid_recv_time(const std::string& time_, const std::string& line_);
+    bool is_quote(const std::string&);
+    bool is_trade(const std::string&);
     Influx_Builder _builder;
     String_Pool _pool; 
     //doesnot see any improvement with thread_local. 

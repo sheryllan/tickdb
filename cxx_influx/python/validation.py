@@ -3,6 +3,7 @@ import sys
 import csv
 import requests
 import json
+import os
 from enum import Enum
 from datetime import datetime
 class CommonColumn(Enum):
@@ -48,9 +49,10 @@ class FixedListForRowData(list):
 
 class ValidateInfluxData:
     NA = "NA"
-    Trade = "T"
+    Trade = "SPU"
+    Old_Trade = "T"
     Trade_Summary = "S"
-    Depth = "Q"
+    Depth = "QAVDHFZOT"
     Trade_Measurement = "trade"
     Book_Measurement = "book"
     _http_host = ""
@@ -60,6 +62,13 @@ class ValidateInfluxData:
     _max_trade_number = 0
     def __init__(self, file_name_):
         self._file_name = file_name_
+        #T is used for depth change since RttRtt2018Fixes.00.02 as of 20180508, make it 20180401 to be safer
+        d = datetime(2018, 4, 1, 0, 0, 0)
+        file_time = datetime.fromtimestamp(os.path.getmtime(file_name_))
+        if file_time > d:
+            self._new_md_file = True
+        else:
+            self._new_md_file = False
         if self._max_book_number > 0:
             self._book_columns = FixedListForRowData(self._max_book_number)
         else:
@@ -115,15 +124,28 @@ class ValidateInfluxData:
             return 27
         else:
             return NewColumn.product.value
-                
+    def is_quote(self, cols_):
+        if ValidateInfluxData.Depth.find(cols_[CommonColumn.otype.value]) != -1:
+            if cols_[CommonColumn.otype.value] == ValidateInfluxData.Old_Trade:
+                return self._new_md_file
+            return True
+        else:
+            return False                
+    def is_trade(self, cols_):
+        if ValidateInfluxData.Trade.find(cols_[CommonColumn.otype.value]) != -1:
+            return True
+        else:
+            if cols_[CommonColumn.otype.value] == ValidateInfluxData.Old_Trade:
+                return not self._new_md_file
+            return False;
     def get_key(self, row_data_):
         return row_data_._cols[CommonColumn.recv.value]
     def process_pending_columns(self, time_, desc_):
         for cols in self._pending_columns:
             cols[CommonColumn.recv.value] = time_
-            if cols[CommonColumn.otype.value] == ValidateInfluxData.Trade or cols[CommonColumn.otype.value] == ValidateInfluxData.Trade_Summary:
+            if self.is_trade(cols):
                 self._trade_columns.append(RowData(cols, desc_))
-            elif cols[CommonColumn.otype.value] == ValidateInfluxData.Depth:
+            elif self.is_quote(cols):
                 self._book_columns.append(RowData(cols, desc_))
         self._pending_columns = []
     def invalid_recv_time(self, time_):
@@ -154,9 +176,9 @@ class ValidateInfluxData:
         if not self._old_format:
             cols[self.get_product_index_in_new_format(cols)] = cols[self.get_product_index_in_new_format(cols)].replace('"', '')#product id is double quoted in csv file
 
-        if cols[CommonColumn.otype.value] == ValidateInfluxData.Trade or cols[CommonColumn.otype.value] == ValidateInfluxData.Trade_Summary:
+        if self.is_trade(cols):
             self._trade_columns.append(RowData(cols, description))
-        elif cols[CommonColumn.otype.value] == ValidateInfluxData.Depth:
+        elif self.is_quote(cols):
             self._book_columns.append(RowData(cols, description))
     def compare_with_influx(self, begin_, end_, measurement):
         statement = "select * from {} where type = '{}' and product = '{}' and time >= {} and time <= {}"  \

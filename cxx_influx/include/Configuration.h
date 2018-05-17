@@ -33,9 +33,11 @@ public:
     bool _filter_processed_files = true;
     ImportType _import_type = ImportType::undefined;
     Date_Range _date_range;
-    std::unordered_map<std::string, std::string> _reactor_source_config;
-private:
+    std::string get_source(const std::string& product_, const std::string& file_name_);
     bool parse_reactor_source_file(const std::string& file_path_);
+private:
+    std::unordered_map<std::string, std::string> _reactor_source_config;
+    std::unordered_map<std::string, std::map<std::string, std::string>> _special_reactor_source_config;
 };
 
 

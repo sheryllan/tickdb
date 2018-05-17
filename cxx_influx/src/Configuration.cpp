@@ -154,7 +154,28 @@ bool Configuration::init()
     return true; 
     
 }
+std::string Configuration::get_source(const std::string& product_, const std::string& file_name_)
+{
+    auto it = _reactor_source_config.find(product_);
+    if (it != _reactor_source_config.end())
+    {
+        return it->second;
+    }
 
+    auto it_special = _special_reactor_source_config.find(product_);
+    if (it_special != _special_reactor_source_config.end())
+    {
+        const std::map<std::string, std::string>& tmp = it_special->second;
+        for (auto& pair : tmp)
+        {
+            if (strncmp(file_name_.data(), pair.first.data(), pair.first.size()) == 0)
+            {
+                return pair.second;
+            }                
+        }
+    }
+    return std::string();
+}
 bool Configuration::parse_reactor_source_file(const std::string& file_path_)
 {
     std::fstream file(file_path_);
@@ -163,7 +184,10 @@ bool Configuration::parse_reactor_source_file(const std::string& file_path_)
         CUSTOM_LOG(Log::logger(), logging::trivial::error) << "Failed to open reactor source config file " << file_path_;
         return false;
     }
+    CUSTOM_LOG(Log::logger(), logging::trivial::info) << "parse source config file " << file_path_;
     std::string line;
+    std::vector<std::string> special_products;
+    std::vector<std::string> remove_products;
     while(std::getline(file, line))
     {
         boost::algorithm::trim(line);
@@ -174,16 +198,54 @@ bool Configuration::parse_reactor_source_file(const std::string& file_path_)
         {
             boost::algorithm::trim(str);
         }
-        if (cols.size() < static_cast<size_t>(ReactorSourceColumn::count))
+        if (cols.size() < static_cast<size_t>(ReactorSourceColumn::count))//description is optional.
         {
             CUSTOM_LOG(Log::logger(), logging::trivial::error) << "Invalid format of reactor source config file " << file_path_;
             return false;
         }
-        if (cols[static_cast<size_t>(ReactorSourceColumn::product)] == "product")
+        if (cols[static_cast<size_t>(ReactorSourceColumn::product)] == "#product")
         {
             continue;//header;            
-        }             
-        _reactor_source_config[cols[static_cast<size_t>(ReactorSourceColumn::product)]] = cols[static_cast<size_t>(ReactorSourceColumn::source)]; 
+        }            
+        const std::string& product = cols[static_cast<size_t>(ReactorSourceColumn::product)];
+        const std::string& source = cols[static_cast<size_t>(ReactorSourceColumn::source)];
+        if (_reactor_source_config.find(product) != _reactor_source_config.end())
+        {
+            CUSTOM_LOG(Log::logger(), logging::trivial::warning) << product << " already exists with source " << _reactor_source_config[product]
+                       << " trying to set it with a new source " << source;
+            special_products.push_back(product);
+        }
+        else
+        {
+            _reactor_source_config[product] = cols[static_cast<size_t>(ReactorSourceColumn::source)]; 
+        }
+        //products on different exchange could have the same name. one example is ES. it can be found on both ASX and CME.
+        //need to use extra information to distinguish them. currently,  check if a file starts with certain string like ASX, CME etc.
+        //one example of configuration for ES is ES, ALC, ASX, ITCH_ASX.
+        for (size_t i = static_cast<size_t>(ReactorSourceColumn::count); i < cols.size(); ++i)
+        {
+            if (cols[i].empty()) continue;
+            special_products.push_back(product);
+            auto ret = _special_reactor_source_config[product].insert(std::make_pair(cols[i], source));
+            if (!ret.second)
+            {
+                if (ret.first->second != source)
+                {
+                    CUSTOM_LOG(Log::logger(), logging::trivial::error) << "conflict of configuration. " << product << " with " << ret.first->first << " has source " << ret.first->second
+                                                   << " trying to attach it to a new source " << source << " with " << cols[i];
+                    remove_products.push_back(product);
+                }
+            }
+        }
+    }
+
+    for (auto& p : special_products)
+    {
+        _reactor_source_config.erase(p);       
+    }
+    for (auto& p : remove_products)
+    {
+        _special_reactor_source_config.erase(p);
     }
 }
 

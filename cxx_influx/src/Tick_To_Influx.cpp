@@ -17,7 +17,7 @@ namespace
     std::atomic<int32_t> g_thread_count;
     void dump_files(const DateFileMap& files_)
     {
-        CUSTOM_LOG(Log::logger(), logging::trivial::debug) << "Files to decode...";
+        CUSTOM_LOG(Log::logger(), logging::trivial::debug) << "Files to decode... total count :" << file_map_count(files_) << "; total size : " << file_map_size(files_);
         for (auto& pair : files_)
         {
             const TickFileMap& files = pair.second;
@@ -29,6 +29,7 @@ namespace
         CUSTOM_LOG(Log::logger(), logging::trivial::debug) << "Files to decode...Done";
     }
     bool g_write_to_files = false;
+    bool g_create_files_per_date = true;
 
     void write_to_files(const Influx_Msg& msg_)
     {
@@ -37,7 +38,9 @@ namespace
         {
             t_thread_index = g_thread_count.fetch_add(1);
             std::ostringstream os;
-            os << "influx_messages_on_thread" << t_thread_index << "_" << msg_._date;
+            os << "influx_messages_on_thread" << t_thread_index;
+            if (g_create_files_per_date) os << "_" << msg_._date;
+
             CUSTOM_LOG(Log::logger(), logging::trivial::info) << "Open file " << os.str() << " on thread " 
                    << t_thread_index << ":" << std::this_thread::get_id();
             t_output_file.open(os.str(), std::ios::out | std::ios::app);
@@ -54,17 +57,20 @@ namespace
         if (t_file_date != 0 && t_file_date != msg_._date)
         {
             t_post_size = 0;
-            t_output_file.close();
             CUSTOM_LOG(Log::logger(), logging::trivial::info) << "Finished writing to disk for date " << t_file_date
                                  << "; total size is " << t_post_size;
-            std::ostringstream os;
-            os << "influx_messages_on_thread" << t_thread_index << "_" << msg_._date;
-            CUSTOM_LOG(Log::logger(), logging::trivial::info) << "Open file " << os.str() << " on thread " 
-                   << t_thread_index << ":" << std::this_thread::get_id();
-            t_output_file.open(os.str(), std::ios::out | std::ios::app);
-            if (!t_output_file)
+            if (g_create_files_per_date)
             {
-                CUSTOM_LOG(Log::logger(), logging::trivial::error) << "Failed to open " << os.str();
+                t_output_file.close();
+                std::ostringstream os;
+                os << "influx_messages_on_thread" << t_thread_index << "_" << msg_._date;
+                CUSTOM_LOG(Log::logger(), logging::trivial::info) << "Open file " << os.str() << " on thread " 
+                       << t_thread_index << ":" << std::this_thread::get_id();
+                t_output_file.open(os.str(), std::ios::out | std::ios::app);
+                if (!t_output_file)
+                {
+                    CUSTOM_LOG(Log::logger(), logging::trivial::error) << "Failed to open " << os.str();
+                }
             }
         }
         t_file_date = msg_._date;
@@ -86,6 +92,10 @@ Tick_To_Influx::Tick_To_Influx(const std::string& http_host_, const uint16_t htt
     {
         CUSTOM_LOG(Log::logger(), logging::trivial::info) << "influx messages will be saved in current directory instead of going out.";
         g_write_to_files = true;
+        if (getenv("CREATE_FILE_PER_THREAD"))
+        {
+            g_create_files_per_date = false;
+        }
     }
 
 }
@@ -257,7 +267,6 @@ void Tick_To_Influx::run(const std::string& dir_, const Find_Files_In_Dir& find_
     if (filter_processed_files_) remove_processed_files(tick_files);
     process_files(tick_files, decode_thread_cnt_, post_influx_thread_cnt_);
     update_processed_files(tick_files);
-    CUSTOM_LOG(Log::logger(), logging::trivial::info) << "Finished updating processed files in influx db.";
 }
 
 void Tick_To_Influx::decode_files(const DateFileMap& files_)
@@ -285,6 +294,11 @@ void Tick_To_Influx::decode_files(const DateFileMap& files_)
 }
 void Tick_To_Influx::update_processed_files(const DateFileMap& tick_files_)
 {
+    if (getenv("NOT_UPDATE_PROCESSED_FILES"))
+    {
+        CUSTOM_LOG(Log::logger(), logging::trivial::info) << "not update processed files in influx db.";
+        return;
+    }
     for (auto& pair : tick_files_)
     {
         const TickFileMap& files = pair.second;
@@ -300,6 +314,7 @@ void Tick_To_Influx::update_processed_files(const DateFileMap& tick_files_)
         }
     }
     update_processed_files(_processed_files, _http_host, _http_port, _influx_db);
+    CUSTOM_LOG(Log::logger(), logging::trivial::info) << "Finished updating processed files in influx db.";
 }
 void Tick_To_Influx::update_processed_files(const Processed_Files& processed_files_, const std::string& http_host_
                                           , uint16_t http_port_, const std::string& influx_db_)

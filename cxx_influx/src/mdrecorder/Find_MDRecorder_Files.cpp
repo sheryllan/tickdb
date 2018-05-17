@@ -113,10 +113,10 @@ void Find_MD_Files::add_tick_files(const fs::path& dir_)
                                                        << "type:" << type << ".product:" << product << ".date:" << date;
                     continue;
                 }
-                std::string source = _get_source(product);
+                std::string source = _get_source(product, file);
                 if (source.empty())
                 {
-                    CUSTOM_LOG(Log::logger(), logging::trivial::error) << "File " << itr->path().native() 
+                    CUSTOM_LOG(Log::logger(), logging::trivial::warning) << "File " << itr->path().native() 
                           << " is ignored as source not configured for product " << product;
                     continue;
                 }
