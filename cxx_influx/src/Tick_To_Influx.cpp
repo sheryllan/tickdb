@@ -88,11 +88,12 @@ Tick_To_Influx::Tick_To_Influx(const std::string& http_host_, const uint16_t htt
     , _generate_points(generate_points_)
 {
     const char * env = getenv("WRITE_TO_FILE");
-    if (env)
+    //if COUNT_PRODUCT is configured, this tool simply print out all products included in all files.
+    if (env || getenv("COUNT_PRODUCT"))
     {
         CUSTOM_LOG(Log::logger(), logging::trivial::info) << "influx messages will be saved in current directory instead of going out.";
         g_write_to_files = true;
-        if (getenv("CREATE_FILE_PER_THREAD"))
+        if (getenv("CREATE_FILE_PER_THREAD") || getenv("COUNT_PRODUCT"))
         {
             g_create_files_per_date = false;
         }
@@ -111,17 +112,19 @@ void Tick_To_Influx::post_influx(const Influx_Msg& msg_)
             return;
         }
         t_post_size += msg_._msg->size();
-        if (!t_post_influx) t_post_influx.reset(new Post_Influx_Msg(_http_host, _http_port, _influx_db));
-        t_post_influx->post(msg_);
+        if (!t_post_influx) t_post_influx.reset(new Post_Influx_Msg(_http_host, _http_port));
+        t_post_influx->post(msg_, msg_.get_database_name(_influx_db));
         if (t_post_size > 1024 * 1024 * 10) //send out more than 10M data
         {
-            CUSTOM_LOG(Log::logger(), logging::trivial::debug) << "posted " << t_post_size << " bytes of influx messages.";
+            CUSTOM_LOG(Log::logger(), logging::trivial::debug) << "posted " << t_post_size << " bytes of influx messages. db ="
+                             << msg_.get_database_name(_influx_db);
             t_post_size = 0;
         }
         if (msg_._last)
         {
             //there could still be messages from this file queuing on other threads
-            CUSTOM_LOG(Log::logger(), logging::trivial::info) << "Finished sending influx data for file " << msg_._file;
+            CUSTOM_LOG(Log::logger(), logging::trivial::info) << "Finished sending influx data for file " << msg_._file
+                                   << " into database " << msg_.get_database_name(_influx_db);
         }
     }
     catch(std::exception& e)
@@ -180,12 +183,17 @@ void Tick_To_Influx::get_processed_files(Date_Range range_)
 {
     get_processed_files(_processed_files, _http_host, _http_port, _influx_db, range_);
 }
+namespace
+{
+    const std::string PROCESSED_FILES_SUFFIX("_processed_files");
+}
 void Tick_To_Influx::get_processed_files(Processed_Files& processed_files_, const std::string& http_host_, uint16_t http_port_
                                   , const std::string& influx_db_, Date_Range range_)
 {
+    CUSTOM_LOG(Log::logger(), logging::trivial::info) << "query processed files.";
     std::ostringstream os;
     os << "select file,date from processed_files where time >= " << range_._begin << " and time <= " << range_._end;
-    std::string ret = query_influx(http_host_, http_port_, influx_db_, url_encode(os.str()));
+    std::string ret = query_influx(http_host_, http_port_, influx_db_ + PROCESSED_FILES_SUFFIX, url_encode(os.str()));
     if (ret.empty())
     {
         CUSTOM_LOG(Log::logger(), logging::trivial::info) << "No processed files queried.";
@@ -320,7 +328,7 @@ void Tick_To_Influx::update_processed_files(const Processed_Files& processed_fil
                                           , uint16_t http_port_, const std::string& influx_db_)
 {
     Influx_Builder builder;    
-    Post_Influx_Msg post(http_host_, http_port_, influx_db_);
+    Post_Influx_Msg post(http_host_, http_port_);
     std::string influx_msg;
     for (auto& pair : processed_files_)
     {
@@ -335,7 +343,7 @@ void Tick_To_Influx::update_processed_files(const Processed_Files& processed_fil
             if (builder.msg_count() > 100000)
             {
                 builder.get_influx_msg(influx_msg);
-                post.post(influx_msg);                     
+                post.post(influx_msg, influx_db_ + PROCESSED_FILES_SUFFIX);                     
                 influx_msg.clear();
                 builder.clear();      
             }
@@ -344,7 +352,7 @@ void Tick_To_Influx::update_processed_files(const Processed_Files& processed_fil
     if (builder.msg_count() > 0)
     {
         builder.get_influx_msg(influx_msg);
-        post.post(influx_msg);
+        post.post(influx_msg, influx_db_ + PROCESSED_FILES_SUFFIX);
     }
 }
 

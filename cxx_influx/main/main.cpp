@@ -71,10 +71,12 @@ void reactor_to_influx(Configuration& config)
                                 return config.get_source(product_, file_name_);
                             };        
 
-    Generate_Points generate_points([&config](const TickFile& file_, const Msg_Handler& handler_)
+    //a hack to make ticktool count how many products there are.
+    bool count_product = getenv("COUNT_PRODUCT");
+    Generate_Points generate_points([&config, count_product](const TickFile& file_, const Msg_Handler& handler_)
                                     {
                                         CSVToInfluxMsg cti(config._batch_count);
-                                        cti.generate_points(file_, handler_);
+                                        cti.generate_points(file_, handler_, count_product);
                                     });
     Find_Files_In_Dir find_files([&valid_product, &get_source, &config](const fs::path& dir_, DateFileMap& files_)
                                  {

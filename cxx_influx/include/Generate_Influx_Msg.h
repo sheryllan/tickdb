@@ -46,7 +46,7 @@ private:
     Get_Product _get_product;
     uint32_t _batch_count = INFLUX_BATCH_CNT;
     const TickFile* _qtg_file = nullptr;
-
+    char _product_type='U';//by default a fault value
     Recv_Time_Index _quote_recv_time_index;
     Recv_Time_Index _trade_recv_time_index;
 };

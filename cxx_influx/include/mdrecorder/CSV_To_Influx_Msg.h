@@ -7,6 +7,7 @@
 #include "String_Pool.h"
 #include <functional>
 #include <array>
+#include <set>
 #include <unordered_map>
 
 namespace cxx_influx
@@ -20,7 +21,7 @@ class CSVToInfluxMsg
 {
 public:
     CSVToInfluxMsg(uint32_t batch_count_ = INFLUX_BATCH_CNT);
-    void generate_points(const TickFile& file_, const Msg_Handler&);
+    void generate_points(const TickFile& file_, const Msg_Handler&, bool count_product_ = false);
 private:
     //recv time is used as timestamp in influx. If different messages have the same receive time,
     //needs to have index to distinguish between series.
@@ -45,6 +46,10 @@ private:
     bool invalid_recv_time(const std::string& time_, const std::string& line_);
     bool is_quote(const std::string&);
     bool is_trade(const std::string&);
+    void add_product(const std::vector<std::string>& cols_);
+    void assign_product_type(const char);
+    uint8_t get_product_index_in_new_format(const std::vector<std::string>& cols_);
+    bool abnormal_column_count(size_t cols_cnt_);
     Influx_Builder _builder;
     String_Pool _pool; 
     //doesnot see any improvement with thread_local. 
@@ -69,6 +74,9 @@ private:
     std::vector<std::string> _columns;
     std::vector<std::string> _product_attributes;
     std::string _product_index_key;
+    char _product_type = 'U';
+    //counting products in a file.
+    bool _count_product = false;
     //thread_local static std::vector<std::string> _product_attributes;
 };
 

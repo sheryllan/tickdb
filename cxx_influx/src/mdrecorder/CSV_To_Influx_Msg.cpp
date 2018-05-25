@@ -2,6 +2,7 @@
 #include "Log.h"
 #include "gperftools/profiler.h"
 #include <mutex>
+#include <atomic>
 #include <lzma.h>
 #include <boost/algorithm/string.hpp>
 
@@ -339,6 +340,25 @@ void trim(std::string& str)
     boost::algorithm::trim(str);
 }
 
+struct CountProducts
+{
+    static std::atomic<int32_t> _thread_count;
+    cxx_influx::str_ptr _str;
+    std::set<std::string> _products;
+    std::string _product;
+    ~CountProducts()
+    {
+        int32_t index = _thread_count.fetch_add(1);
+        std::ostringstream os;
+        os << "products_on_thread" << index;                
+        std::fstream file(os.str(), std::ios::out);
+        file << *_str << std::endl;
+    }
+};
+
+std::atomic<int32_t> CountProducts::_thread_count;
+thread_local CountProducts t_count_products;
+
 }//end namespace
 namespace cxx_influx
 {
@@ -414,8 +434,13 @@ void CSVToInfluxMsg::unzip(const std::string& file_name_)
     lzma_end(&strm);
 }
 
-void CSVToInfluxMsg::generate_points(const TickFile& file_, const Msg_Handler& handler_)
+void CSVToInfluxMsg::generate_points(const TickFile& file_, const Msg_Handler& handler_, bool count_product_)
 {
+    _count_product = count_product_;
+    if (_count_product)
+    {
+        t_count_products._str = _pool.get_str_ptr();
+    }
     if (file_._reactor_source.empty())
     {
         CUSTOM_LOG(Log::logger(), logging::trivial::error) << "No source for file " << file_._file_path.native();
@@ -461,7 +486,6 @@ void CSVToInfluxMsg::generate_points(const TickFile& file_, const Msg_Handler& h
                               << _book_cnt << " quotes from " << file_path;
 
 }
-
 void CSVToInfluxMsg::convert_decoded_string(std::string& str, bool end)
 {
     std::string line;
@@ -492,7 +516,7 @@ void CSVToInfluxMsg::process_msg(bool last_)
     str_ptr str = _pool.get_str_ptr();
     _builder.get_influx_msg(*str);
     _builder.clear();
-    Influx_Msg msg{_file->_file_path.filename().string(), _file->_date, last_, str};
+    Influx_Msg msg{_file->_file_path.filename().string(), _file->_date, last_, str, _product_type, _source};
     //Influx_Msg msg{_file->_date, str};
     _msg_handler(msg);
 }
@@ -588,6 +612,70 @@ bool CSVToInfluxMsg::is_trade(const std::string& otype_)
         return false;
     }
 }
+uint8_t CSVToInfluxMsg::get_product_index_in_new_format(const std::vector<std::string>& cols_)
+{
+    uint8_t product_index = static_cast<uint8_t>(NewColumn::product);
+    if (_cols_cnt < static_cast<size_t>(BookColumnIndex::count))
+    {
+        std::ostringstream os;
+        for (auto& str : cols_) os << str << ',';
+        CUSTOM_LOG(Log::logger(), logging::trivial::warning) << "too few columns, some old mdrecorder files use fewer columns for trade report." << os.str();
+        //check /mnt/tank/backups/london/quants/data/rawdata/20160506/TNG-HKFE-QTG-Shim-A50-F-JUN2016-20160506-093423.csv.xz search for 'T'
+        //there are only 28 columns for trade and the last column is used to store "product id"
+        product_index = 27;
+    }   
+    return product_index; 
+}
+void CSVToInfluxMsg::add_product(const std::vector<std::string>& cols_)
+{
+    std::string& _product = t_count_products._product;
+    if (_old_format)
+    {
+        _product.append("PROD.");
+        _product.append(cols_[(uint8_t)OldColumn::type]);
+        _product.push_back('.');
+        _product.append(cols_[(uint8_t)OldColumn::prod]);
+        if (cols_[(uint8_t)OldColumn::series] != NA)
+        {
+            _product.push_back('.');
+            _product.append(cols_[(uint8_t)OldColumn::series]);
+        }
+        if (cols_[(uint8_t)OldColumn::strike] != NA)
+        {
+            _product.push_back('.');
+            _product.append(cols_[(uint8_t)OldColumn::strike]);
+        }
+        if (cols_[(uint8_t)OldColumn::call_put] != NA)
+        {
+            _product.push_back('.');
+            _product.append(cols_[(uint8_t)OldColumn::call_put]);
+        }
+        if (cols_[static_cast<uint8_t>(OldColumn::version)] != NA)
+        {
+            _product.push_back('.');
+            _product.append(cols_[static_cast<uint8_t>(OldColumn::version)]);
+        }
+        if (t_count_products._products.insert(_product).second)
+        {
+            if (t_count_products._products.size() > 1) t_count_products._str->push_back('\n');
+            t_count_products._str->append(_product);
+        }
+    }
+    else
+    {
+        if (t_count_products._products.insert(cols_[get_product_index_in_new_format(cols_)]).second)
+        {
+            if (t_count_products._products.size() > 1) t_count_products._str->push_back('\n');
+            t_count_products._str->append(cols_[get_product_index_in_new_format(cols_)]);
+        }
+    }
+}
+bool CSVToInfluxMsg::abnormal_column_count(size_t cols_cnt_)
+{
+    //there are corrupted files with strange rows that with less or more columns than expected.
+    //this check can't rule all of them out. may need to be adjusted in the future.
+    return (cols_cnt_ < 27 | cols_cnt_ > static_cast<size_t>(OldColumn::count));
+}
 void CSVToInfluxMsg::convert_one_line(const std::string& line_)
 {
     CUSTOM_LOG(Log::logger(), logging::trivial::trace) << "line : " << line_;
@@ -596,6 +684,11 @@ void CSVToInfluxMsg::convert_one_line(const std::string& line_)
     std::vector<std::string>& columns = _columns;;
     for (auto& str : columns) str.clear();
     _cols_cnt = internal_split<','>(columns, line_);
+    if (abnormal_column_count(_cols_cnt))
+    {
+        CUSTOM_LOG(Log::logger(), logging::trivial::error) << "Currupted data, too few or too many columns than expected." << line_;
+        return;
+    }
     for (auto& col : columns)
     {
         trim(col);
@@ -603,11 +696,21 @@ void CSVToInfluxMsg::convert_one_line(const std::string& line_)
     const std::string& otype = columns[static_cast<uint8_t>(BookColumnIndex::otype)];
     if (is_quote(otype))
     {
+        if (_count_product) 
+        {
+            add_product(columns);
+            return;
+        }
         if (!set_recv_time(columns, line_)) return;
         convert_quote(columns);
     }
     else if (is_trade(otype))
     {
+        if (_count_product) 
+        {
+            add_product(columns);
+            return;
+        }
         if (!set_recv_time(columns, line_)) return;
         convert_trade(columns);
     }
@@ -650,19 +753,38 @@ void replace_comma_with_dot_in_strike(std::string& str_)
     }
 }
 }
+
+void CSVToInfluxMsg::assign_product_type(const char type_)
+{
+    if (_product_type != 'U' & _product_type != type_)
+    {
+        CUSTOM_LOG(Log::logger(), logging::trivial::fatal) << "Different product type in " << _file->_file_path.native();
+    }
+    _product_type = type_;
+}
 void CSVToInfluxMsg::add_tags_old(std::vector<std::string>& cols_)
 {
     //add product tag first so resendfailedmsg can work for both qtg tick and reactor tick
     _builder.add_tag(TAG_PRODUCT, cols_[(uint8_t)OldColumn::prod]);
     _builder.add_tag(TAG_TYPE, cols_[(uint8_t)OldColumn::type]);
+    assign_product_type(cols_[(uint8_t)OldColumn::type][0]);
     if (cols_[(uint8_t)OldColumn::series] != NA) _builder.add_tag(TAG_EXPIRY, cols_[(uint8_t)OldColumn::series]);
     if (cols_[(uint8_t)OldColumn::strike] != NA) 
     {
         replace_comma_with_dot_in_strike(cols_[(uint8_t)OldColumn::strike]);
         _builder.add_tag(TAG_STRIKE, cols_[(uint8_t)OldColumn::strike]);    
+        _product_index_key.append(cols_[(uint8_t)OldColumn::strike]);
     }
-    if (cols_[(uint8_t)OldColumn::call_put] != NA) _builder.add_tag(TAG_CALLPUT, cols_[(uint8_t)OldColumn::call_put]);    
-    if (cols_[static_cast<uint8_t>(OldColumn::version)] != NA) _builder.add_tag(TAG_VERSION, cols_[static_cast<uint8_t>(OldColumn::version)]);
+    if (cols_[(uint8_t)OldColumn::call_put] != NA) 
+    {
+        _product_index_key.append(cols_[(uint8_t)OldColumn::call_put]);
+        _builder.add_tag(TAG_CALLPUT, cols_[(uint8_t)OldColumn::call_put]);    
+    }
+    if (cols_[static_cast<uint8_t>(OldColumn::version)] != NA) 
+    {
+        _product_index_key.append(cols_[static_cast<uint8_t>(OldColumn::version)]);
+        _builder.add_tag(TAG_VERSION, cols_[static_cast<uint8_t>(OldColumn::version)]);
+    }
 }
 
 uint32_t CSVToInfluxMsg::get_index(const std::vector<std::string>& cols_, Recv_Time_Index& time_index_)
@@ -683,22 +805,16 @@ void CSVToInfluxMsg::add_tags_new(std::vector<std::string>& cols_)
     std::vector<std::string>& product_attributes = _product_attributes;
     for (auto& str : product_attributes) str.clear();
 
-    uint8_t product_index = static_cast<uint8_t>(NewColumn::product);
-    if (_cols_cnt < static_cast<size_t>(BookColumnIndex::count))
-    {
-        std::ostringstream os;
-        for (auto& str : cols_) os << str << ',';
-        CUSTOM_LOG(Log::logger(), logging::trivial::warning) << "too few columns, some old mdrecorder files use fewer columns for trade report." << os.str();
-        //check /mnt/tank/backups/london/quants/data/rawdata/20160506/TNG-HKFE-QTG-Shim-A50-F-JUN2016-20160506-093423.csv.xz search for 'T'
-        //there are only 28 columns for trade and the last column is used to store "product id"
-        product_index = 27;
-    }
+    uint8_t product_index = get_product_index_in_new_format(cols_);
     size_t size = internal_split<'.'>(product_attributes, cols_[product_index]);
     //add product tag first so resendfailedmsg can work for both qtg tick and reactor tick
     if (size > (uint8_t)ProductAttr::product)
         _builder.add_tag(TAG_PRODUCT, product_attributes[(uint8_t)ProductAttr::product]);
     if (size > (uint8_t)ProductAttr::type)
+    {
+        assign_product_type(product_attributes[(uint8_t)ProductAttr::type][0]);
         _builder.add_tag(TAG_TYPE, product_attributes[(uint8_t)ProductAttr::type]);
+    }
     if (size > (uint8_t)ProductAttr::expiry)
         _builder.add_tag(TAG_EXPIRY, product_attributes[(uint8_t)ProductAttr::expiry]);
     if (size > (uint8_t)ProductAttr::strike)

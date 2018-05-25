@@ -114,9 +114,9 @@ void Generate_Influx_Msg::process_msg(const Msg_Handler& func_, bool last_)
 {
     str_ptr str = _pool.get_str_ptr();
     _builder.get_influx_msg(*str);
-    CUSTOM_LOG(Log::logger(), logging::trivial::info) << "process message, str use count " << str.use_count() << " msg count " << _builder.msg_count() << " str size " << str->size();
+    CUSTOM_LOG(Log::logger(), logging::trivial::trace) << "process message, str use count " << str.use_count() << " msg count " << _builder.msg_count() << " str size " << str->size();
     _builder.clear();
-    Influx_Msg msg {_qtg_file->_file_path.filename().string(), _qtg_file->_date, last_, str};
+    Influx_Msg msg {_qtg_file->_file_path.filename().string(), _qtg_file->_date, last_, str, _product_type};
     func_(msg);
 }
 
@@ -129,6 +129,12 @@ void Generate_Influx_Msg::generate_points(const lcc::msg::MarketData& md_)
                                     << "; msg : " << md_._data.to_debug_string();
         return;
     }
+    if (_product_type != 'U' & _product_type != static_cast<char>(product->_type))
+    {
+        CUSTOM_LOG(Log::logger(), logging::trivial::fatal) << "Different product type appeared in " << _qtg_file->_file_path.native()
+                     << " " << _product_type << ":" << static_cast<char>(product->_type);
+    }
+    _product_type = static_cast<char>(product->_type);
 
     if (md_._data._header._data_type == static_cast<char>(lcc::msg::md_data_type::quote))
     {

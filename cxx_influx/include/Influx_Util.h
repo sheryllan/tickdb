@@ -44,6 +44,8 @@ std::ostream& add_field(const std::string& field_, const bool value_, std::ostre
 
 std::string build_influx_url(const std::string& http_host_, const uint16_t http_port_, const std::string& db_name_
                       , const std::string& cmd_ = "write");
+
+std::string build_influx_url_withoutdb(const std::string& http_host_, const uint16_t http_port_, const std::string& cmd_ = "write");
 bool post_http_msg(const std::string& influx_msg_, const std::string& http_host_, const uint16_t http_port_
                        , const std::string& db_name_);
 
@@ -98,9 +100,9 @@ private:
 class Post_Influx_Msg
 {
 public:
-    Post_Influx_Msg(const std::string& http_host_, const uint16_t http_port_, const std::string& db_name_);
-    bool post(const std::string& msg_);
-    bool post(const Influx_Msg& influx_msg_);
+    Post_Influx_Msg(const std::string& http_host_, const uint16_t http_port_);
+    bool post(const std::string& msg_, const std::string& db_name_);
+    bool post(const Influx_Msg& influx_msg_, const std::string& db_name_);
 private:    
     std::string _uri;
     Poco::Net::HTTPClientSession _session;

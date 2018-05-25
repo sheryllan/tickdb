@@ -124,9 +124,18 @@ std::string build_influx_url(const std::string& http_host_, const uint16_t http_
                      , const std::string& cmd_)
 {
     std::ostringstream os;
-    os << "http://" << http_host_ << ":" << http_port_ << "/" << cmd_ <<"?db=" << db_name_;
+    os << build_influx_url_withoutdb(http_host_, http_port_, cmd_) << "?db=" << db_name_;
     return os.str();
 }
+
+std::string build_influx_url_withoutdb(const std::string& http_host_, const uint16_t http_port_, const std::string& cmd_)
+{
+    std::ostringstream os;
+    os << "http://" << http_host_ << ":" << http_port_ << "/" << cmd_;
+    return os.str();
+}
+
+
 
 bool post_http_msg(const std::string& influx_msg_, const std::string& http_host_, const uint16_t http_port_, const std::string& db_name_)
 {
@@ -149,7 +158,8 @@ bool post_http_msg(const std::string& influx_msg_, const std::string& uri_, Poco
     if (res.getStatus() != Poco::Net::HTTPResponse::HTTP_NO_CONTENT)
     {
         CUSTOM_LOG(Log::logger(), logging::trivial::error) << "Failed to send influx message to influxdb, msg size : " << influx_msg_.size() << "; status " << res.getStatus() << ", reason " << res.getReason();
-        CUSTOM_LOG(Log::logger(), logging::trivial::error) << "msg : " << influx_msg_;
+        CUSTOM_LOG(Log::logger(), logging::trivial::error) << "msgs are as below : " << std::endl //make sure one line contains nothing but a message
+                               << influx_msg_; 
         std::ostringstream output;
         Poco::StreamCopier::copyStream(rs, output);
         CUSTOM_LOG(Log::logger(), logging::trivial::error) << "response " << output.str();
@@ -296,26 +306,27 @@ void Influx_Builder::clear()
 
 
 
-Post_Influx_Msg::Post_Influx_Msg(const std::string& http_host_, const uint16_t http_port_, const std::string& db_name_)
-    : _uri(build_influx_url(http_host_, http_port_, db_name_))
+Post_Influx_Msg::Post_Influx_Msg(const std::string& http_host_, const uint16_t http_port_)
+    : _uri(build_influx_url_withoutdb(http_host_, http_port_))
     , _session(http_host_, http_port_)
 {
+    _uri.append("?db=");
     _session.setKeepAlive(true);
     _session.setKeepAliveTimeout(Poco::Timespan(60, 0));
 }
-bool Post_Influx_Msg::post(const Influx_Msg& influx_msg_)
+bool Post_Influx_Msg::post(const Influx_Msg& influx_msg_, const std::string& db_name_)
 {
-    if (!post_http_msg(*influx_msg_._msg, _uri, _session, true))
+    if (!post_http_msg(*influx_msg_._msg, _uri + db_name_, _session, true))
     {
         CUSTOM_LOG(Log::logger(), logging::trivial::error) << "Failed to send messages that generated from file : " << influx_msg_._file;
         return false;
     }
     return true;
 }
-bool Post_Influx_Msg::post(const std::string& msg_)
+bool Post_Influx_Msg::post(const std::string& msg_, const std::string& db_name_)
 {
     //return true;
-    return post_http_msg(msg_, _uri, _session, true);
+    return post_http_msg(msg_, _uri + db_name_, _session, true);
 }
 
 }

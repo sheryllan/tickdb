@@ -15,7 +15,6 @@ using str_ptr = std::shared_ptr<std::string>;
 using Get_Product = std::function<const Product * (int32_t)>;
 using Valid_Product = std::function<bool(const int32_t id_)>;
 using Get_Source = std::function<std::string(const std::string& product_, const std::string& file_name_)>;
-
 using Valid_Reactor_Product = std::function<bool(const char type_, const std::string& product_)>;
 static constexpr const uint32_t INFLUX_BATCH_CNT = 5000;
 
@@ -32,6 +31,20 @@ struct Influx_Msg
     int32_t _date = 0;
     bool _last = false; //is this message the last one of all messages generated from a file
     str_ptr _msg;
+    char _product_type;
+    std::string _reactor_source;
+    const std::string& get_database_name(const std::string& database_) const
+    {
+        thread_local std::string database;
+        if (_reactor_source.empty()) return database_;
+        database.clear();
+        database.append(database_);
+        database.push_back('_');
+        database.append(_reactor_source);
+        database.push_back('_');
+        database.push_back(_product_type);
+        return database;
+    }
 };
 
 struct TickFile
