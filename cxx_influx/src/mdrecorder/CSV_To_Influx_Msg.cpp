@@ -303,20 +303,31 @@ decompress(lzma_stream *strm, const char *inname, FILE *infile, std::string& buf
 //can't use boost::algorithm::split as ',' can be contained in product ID.
 //also simpler than boost::split thus faster
 template<char seperator>
-size_t internal_split(std::vector<std::string>& cols_, const std::string& line)
+size_t internal_split(std::vector<std::string>& cols_, const std::string& line_)
 {
     size_t index = 0;
+    size_t seperator_count = 0;
     if (index >= cols_.size()) cols_.push_back(std::string());
     std::string* col = &(cols_[index]);
     bool in_quote = false;
-    for (auto c : line)
+    for (auto c : line_)
     {
         switch(c)
         {
         case seperator:
-            if (in_quote) col->push_back(c);
+            if (in_quote)
+            {
+                seperator_count++;
+                if (seperator_count > 1)//more than one ',' appeared in ", data is corrupted
+                {
+                    CUSTOM_LOG(cxx_influx::Log::logger(), cxx_influx::logging::trivial::error) << "Corrupted data : " << line_;
+                    return 0;
+                }       
+                col->push_back(c);
+            }
             else
             {
+                seperator_count = 0;                    
                 ++index;
                 if (index >= cols_.size()) cols_.push_back(std::string());
                 col = &(cols_[index]);
@@ -343,7 +354,6 @@ void trim(std::string& str)
 struct CountProducts
 {
     static std::atomic<int32_t> _thread_count;
-    cxx_influx::str_ptr _str;
     std::set<std::string> _products;
     std::string _product;
     ~CountProducts()
@@ -352,7 +362,8 @@ struct CountProducts
         std::ostringstream os;
         os << "products_on_thread" << index;                
         std::fstream file(os.str(), std::ios::out);
-        file << *_str << std::endl;
+        for (auto& str : _products)
+            file << str << std::endl;
     }
 };
 
@@ -437,10 +448,6 @@ void CSVToInfluxMsg::unzip(const std::string& file_name_)
 void CSVToInfluxMsg::generate_points(const TickFile& file_, const Msg_Handler& handler_, bool count_product_)
 {
     _count_product = count_product_;
-    if (_count_product)
-    {
-        t_count_products._str = _pool.get_str_ptr();
-    }
     if (file_._reactor_source.empty())
     {
         CUSTOM_LOG(Log::logger(), logging::trivial::error) << "No source for file " << file_._file_path.native();
@@ -629,6 +636,7 @@ uint8_t CSVToInfluxMsg::get_product_index_in_new_format(const std::vector<std::s
 void CSVToInfluxMsg::add_product(const std::vector<std::string>& cols_)
 {
     std::string& _product = t_count_products._product;
+    _product.clear();
     if (_old_format)
     {
         _product.append("PROD.");
@@ -655,19 +663,11 @@ void CSVToInfluxMsg::add_product(const std::vector<std::string>& cols_)
             _product.push_back('.');
             _product.append(cols_[static_cast<uint8_t>(OldColumn::version)]);
         }
-        if (t_count_products._products.insert(_product).second)
-        {
-            if (t_count_products._products.size() > 1) t_count_products._str->push_back('\n');
-            t_count_products._str->append(_product);
-        }
+        t_count_products._products.insert(_product);
     }
     else
     {
-        if (t_count_products._products.insert(cols_[get_product_index_in_new_format(cols_)]).second)
-        {
-            if (t_count_products._products.size() > 1) t_count_products._str->push_back('\n');
-            t_count_products._str->append(cols_[get_product_index_in_new_format(cols_)]);
-        }
+        t_count_products._products.insert(cols_[get_product_index_in_new_format(cols_)]);
     }
 }
 bool CSVToInfluxMsg::abnormal_column_count(size_t cols_cnt_)
@@ -758,7 +758,9 @@ void CSVToInfluxMsg::assign_product_type(const char type_)
 {
     if (_product_type != 'U' & _product_type != type_)
     {
-        CUSTOM_LOG(Log::logger(), logging::trivial::fatal) << "Different product type in " << _file->_file_path.native();
+        CUSTOM_LOG(Log::logger(), logging::trivial::fatal) << "Different product type in " << _file->_file_path.native()
+                    << ".probably corrupted data.";
+        return;
     }
     _product_type = type_;
 }
