@@ -12,3 +12,5 @@ cmake_install.cmake
 cmake_uninstall.cmake
 1
 .*
+software/TestRuns/
+software/TestScripts/
