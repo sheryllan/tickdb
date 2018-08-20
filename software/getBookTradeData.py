@@ -134,6 +134,7 @@ def query_influx_for_trades(database,product,timezone,startDate,seconds,debug,bo
                     val[-1]=convert_long_utc_time_to_string(val[-1],timezone)
                     print(JOIN.join([str(item) for item in val]))
         else:
+            print(JOIN.join([str(item) for item in cols])) #print the headers for books only
             for val in book_vals:
                 val[-3]=convert_long_utc_time_to_string(val[-3],timezone)
                 if books:
