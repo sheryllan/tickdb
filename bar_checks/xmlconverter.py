@@ -1,5 +1,6 @@
 from lxml import etree
 import pandas as pd
+from collections import Iterable, Mapping
 
 
 def df_to_xmletree(root_ele, mem_ele, df, index_name=None):
@@ -13,6 +14,32 @@ def df_to_xmletree(root_ele, mem_ele, df, index_name=None):
             fields.update({index_name: str(i)})
         subelement = etree.Element(mem_ele, **fields)
         xml.append(subelement)
+
+    return xml
+
+
+def dicts_to_xmletree(data, root_name, element_name):
+
+    def rcsv_addto_etree(value, root):
+        if isinstance(value, Mapping):
+            for fk, fv in value.items():
+                if isinstance(fv, Iterable):
+                    subelement = etree.Element(fk)
+                    root.append(rcsv_addto_etree(fv, subelement))
+                else:
+                    root.set(fk, fv)
+
+        elif isinstance(value, Iterable):
+            for val in value:
+                root.append(rcsv_addto_etree(val, root))
+        else:
+            root.text = str(value)
+
+        return root
+
+    xml = etree.Element(root_name)
+    for element in data:
+        xml.append(rcsv_addto_etree(element, etree.Element(element_name)))
 
     return xml
 

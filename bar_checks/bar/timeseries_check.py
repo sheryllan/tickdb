@@ -1,5 +1,4 @@
 from collections import OrderedDict
-from datetime import datetime, time
 import pandas as pd
 from pandas.tseries import offsets
 
@@ -19,19 +18,15 @@ def to_nanosecond(time_in_unit, unit):
         return time_in_unit * 24 * 3.6E+12
 
 
-def tzaware_timestamp(dt, tz, tm=time(0, 0, 0)):
-    return pd.Timestamp(datetime.combine(dt, tm, tzinfo=tz))
-
-
-def all_valid_timestamps(start_dtime, end_dtime, offset, interval, unit=offsets.Minute):
+def all_valid_timestamps(start_dtime, end_dtime, offset, interval, unit=offsets.Minute, closed=None):
     offset, interval = float(offset), float(interval)
     start_dtime = start_dtime + unit(offset)
-    return pd.bdate_range(start_dtime, end_dtime, freq=unit(interval), closed='left')
+    return pd.date_range(start_dtime, end_dtime, freq=unit(interval), closed=closed)
 
 
-def validate_timestamps(timestamps, start_dtime, end_dtime, offset, interval, unit=offsets.Minute):
+def validate_timestamps(timestamps, start_dtime, end_dtime, offset, interval, unit=offsets.Minute, closed=None):
     valid_timestamps = OrderedDict({ts: None for ts in
-                                    all_valid_timestamps(start_dtime, end_dtime, offset, interval, unit)})
+                                    all_valid_timestamps(start_dtime, end_dtime, offset, interval, unit, closed=closed)})
 
     invalid_timestamps = []
     for i, ts in enumerate(timestamps):

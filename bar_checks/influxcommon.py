@@ -1,6 +1,6 @@
 import pandas as pd
 
-from quantdb1_config import *
+from bar.quantdb1_config import *
 from commonlib import *
 
 
