@@ -28,3 +28,13 @@ def nontypes_iterable(arg, excl_types=(str,)):
 def to_iter(x, excl_types=(str,), ittype=list):
     return [x] if not nontypes_iterable(x, excl_types) else ittype(x)
 
+
+def find_first_n(arry, condition, n=1):
+    result = list()
+    for a in arry:
+        if n <= 0:
+            break
+        if condition(a):
+            result.append(a)
+            n -= 1
+    return result if len(result) != 1 else result[0]

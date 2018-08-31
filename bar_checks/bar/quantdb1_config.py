@@ -15,7 +15,7 @@ class StrEnum(str, Enum):
         return self._value_
 
     @classmethod
-    def all(cls):
+    def values(cls):
         return [v.value for _, v in cls.__members__.items()]
 
 
