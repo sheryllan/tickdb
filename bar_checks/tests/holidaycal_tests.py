@@ -12,6 +12,17 @@ class BScheduleTests(ut.TestCase):
         cls.calendar = GeneralCalendar()
         cls.calendar.rules.extend(holidays)
 
+    def test_get_1day_schedule(self):
+        tz = pytz.timezone('America/Chicago')
+        bscheduler = BScheduler(self.calendar, default=('18:00', '17:00'), tzinfo=tz)
+        actual = list(bscheduler.get_schedules(dt.date(2018, 7, 1), dt.date(2018, 7, 1), dt.time(1), dt.time(22), pytz.UTC))
+        self.assertTrue(not actual)
+
+        actual = list(bscheduler.get_schedules(dt.date(2018, 7, 4), dt.date(2018, 7, 4), dt.time(1), dt.time(22), pytz.UTC))
+        expected = [(pd.Timestamp('2018-07-04 01:00:00+0000'), pd.Timestamp('2018-07-04 22:00:00+0000'))]
+        self.assertListEqual(expected, actual)
+
+
     def test_get_schedules(self):
         tz = pytz.timezone('America/Chicago')
         bscheduler = BScheduler(self.calendar, default=('18:00', '17:00'), tzinfo=tz)

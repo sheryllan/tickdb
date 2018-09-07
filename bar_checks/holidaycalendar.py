@@ -1,13 +1,10 @@
-import datetime as dt
 from pandas.tseries.holiday import *
 from pandas.tseries import offsets
 import pandas._libs.tslibs.offsets as liboffsets
 from pandas.core.tools.datetimes import to_datetime
-import pandas as pd
 import pytz
 
 from commonlib import *
-
 
 
 def to_tz_datetime(dttm=None, date=None, time=None, from_tz=None, to_tz=pytz.UTC):
@@ -102,8 +99,7 @@ class BScheduler(object):
             return start, end
 
     def get_schedules(self, start_date, end_date, start_time=None, end_time=None, tz=None):
-        if not (isinstance(start_date, dt.date) and isinstance(end_date, dt.date)):
-            raise ValueError('Input start_date and end_date must both be datetime.date object')
+        start_date, end_date = pd.Timestamp(start_date).date(), pd.Timestamp(end_date).date()
         if not ((start_time is None or isinstance(start_time, dt.time)) and
                 (end_time is None or isinstance(end_time, dt.time))):
             raise ValueError('If start_time or end_time is set, the value must be a datetime.time object')
@@ -117,6 +113,7 @@ class BScheduler(object):
             start, end = self.captime_by_window(schedule_open, schedule_close, start_time, end_time)
             if end.date() <= end_date:
                 yield (start, end)
+
 
 
 NewYear = Holiday('New Years Day', month=1, day=1, observance=nearest_workday)

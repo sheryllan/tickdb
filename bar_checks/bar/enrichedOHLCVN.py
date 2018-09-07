@@ -1,14 +1,13 @@
-from collections import namedtuple
 import argparse
 import os
+from collections import namedtuple
 
 from influxdb import DataFrameClient
 
-from holidaycalendar import *
+from bar.quantdb1_config import *
 from bar.timeseries_check import *
+from holidaycalendar import *
 from influxcommon import *
-from bar.quantdb1_config import EnrichedOHLCVN
-
 from xmlconverter import *
 
 Fields = EnrichedOHLCVN.Fields
@@ -29,8 +28,6 @@ class BarChecker(object):
 
     CHECK_COLS = [OK_HIGH_LOW, OK_PCLV_ORDER, OK_BID_ASK, OK_NET_VOLUME,
                   OK_VOL_ON_LV1, OK_VOL_ON_LV2, OK_VOL_ON_LV3]
-
-    OUTCOLS = Tags.values() + CHECK_COLS
 
     @classmethod
     def check_high_low(cls, df):
@@ -72,7 +69,10 @@ class BarChecker(object):
 
 
 class SeriesChecker(object):
-    DATETIME = 'datetime'  # tag
+
+    ERRORTYPE = 'error_type'
+    ERRORVAL = 'error_value'
+
     DATE = 'date'  # attribute
     TIMEZONE = 'timezone'  # attribute
 
@@ -80,77 +80,64 @@ class SeriesChecker(object):
     REVERSIONS = 'reversions'  # tag
     INVALIDS = 'invalids'  # tag
 
+    BAR = 'bar'  # tag
+
     TIMESTAMP = 'timestamp'  # tag
     START_TS = 'start_ts'  # attribute
     END_TS = 'end_ts'  # attribute
+    INDEX = 'index'  # attribute
+    LOC = 'loc'  # attribute
 
     OFFSET_MAPPING = {'M': offsets.Minute}
 
     def __init__(self, scheduler):
         self.scheduler = scheduler
 
-    def check_gaps_reversions(self, data, window, closed):
-        date_gdf = data.groupby(lambda x: (x.tz, x.date()))
-        tzdate_groups = pd.Series(index=pd.MultiIndex.from_tuples(date_gdf.groups.keys()))
-        tzdate_schedules, validation = {}, KnownTimestampValidation()
+    def validate(self, data, window, closed):
+        for tz, tz_df in data.groupby(lambda x: x.tz):
+            start_date, end_date = tz_df.index[0].date(), tz_df.index[-1].date()
+            schedules = list(self.scheduler.get_schedules(start_date, end_date, *window, tz))
+            for (clock_type, width), bars_df in tz_df.groupby([Tags.CLOCK_TYPE, Tags.WIDTH]):
+                step, unit = width, self.OFFSET_MAPPING[clock_type]
+                tsgenerator = StepTimestampGenerator(schedules, step, unit, closed=closed)
+                validation = KnownTimestampValidation(tsgenerator)
+                for barid, barid_df in map(lambda x: (BarId(*x[0]), x[1]), bars_df.groupby(Tags.values())):
+                    ts_dict = {d: list(ts) for d, ts in groupby(barid_df.index, lambda x: x.date())}
+                    for schedule in schedules:
+                        date = schedule[0].date()
+                        if date not in ts_dict:
+                            invalids, reversions = [], []
+                            gaps = [{self.TIMESTAMP: {self.START_TS: schedule[0], self.END_TS: schedule[1]}}]
+                        else:
+                            validation.tsgenerator.offset = barid.OFFSET
+                            validation.timestamps = ts_dict[date]
+                            invalids = [(self.TIMESTAMP, ts) for ts in validation.invalids()]
+                            gaps = [{self.TIMESTAMP: {self.START_TS: tsrange[0], self.END_TS: tsrange[-1]}}
+                                    for tsrange in validation.gaps(date)]
+                            reversions = [{self.TIMESTAMP: [{self.LOC: loc, self.INDEX: idx}, ts]}
+                                          for ts, loc, idx in validation.reversions(date)]
 
-        for tz in tzdate_groups.index.unique(0):
-            dates = tzdate_groups[tz].index
-            tzdate_schedules[tz] = {
-                s[0].date(): s for s in self.scheduler.get_schedules(dates[0], dates[-1], *window, tz=tz)}
+                        record = {self.DATE: str(date), self.TIMEZONE: tz._tzname, self.BAR: barid}
+                        if invalids:
+                            yield {**record, self.ERRORTYPE: self.INVALIDS, self.ERRORVAL: invalids}
+                        if gaps:
+                            yield {**record, self.ERRORTYPE: self.GAPS, self.ERRORVAL: gaps}
+                        if reversions:
+                            yield {**record, self.ERRORTYPE: self.REVERSIONS, self.ERRORVAL: reversions}
 
-        for (sdate, tz), date_df in date_gdf:
-            schedule = tzdate_schedules[tz][sdate]
-            validation.valid_timestamps = schedule
-            for barid, bar_df in map(lambda x: (BarId(*x[0]), x[1]), date_df.groupby(Tags.values())):
-                offset, interval = barid.OFFSET, barid.WIDTH
-                unit = self.OFFSET_MAPPING[barid.CLOCK_TYPE]
-                timestamps = dtrange_between_time(bar_df.index, *window, closed)
+    def to_dated_results(self, data):
+        keys = [lambda x: (x[self.DATE], x[self.TIMEZONE]),
+                lambda x: x[self.ERRORTYPE],
+                lambda x: x[self.BAR]]
+        sort_keys = [True, False, False]
+        itemfunc = lambda x: x[self.ERRORVAL]
 
-                validation.actual_timestamps = timestamps
-                invalids = [(self.TIMESTAMP, ts) for ts in validation.invalids()]
-                gaps = [{self.TIMESTAMP: {self.START_TS: tsrange[0], self.END_TS: tsrange[-1]}}
-                            for tsrange in validation.gaps()]
-                reversions = [{self.TIMESTAMP: ts} for ts in validation.reversions()]
-
-
-
-
-
-        for barid, date_df in map(lambda x: (BarId(*x[0]), x[1]), data.groupby(Tags.values())):
-            for tz, tz_records in date_df.groupby(lambda x: x.tz):
-                date_gdf = date_df.groupby(lambda x: x.date())
-                dated_indices = list(date_gdf.groups)
-                start_date, end_date = dated_indices[0], dated_indices[-1]
-                for schedule in self.scheduler.get_schedules(start_date, end_date, *window, tz=tz):
-                    sdate = schedule[0].date()
-                    start_ts, end_ts = schedule[0], schedule[1]
-                    offset, interval = barid.OFFSET, barid.WIDTH
-                    unit = self.OFFSET_MAPPING[barid.CLOCK_TYPE]
-
-                    timestamps = dtrange_between_time(date_gdf.groups.get(sdate, None), *window, closed)
-                    valid, invalid = validate_timestamps(timestamps, start_ts, end_ts, offset, interval, unit, closed)
-                    invalid = [(self.TIMESTAMP, ts) for ts in invalid]
-                    reversions = [(self.TIMESTAMP, ts) for ts in check_time_reversion(valid)]
-                    gaps = [{self.TIMESTAMP: {self.START_TS: tsrange[0], self.END_TS: tsrange[-1]}}
-                            for tsrange in check_intraday_gaps(valid)]
-
-                    erros = {self.GAPS: gaps, self.REVERSIONS: reversions, self.INVALIDS: invalid}
-                    erros = {k: v for k, v in erros.items() if v}
-
-                    if erros:
-                        yield (barid, {self.DATETIME: {self.DATE: str(sdate), self.TIMEZONE: tz._tzname, **erros}})
-
-    def structure_results(self, data):
-        grouped = {}
-        for barid, records in data:
-            if barid in grouped:
-                grouped[barid].append(records)
-            else:
-                grouped[barid] = [records]
-
-        for barid, records in grouped.items():
-            yield [barid._asdict(), records]
+        dated = hierarchical_group_by(data, keys, itemfunc, sort_keys)
+        for d in dated:
+            for errortype in dated[d]:
+                dated[d][errortype] = [{self.BAR: [bar._asdict(), dated[d][errortype][bar]]}
+                                       for bar in dated[d][errortype]]
+            yield {self.DATE: d[0], self.TIMEZONE: d[1], **dated[d]}
 
 
 class CheckTask(object):
@@ -160,6 +147,7 @@ class CheckTask(object):
     START_TIME = 'start_time'  # attribute
     END_TIME = 'end_time'  # attribute
 
+    RECORD = 'record'  # tag
     BAR = 'bar'  # tag
     WINDOW_FMT = '%H:%M'
 
@@ -219,11 +207,8 @@ class CheckTask(object):
 
     @property
     def task_report_etree(self):
-        window = self.task_window
         return rcsv_addto_etree({self.START_DATE: self.task_dfrom,
-                                 self.END_DATE: self.task_dto,
-                                 self.START_TIME: window[0],
-                                 self.END_TIME: window[1]},
+                                 self.END_DATE: self.task_dto},
                                 self.REPORT)
 
     def get_data(self, time_from, product=None, ptype=None, time_to=None, expiry=None):
@@ -243,7 +228,11 @@ class CheckTask(object):
 
     def bar_checks_xml(self, data, xsl, outpath=None):
         results = self.run_bar_checks(data)
-        xml = df_to_xmletree('timeseries', 'entry', results[BarChecker.OUTCOLS], TIME_IDX)
+
+        xml = self.task_report_etree
+        for bar, bar_df in results.groupby(Tags.values()):
+            root = rcsv_addto_etree(BarId(*bar)._asdict(), self.BAR)
+            xml.append(df_to_xmletree(root, self.RECORD, bar_df[BarChecker.CHECK_COLS], TIME_IDX))
 
         if outpath is not None:
             with open(outpath, mode='wt+') as fh:
@@ -253,13 +242,16 @@ class CheckTask(object):
 
     def run_timeseries_checks(self, data):
         window, closed = self.task_window, self.task_closed
-        return self.schecker.check_gaps_reversions(data, window, closed)
+        return self.schecker.validate(data, window, closed)
 
     def timeseries_checks_xmls(self, data, xsl, outpath=None):
         xml = self.task_report_etree
+        window = self.task_window
+        xml.set(self.START_TIME, str(window[0]))
+        xml.set(self.END_TIME, str(window[1]))
         results = self.run_timeseries_checks(data)
-        for bar in self.schecker.structure_results(results):
-            xml.append(rcsv_addto_etree(bar, self.BAR))
+        for record in self.schecker.to_dated_results(results):
+            xml.append(rcsv_addto_etree(record, self.RECORD))
 
         if outpath is not None:
             with open(outpath, mode='wt+') as fh:
@@ -279,14 +271,14 @@ class CheckTask(object):
                    'dfrom': self.task_dfrom, 'dto': self.task_dfrom}
             raise ValueError('No data selected for {}'.format({k: v for k, v in msg.items()}))
 
-        self.timeseries_checks_xmls(data, 'xsl', 'check_results.xml')
-
-        # self.bar_checks_xml(data, '')
+        self.bar_checks_xml(data, 'xsl', 'bar_checks.xml')
+        self.timeseries_checks_xmls(data, 'xsl', 'timeseries_checks.xml')
 
 
 if __name__ == '__main__':
     c = CheckTask(CMESchedule)
-    c.run_checks('CL', 'F', closed='right', dfrom=date(2018, 6, 1))
+    c.run_checks('CL', 'F', closed='right', dfrom=dt.date(2018, 6, 1))
+    # c.run_checks('CL', 'F', closed='right', dfrom=dt.date(2018, 6, 1), dto=dt.date(2018, 6, 23))
 
 # self.aparser = argparse.ArgumentParser()
 # self.aparser.add_argument('--dfrom', nargs=3, type=int, help='type from date in year(yyyy), month, and day')

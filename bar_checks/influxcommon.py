@@ -1,6 +1,4 @@
-import pandas as pd
-
-from bar.quantdb1_config import *
+from bar.quantdb1_config import TIME_IDX
 from commonlib import *
 
 

@@ -68,10 +68,14 @@ class EnrichedOHLCVN(object):
         EXCH_TIME = 'exch_time'
 
     class Tags(StrEnum):
-        CLOCK_TYPE = 'clock_type'
-        EXPIRY = 'expiry'
-        OFFSET = 'offset'
         PRODUCT = 'product'
         TYPE = 'type'
+        EXPIRY = 'expiry'
+
+        CLOCK_TYPE = 'clock_type'
         WIDTH = 'width'
+        OFFSET = 'offset'
+
+
+
 

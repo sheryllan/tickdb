@@ -1,19 +1,25 @@
 from lxml import etree
-import pandas as pd
 from collections import Mapping
 from commonlib import *
 
 
-def df_to_xmletree(root_ele, mem_ele, df, index_name=None):
+def df_to_xmletree(root, sub_name, df, index_name=None):
     if not isinstance(df, pd.DataFrame):
         df = pd.DataFrame(df)
 
-    xml = etree.Element(str(root_ele))
+    xml = root
+    if isinstance(root, str):
+        xml = etree.Element(root)
+    elif not etree.iselement(root):
+        raise TypeError('Invalid type of root: it must be either a string or etree.Element')
+
     for i, row in df.iterrows():
-        fields = {k: str(v) for k, v in row.items()}
+        subelement = etree.Element(sub_name)
         if index_name is not None:
-            fields.update({index_name: str(i)})
-        subelement = etree.Element(mem_ele, **fields)
+            subelement.set(index_name, str(i))
+        for k, v in row.items():
+            subelement.set(k, str(v))
+
         xml.append(subelement)
 
     return xml
@@ -28,13 +34,11 @@ def rcsv_addto_etree(value, root):
     if isinstance(value, Mapping):
         for fk, fv in value.items():
             if nontypes_iterable(fv):
-                subelement = etree.Element(fk)
-                root.append(rcsv_addto_etree(fv, subelement))
+                root.append(rcsv_addto_etree(fv, fk))
             else:
                 root.set(fk, str(fv))
     elif isinstance(value, tuple) and len(value) == 2:
-        subelement = etree.Element(value[0])
-        root.append(rcsv_addto_etree(value[1], subelement))
+        root.append(rcsv_addto_etree(value[1], value[0]))
     elif nontypes_iterable(value):
         for val in value:
             rcsv_addto_etree(val, root)
@@ -45,8 +49,8 @@ def rcsv_addto_etree(value, root):
 
 
 def to_xslstyle_xml(xml, xsl, stream):
-    header = '<?xml version="1.0" encoding="utf-8"?>'
-    xsl_ref = '<?xml-stylesheet type="text/xsl" href="{}"?>'.format(xsl)
+    header = '<?xml version="1.0" encoding="utf-8"?>\n'
+    xsl_ref = '<?xml-stylesheet type="text/xsl" href="{}"?>\n'.format(xsl)
     stream.write(header)
     stream.write(xsl_ref)
     text = etree.tostring(xml, pretty_print=True).decode('ascii')
