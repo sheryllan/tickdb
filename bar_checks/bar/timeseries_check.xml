@@ -1,0 +1,1415 @@
+<?xml version="1.0" encoding="utf-8"?>
+<?xml-stylesheet type="text/xsl" href="timeseries_check.xsl"?>
+<report start_date="2018-06-01" end_date="2018-09-17" start_time="00:00:00" end_time="22:00:00">
+  <record date="2018-06-01" timezone="UTC">
+    <gaps>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="6306112493344481639">
+        <detail start_ts="2018-06-01 00:00:00+00:00" end_ts="2018-06-01 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="4209188877455418279">
+        <detail start_ts="2018-06-01 00:00:00+00:00" end_ts="2018-06-01 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="3961543977264106009">
+        <detail start_ts="2018-06-01 00:00:00+00:00" end_ts="2018-06-01 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-8776698550783086204">
+        <detail start_ts="2018-06-01 00:00:00+00:00" end_ts="2018-06-01 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-521315651094657351">
+        <detail start_ts="2018-06-01 00:00:00+00:00" end_ts="2018-06-01 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-1501742064962207131">
+        <detail start_ts="2018-06-01 00:00:00+00:00" end_ts="2018-06-01 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="978041377569984910">
+        <detail start_ts="2018-06-01 00:00:00+00:00" end_ts="2018-06-01 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="-2303253837626456242">
+        <detail start_ts="2018-06-01 00:00:00+00:00" end_ts="2018-06-01 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="3274052186836986076">
+        <detail start_ts="2018-06-01 00:00:00+00:00" end_ts="2018-06-01 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="8853485365172153665">
+        <detail start_ts="2018-06-01 00:00:00+00:00" end_ts="2018-06-01 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-4789123795842494852">
+        <detail start_ts="2018-06-01 00:00:00+00:00" end_ts="2018-06-01 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="708446824404521456">
+        <detail start_ts="2018-06-01 00:00:00+00:00" end_ts="2018-06-01 22:00:00+00:00"/>
+      </bar>
+    </gaps>
+  </record>
+  <record date="2018-06-04" timezone="UTC">
+    <gaps>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="6306112493344481639">
+        <detail start_ts="2018-06-04 00:00:00+00:00" end_ts="2018-06-04 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="4209188877455418279">
+        <detail start_ts="2018-06-04 00:00:00+00:00" end_ts="2018-06-04 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="3961543977264106009">
+        <detail start_ts="2018-06-04 00:00:00+00:00" end_ts="2018-06-04 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-8776698550783086204">
+        <detail start_ts="2018-06-04 00:00:00+00:00" end_ts="2018-06-04 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-521315651094657351">
+        <detail start_ts="2018-06-04 00:00:00+00:00" end_ts="2018-06-04 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-1501742064962207131">
+        <detail start_ts="2018-06-04 00:00:00+00:00" end_ts="2018-06-04 22:00:00+00:00"/>
+      </bar>
+    </gaps>
+  </record>
+  <record date="2018-06-05" timezone="UTC">
+    <gaps>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="6306112493344481639">
+        <detail start_ts="2018-06-05 00:00:00+00:00" end_ts="2018-06-05 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="4209188877455418279">
+        <detail start_ts="2018-06-05 00:00:00+00:00" end_ts="2018-06-05 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="3961543977264106009">
+        <detail start_ts="2018-06-05 00:00:00+00:00" end_ts="2018-06-05 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-8776698550783086204">
+        <detail start_ts="2018-06-05 00:00:00+00:00" end_ts="2018-06-05 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-521315651094657351">
+        <detail start_ts="2018-06-05 00:00:00+00:00" end_ts="2018-06-05 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-1501742064962207131">
+        <detail start_ts="2018-06-05 00:00:00+00:00" end_ts="2018-06-05 22:00:00+00:00"/>
+      </bar>
+    </gaps>
+  </record>
+  <record date="2018-06-06" timezone="UTC">
+    <gaps>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="6306112493344481639">
+        <detail start_ts="2018-06-06 00:00:00+00:00" end_ts="2018-06-06 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="4209188877455418279">
+        <detail start_ts="2018-06-06 00:00:00+00:00" end_ts="2018-06-06 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="3961543977264106009">
+        <detail start_ts="2018-06-06 00:00:00+00:00" end_ts="2018-06-06 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-8776698550783086204">
+        <detail start_ts="2018-06-06 00:00:00+00:00" end_ts="2018-06-06 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-521315651094657351">
+        <detail start_ts="2018-06-06 00:00:00+00:00" end_ts="2018-06-06 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-1501742064962207131">
+        <detail start_ts="2018-06-06 00:00:00+00:00" end_ts="2018-06-06 22:00:00+00:00"/>
+      </bar>
+    </gaps>
+  </record>
+  <record date="2018-06-07" timezone="UTC">
+    <gaps>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="6306112493344481639">
+        <detail start_ts="2018-06-07 00:00:00+00:00" end_ts="2018-06-07 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="4209188877455418279">
+        <detail start_ts="2018-06-07 00:00:00+00:00" end_ts="2018-06-07 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="3961543977264106009">
+        <detail start_ts="2018-06-07 00:00:00+00:00" end_ts="2018-06-07 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-8776698550783086204">
+        <detail start_ts="2018-06-07 00:00:00+00:00" end_ts="2018-06-07 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-521315651094657351">
+        <detail start_ts="2018-06-07 00:00:00+00:00" end_ts="2018-06-07 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-1501742064962207131">
+        <detail start_ts="2018-06-07 00:00:00+00:00" end_ts="2018-06-07 22:00:00+00:00"/>
+      </bar>
+    </gaps>
+  </record>
+  <record date="2018-06-08" timezone="UTC">
+    <gaps>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="6306112493344481639">
+        <detail start_ts="2018-06-08 00:00:00+00:00" end_ts="2018-06-08 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="4209188877455418279">
+        <detail start_ts="2018-06-08 00:00:00+00:00" end_ts="2018-06-08 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="3961543977264106009">
+        <detail start_ts="2018-06-08 00:00:00+00:00" end_ts="2018-06-08 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-8776698550783086204">
+        <detail start_ts="2018-06-08 00:00:00+00:00" end_ts="2018-06-08 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-521315651094657351">
+        <detail start_ts="2018-06-08 00:00:00+00:00" end_ts="2018-06-08 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-1501742064962207131">
+        <detail start_ts="2018-06-08 00:00:00+00:00" end_ts="2018-06-08 22:00:00+00:00"/>
+      </bar>
+    </gaps>
+  </record>
+  <record date="2018-06-11" timezone="UTC">
+    <gaps>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="6306112493344481639">
+        <detail start_ts="2018-06-11 00:00:00+00:00" end_ts="2018-06-11 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="4209188877455418279">
+        <detail start_ts="2018-06-11 00:00:00+00:00" end_ts="2018-06-11 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="3961543977264106009">
+        <detail start_ts="2018-06-11 00:00:00+00:00" end_ts="2018-06-11 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-8776698550783086204">
+        <detail start_ts="2018-06-11 00:00:00+00:00" end_ts="2018-06-11 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-521315651094657351">
+        <detail start_ts="2018-06-11 00:00:00+00:00" end_ts="2018-06-11 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-1501742064962207131">
+        <detail start_ts="2018-06-11 00:00:00+00:00" end_ts="2018-06-11 22:00:00+00:00"/>
+      </bar>
+    </gaps>
+  </record>
+  <record date="2018-06-12" timezone="UTC">
+    <gaps>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="6306112493344481639">
+        <detail start_ts="2018-06-12 00:00:00+00:00" end_ts="2018-06-12 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="4209188877455418279">
+        <detail start_ts="2018-06-12 00:00:00+00:00" end_ts="2018-06-12 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="3961543977264106009">
+        <detail start_ts="2018-06-12 00:00:00+00:00" end_ts="2018-06-12 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-8776698550783086204">
+        <detail start_ts="2018-06-12 00:00:00+00:00" end_ts="2018-06-12 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-521315651094657351">
+        <detail start_ts="2018-06-12 00:00:00+00:00" end_ts="2018-06-12 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-1501742064962207131">
+        <detail start_ts="2018-06-12 00:00:00+00:00" end_ts="2018-06-12 22:00:00+00:00"/>
+      </bar>
+    </gaps>
+  </record>
+  <record date="2018-06-13" timezone="UTC">
+    <gaps>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="6306112493344481639">
+        <detail start_ts="2018-06-13 00:00:00+00:00" end_ts="2018-06-13 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="4209188877455418279">
+        <detail start_ts="2018-06-13 00:00:00+00:00" end_ts="2018-06-13 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="3961543977264106009">
+        <detail start_ts="2018-06-13 00:00:00+00:00" end_ts="2018-06-13 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-8776698550783086204">
+        <detail start_ts="2018-06-13 00:00:00+00:00" end_ts="2018-06-13 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-521315651094657351">
+        <detail start_ts="2018-06-13 00:00:00+00:00" end_ts="2018-06-13 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-1501742064962207131">
+        <detail start_ts="2018-06-13 00:00:00+00:00" end_ts="2018-06-13 22:00:00+00:00"/>
+      </bar>
+    </gaps>
+  </record>
+  <record date="2018-06-14" timezone="UTC">
+    <gaps>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="6306112493344481639">
+        <detail start_ts="2018-06-14 00:00:00+00:00" end_ts="2018-06-14 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="4209188877455418279">
+        <detail start_ts="2018-06-14 00:00:00+00:00" end_ts="2018-06-14 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="3961543977264106009">
+        <detail start_ts="2018-06-14 00:00:00+00:00" end_ts="2018-06-14 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-8776698550783086204">
+        <detail start_ts="2018-06-14 00:00:00+00:00" end_ts="2018-06-14 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-521315651094657351">
+        <detail start_ts="2018-06-14 00:00:00+00:00" end_ts="2018-06-14 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-1501742064962207131">
+        <detail start_ts="2018-06-14 00:00:00+00:00" end_ts="2018-06-14 22:00:00+00:00"/>
+      </bar>
+    </gaps>
+  </record>
+  <record date="2018-06-15" timezone="UTC">
+    <gaps>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="6306112493344481639">
+        <detail start_ts="2018-06-15 00:00:00+00:00" end_ts="2018-06-15 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="4209188877455418279">
+        <detail start_ts="2018-06-15 00:00:00+00:00" end_ts="2018-06-15 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="3961543977264106009">
+        <detail start_ts="2018-06-15 00:00:00+00:00" end_ts="2018-06-15 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-8776698550783086204">
+        <detail start_ts="2018-06-15 00:00:00+00:00" end_ts="2018-06-15 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-521315651094657351">
+        <detail start_ts="2018-06-15 00:00:00+00:00" end_ts="2018-06-15 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-1501742064962207131">
+        <detail start_ts="2018-06-15 00:00:00+00:00" end_ts="2018-06-15 22:00:00+00:00"/>
+      </bar>
+    </gaps>
+  </record>
+  <record date="2018-06-18" timezone="UTC">
+    <gaps>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="6306112493344481639">
+        <detail start_ts="2018-06-18 00:00:00+00:00" end_ts="2018-06-18 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="4209188877455418279">
+        <detail start_ts="2018-06-18 00:00:00+00:00" end_ts="2018-06-18 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="3961543977264106009">
+        <detail start_ts="2018-06-18 00:00:00+00:00" end_ts="2018-06-18 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-8776698550783086204">
+        <detail start_ts="2018-06-18 00:00:00+00:00" end_ts="2018-06-18 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-521315651094657351">
+        <detail start_ts="2018-06-18 00:00:00+00:00" end_ts="2018-06-18 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-1501742064962207131">
+        <detail start_ts="2018-06-18 00:00:00+00:00" end_ts="2018-06-18 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="978041377569984910">
+        <detail start_ts="2018-06-18 22:00:00+00:00" end_ts="2018-06-18 22:00:00+00:00"/>
+      </bar>
+    </gaps>
+  </record>
+  <record date="2018-06-19" timezone="UTC">
+    <gaps>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="6306112493344481639">
+        <detail start_ts="2018-06-19 00:00:00+00:00" end_ts="2018-06-19 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="4209188877455418279">
+        <detail start_ts="2018-06-19 00:00:00+00:00" end_ts="2018-06-19 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="3961543977264106009">
+        <detail start_ts="2018-06-19 00:00:00+00:00" end_ts="2018-06-19 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-8776698550783086204">
+        <detail start_ts="2018-06-19 00:00:00+00:00" end_ts="2018-06-19 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-521315651094657351">
+        <detail start_ts="2018-06-19 00:00:00+00:00" end_ts="2018-06-19 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-1501742064962207131">
+        <detail start_ts="2018-06-19 00:00:00+00:00" end_ts="2018-06-19 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="978041377569984910">
+        <detail start_ts="2018-06-19 01:00:00+00:00" end_ts="2018-06-19 01:00:00+00:00"/>
+        <detail start_ts="2018-06-19 22:00:00+00:00" end_ts="2018-06-19 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="-2303253837626456242">
+        <detail start_ts="2018-06-19 00:10:00+00:00" end_ts="2018-06-19 01:10:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="3274052186836986076">
+        <detail start_ts="2018-06-19 00:20:00+00:00" end_ts="2018-06-19 01:20:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="8853485365172153665">
+        <detail start_ts="2018-06-19 00:30:00+00:00" end_ts="2018-06-19 01:30:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-4789123795842494852">
+        <detail start_ts="2018-06-19 00:40:00+00:00" end_ts="2018-06-19 00:40:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="708446824404521456">
+        <detail start_ts="2018-06-19 00:50:00+00:00" end_ts="2018-06-19 00:50:00+00:00"/>
+      </bar>
+    </gaps>
+  </record>
+  <record date="2018-06-20" timezone="UTC">
+    <gaps>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="APR2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="9208980146350770250">
+        <detail start_ts="2018-06-20 01:00:00+00:00" end_ts="2018-06-20 06:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="APR2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="6624746005305935370">
+        <detail start_ts="2018-06-20 00:10:00+00:00" end_ts="2018-06-20 06:10:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="APR2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="8575328932859207576">
+        <detail start_ts="2018-06-20 00:20:00+00:00" end_ts="2018-06-20 06:20:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="APR2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-7437974662682218875">
+        <detail start_ts="2018-06-20 00:30:00+00:00" end_ts="2018-06-20 06:30:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="APR2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-2788533786864204040">
+        <detail start_ts="2018-06-20 00:40:00+00:00" end_ts="2018-06-20 06:40:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="APR2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="6862414661168396708">
+        <detail start_ts="2018-06-20 00:50:00+00:00" end_ts="2018-06-20 05:50:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="1620649630420155135">
+        <detail start_ts="2018-06-20 01:00:00+00:00" end_ts="2018-06-20 06:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="4126873616197005503">
+        <detail start_ts="2018-06-20 00:10:00+00:00" end_ts="2018-06-20 06:10:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="-568531910774682959">
+        <detail start_ts="2018-06-20 00:20:00+00:00" end_ts="2018-06-20 06:20:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="6553864935328700780">
+        <detail start_ts="2018-06-20 00:30:00+00:00" end_ts="2018-06-20 06:30:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="6526404490473031185">
+        <detail start_ts="2018-06-20 00:40:00+00:00" end_ts="2018-06-20 06:40:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-1768779983327044419">
+        <detail start_ts="2018-06-20 00:50:00+00:00" end_ts="2018-06-20 05:50:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="6306112493344481639">
+        <detail start_ts="2018-06-20 00:00:00+00:00" end_ts="2018-06-20 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="4209188877455418279">
+        <detail start_ts="2018-06-20 00:00:00+00:00" end_ts="2018-06-20 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="3961543977264106009">
+        <detail start_ts="2018-06-20 00:00:00+00:00" end_ts="2018-06-20 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-8776698550783086204">
+        <detail start_ts="2018-06-20 00:00:00+00:00" end_ts="2018-06-20 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-521315651094657351">
+        <detail start_ts="2018-06-20 00:00:00+00:00" end_ts="2018-06-20 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-1501742064962207131">
+        <detail start_ts="2018-06-20 00:00:00+00:00" end_ts="2018-06-20 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="DEC2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="-2763932187828104323">
+        <detail start_ts="2018-06-20 01:00:00+00:00" end_ts="2018-06-20 06:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="DEC2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="-1769619085174719299">
+        <detail start_ts="2018-06-20 00:10:00+00:00" end_ts="2018-06-20 06:10:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="DEC2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="4181280481352608459">
+        <detail start_ts="2018-06-20 00:20:00+00:00" end_ts="2018-06-20 06:20:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="DEC2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-6714038198859201070">
+        <detail start_ts="2018-06-20 00:30:00+00:00" end_ts="2018-06-20 06:30:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="DEC2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="2210321696360180843">
+        <detail start_ts="2018-06-20 00:40:00+00:00" end_ts="2018-06-20 06:40:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="DEC2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="2960315436914856127">
+        <detail start_ts="2018-06-20 00:50:00+00:00" end_ts="2018-06-20 05:50:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="FEB2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="-157368082468224153">
+        <detail start_ts="2018-06-20 01:00:00+00:00" end_ts="2018-06-20 06:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="FEB2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="-5859001858956900953">
+        <detail start_ts="2018-06-20 00:10:00+00:00" end_ts="2018-06-20 06:10:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="FEB2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="2570707463296429081">
+        <detail start_ts="2018-06-20 00:20:00+00:00" end_ts="2018-06-20 06:20:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="FEB2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-387921073322160252">
+        <detail start_ts="2018-06-20 00:30:00+00:00" end_ts="2018-06-20 06:30:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="FEB2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="4854279521753580729">
+        <detail start_ts="2018-06-20 00:40:00+00:00" end_ts="2018-06-20 06:40:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="FEB2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-921013491537378203">
+        <detail start_ts="2018-06-20 00:50:00+00:00" end_ts="2018-06-20 05:50:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JAN2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="-1734927493800479157">
+        <detail start_ts="2018-06-20 01:00:00+00:00" end_ts="2018-06-20 06:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JAN2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="-7923707980822290549">
+        <detail start_ts="2018-06-20 00:10:00+00:00" end_ts="2018-06-20 06:10:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JAN2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="-7285478310529858051">
+        <detail start_ts="2018-06-20 00:20:00+00:00" end_ts="2018-06-20 06:20:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JAN2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-6860953477055243104">
+        <detail start_ts="2018-06-20 00:30:00+00:00" end_ts="2018-06-20 06:30:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JAN2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-2151802441471222883">
+        <detail start_ts="2018-06-20 00:40:00+00:00" end_ts="2018-06-20 06:40:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JAN2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="3878284511501323249">
+        <detail start_ts="2018-06-20 00:50:00+00:00" end_ts="2018-06-20 05:50:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="2546661693322961216">
+        <detail start_ts="2018-06-20 01:00:00+00:00" end_ts="2018-06-20 06:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="1497785738052841472">
+        <detail start_ts="2018-06-20 00:10:00+00:00" end_ts="2018-06-20 06:10:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="-7211756162116810254">
+        <detail start_ts="2018-06-20 00:20:00+00:00" end_ts="2018-06-20 06:20:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-2071302339964525269">
+        <detail start_ts="2018-06-20 00:30:00+00:00" end_ts="2018-06-20 06:30:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="536911641152460434">
+        <detail start_ts="2018-06-20 00:40:00+00:00" end_ts="2018-06-20 06:40:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-5948593370756791746">
+        <detail start_ts="2018-06-20 00:50:00+00:00" end_ts="2018-06-20 05:50:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="978041377569984910">
+        <detail start_ts="2018-06-20 01:00:00+00:00" end_ts="2018-06-20 06:00:00+00:00"/>
+        <detail start_ts="2018-06-20 22:00:00+00:00" end_ts="2018-06-20 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="-2303253837626456242">
+        <detail start_ts="2018-06-20 00:10:00+00:00" end_ts="2018-06-20 06:10:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="3274052186836986076">
+        <detail start_ts="2018-06-20 00:20:00+00:00" end_ts="2018-06-20 06:20:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="8853485365172153665">
+        <detail start_ts="2018-06-20 00:30:00+00:00" end_ts="2018-06-20 06:30:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-4789123795842494852">
+        <detail start_ts="2018-06-20 00:40:00+00:00" end_ts="2018-06-20 06:40:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="708446824404521456">
+        <detail start_ts="2018-06-20 00:50:00+00:00" end_ts="2018-06-20 05:50:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUN2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="3945589051215663292">
+        <detail start_ts="2018-06-20 01:00:00+00:00" end_ts="2018-06-20 06:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUN2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="6252431322517830140">
+        <detail start_ts="2018-06-20 00:10:00+00:00" end_ts="2018-06-20 06:10:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUN2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="-2325324398133108626">
+        <detail start_ts="2018-06-20 00:20:00+00:00" end_ts="2018-06-20 06:20:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUN2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="6923067628084822575">
+        <detail start_ts="2018-06-20 00:30:00+00:00" end_ts="2018-06-20 06:30:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUN2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-2269901255172990002">
+        <detail start_ts="2018-06-20 00:40:00+00:00" end_ts="2018-06-20 06:40:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUN2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="5383169475911369538">
+        <detail start_ts="2018-06-20 00:50:00+00:00" end_ts="2018-06-20 05:50:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="MAR2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="-3504988143758684605">
+        <detail start_ts="2018-06-20 01:00:00+00:00" end_ts="2018-06-20 06:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="MAR2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="-7847744755448822781">
+        <detail start_ts="2018-06-20 00:10:00+00:00" end_ts="2018-06-20 06:10:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="MAR2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="542814662431972853">
+        <detail start_ts="2018-06-20 00:20:00+00:00" end_ts="2018-06-20 06:20:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="MAR2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="5813323238237324840">
+        <detail start_ts="2018-06-20 00:30:00+00:00" end_ts="2018-06-20 06:30:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="MAR2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-5259536417439890539">
+        <detail start_ts="2018-06-20 00:40:00+00:00" end_ts="2018-06-20 06:40:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="MAR2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="3060005174404073225">
+        <detail start_ts="2018-06-20 00:50:00+00:00" end_ts="2018-06-20 05:50:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="MAY2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="681442426272571202">
+        <detail start_ts="2018-06-20 01:00:00+00:00" end_ts="2018-06-20 06:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="MAY2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="6289112681142903170">
+        <detail start_ts="2018-06-20 00:10:00+00:00" end_ts="2018-06-20 06:10:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="MAY2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="-5903071035116056688">
+        <detail start_ts="2018-06-20 00:20:00+00:00" end_ts="2018-06-20 06:20:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="MAY2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-3221888212293342195">
+        <detail start_ts="2018-06-20 00:30:00+00:00" end_ts="2018-06-20 06:30:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="MAY2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-7138922356218976208">
+        <detail start_ts="2018-06-20 00:40:00+00:00" end_ts="2018-06-20 06:40:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="MAY2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="8639478015777408188">
+        <detail start_ts="2018-06-20 00:50:00+00:00" end_ts="2018-06-20 05:50:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="NOV2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="6943542221010988329">
+        <detail start_ts="2018-06-20 01:00:00+00:00" end_ts="2018-06-20 06:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="NOV2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="-7921773058546452631">
+        <detail start_ts="2018-06-20 00:10:00+00:00" end_ts="2018-06-20 06:10:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="NOV2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="2162585187351305591">
+        <detail start_ts="2018-06-20 00:20:00+00:00" end_ts="2018-06-20 06:20:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="NOV2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="2953719813957867046">
+        <detail start_ts="2018-06-20 00:30:00+00:00" end_ts="2018-06-20 06:30:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="NOV2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="7099266997937503767">
+        <detail start_ts="2018-06-20 00:40:00+00:00" end_ts="2018-06-20 06:40:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="NOV2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-5749308072275977565">
+        <detail start_ts="2018-06-20 00:50:00+00:00" end_ts="2018-06-20 05:50:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="OCT2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="6423720864062688914">
+        <detail start_ts="2018-06-20 01:00:00+00:00" end_ts="2018-06-20 06:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="OCT2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="-2818877539242564270">
+        <detail start_ts="2018-06-20 00:10:00+00:00" end_ts="2018-06-20 06:10:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="OCT2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="-6723396725704655136">
+        <detail start_ts="2018-06-20 00:20:00+00:00" end_ts="2018-06-20 06:20:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="OCT2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-7479679056778926019">
+        <detail start_ts="2018-06-20 00:30:00+00:00" end_ts="2018-06-20 06:30:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="OCT2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="380444082650310976">
+        <detail start_ts="2018-06-20 00:40:00+00:00" end_ts="2018-06-20 06:40:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="OCT2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-5463465746822596372">
+        <detail start_ts="2018-06-20 00:50:00+00:00" end_ts="2018-06-20 05:50:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="SEP2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="5836791793005631873">
+        <detail start_ts="2018-06-20 01:00:00+00:00" end_ts="2018-06-20 06:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="SEP2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="4018096992848845761">
+        <detail start_ts="2018-06-20 00:10:00+00:00" end_ts="2018-06-20 06:10:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="SEP2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="5534615122249599439">
+        <detail start_ts="2018-06-20 00:20:00+00:00" end_ts="2018-06-20 06:20:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="SEP2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="2708696744017326542">
+        <detail start_ts="2018-06-20 00:30:00+00:00" end_ts="2018-06-20 06:30:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="SEP2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="5499383437177344047">
+        <detail start_ts="2018-06-20 00:40:00+00:00" end_ts="2018-06-20 06:40:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="SEP2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="7068112044910893243">
+        <detail start_ts="2018-06-20 00:50:00+00:00" end_ts="2018-06-20 05:50:00+00:00"/>
+      </bar>
+    </gaps>
+  </record>
+  <record date="2018-06-21" timezone="UTC">
+    <gaps>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="6306112493344481639">
+        <detail start_ts="2018-06-21 00:00:00+00:00" end_ts="2018-06-21 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="4209188877455418279">
+        <detail start_ts="2018-06-21 00:00:00+00:00" end_ts="2018-06-21 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="3961543977264106009">
+        <detail start_ts="2018-06-21 00:00:00+00:00" end_ts="2018-06-21 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-8776698550783086204">
+        <detail start_ts="2018-06-21 00:00:00+00:00" end_ts="2018-06-21 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-521315651094657351">
+        <detail start_ts="2018-06-21 00:00:00+00:00" end_ts="2018-06-21 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-1501742064962207131">
+        <detail start_ts="2018-06-21 00:00:00+00:00" end_ts="2018-06-21 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="2546661693322961216">
+        <detail start_ts="2018-06-21 00:00:00+00:00" end_ts="2018-06-21 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="1497785738052841472">
+        <detail start_ts="2018-06-21 00:00:00+00:00" end_ts="2018-06-21 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="-7211756162116810254">
+        <detail start_ts="2018-06-21 00:00:00+00:00" end_ts="2018-06-21 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-2071302339964525269">
+        <detail start_ts="2018-06-21 00:00:00+00:00" end_ts="2018-06-21 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="536911641152460434">
+        <detail start_ts="2018-06-21 00:00:00+00:00" end_ts="2018-06-21 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-5948593370756791746">
+        <detail start_ts="2018-06-21 00:00:00+00:00" end_ts="2018-06-21 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="978041377569984910">
+        <detail start_ts="2018-06-21 22:00:00+00:00" end_ts="2018-06-21 22:00:00+00:00"/>
+      </bar>
+    </gaps>
+  </record>
+  <record date="2018-06-22" timezone="UTC">
+    <gaps>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="APR2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="9208980146350770250">
+        <detail start_ts="2018-06-22 01:00:00+00:00" end_ts="2018-06-22 05:00:00+00:00"/>
+        <detail start_ts="2018-06-22 07:00:00+00:00" end_ts="2018-06-22 15:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="APR2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="6624746005305935370">
+        <detail start_ts="2018-06-22 00:10:00+00:00" end_ts="2018-06-22 05:10:00+00:00"/>
+        <detail start_ts="2018-06-22 07:10:00+00:00" end_ts="2018-06-22 14:10:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="APR2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="8575328932859207576">
+        <detail start_ts="2018-06-22 00:20:00+00:00" end_ts="2018-06-22 04:20:00+00:00"/>
+        <detail start_ts="2018-06-22 07:20:00+00:00" end_ts="2018-06-22 14:20:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="APR2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-7437974662682218875">
+        <detail start_ts="2018-06-22 00:30:00+00:00" end_ts="2018-06-22 04:30:00+00:00"/>
+        <detail start_ts="2018-06-22 06:30:00+00:00" end_ts="2018-06-22 14:30:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="APR2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-2788533786864204040">
+        <detail start_ts="2018-06-22 00:40:00+00:00" end_ts="2018-06-22 04:40:00+00:00"/>
+        <detail start_ts="2018-06-22 06:40:00+00:00" end_ts="2018-06-22 14:40:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="APR2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="6862414661168396708">
+        <detail start_ts="2018-06-22 00:50:00+00:00" end_ts="2018-06-22 04:50:00+00:00"/>
+        <detail start_ts="2018-06-22 06:50:00+00:00" end_ts="2018-06-22 14:50:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="1620649630420155135">
+        <detail start_ts="2018-06-22 01:00:00+00:00" end_ts="2018-06-22 05:00:00+00:00"/>
+        <detail start_ts="2018-06-22 07:00:00+00:00" end_ts="2018-06-22 15:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="4126873616197005503">
+        <detail start_ts="2018-06-22 00:10:00+00:00" end_ts="2018-06-22 05:10:00+00:00"/>
+        <detail start_ts="2018-06-22 07:10:00+00:00" end_ts="2018-06-22 14:10:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="-568531910774682959">
+        <detail start_ts="2018-06-22 00:20:00+00:00" end_ts="2018-06-22 04:20:00+00:00"/>
+        <detail start_ts="2018-06-22 07:20:00+00:00" end_ts="2018-06-22 14:20:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="6553864935328700780">
+        <detail start_ts="2018-06-22 00:30:00+00:00" end_ts="2018-06-22 04:30:00+00:00"/>
+        <detail start_ts="2018-06-22 06:30:00+00:00" end_ts="2018-06-22 14:30:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="6526404490473031185">
+        <detail start_ts="2018-06-22 00:40:00+00:00" end_ts="2018-06-22 04:40:00+00:00"/>
+        <detail start_ts="2018-06-22 06:40:00+00:00" end_ts="2018-06-22 14:40:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-1768779983327044419">
+        <detail start_ts="2018-06-22 00:50:00+00:00" end_ts="2018-06-22 04:50:00+00:00"/>
+        <detail start_ts="2018-06-22 06:50:00+00:00" end_ts="2018-06-22 14:50:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="6306112493344481639">
+        <detail start_ts="2018-06-22 00:00:00+00:00" end_ts="2018-06-22 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="4209188877455418279">
+        <detail start_ts="2018-06-22 00:00:00+00:00" end_ts="2018-06-22 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="3961543977264106009">
+        <detail start_ts="2018-06-22 00:00:00+00:00" end_ts="2018-06-22 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-8776698550783086204">
+        <detail start_ts="2018-06-22 00:00:00+00:00" end_ts="2018-06-22 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-521315651094657351">
+        <detail start_ts="2018-06-22 00:00:00+00:00" end_ts="2018-06-22 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-1501742064962207131">
+        <detail start_ts="2018-06-22 00:00:00+00:00" end_ts="2018-06-22 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="DEC2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="-2763932187828104323">
+        <detail start_ts="2018-06-22 01:00:00+00:00" end_ts="2018-06-22 05:00:00+00:00"/>
+        <detail start_ts="2018-06-22 07:00:00+00:00" end_ts="2018-06-22 15:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="DEC2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="-1769619085174719299">
+        <detail start_ts="2018-06-22 00:10:00+00:00" end_ts="2018-06-22 05:10:00+00:00"/>
+        <detail start_ts="2018-06-22 07:10:00+00:00" end_ts="2018-06-22 14:10:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="DEC2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="4181280481352608459">
+        <detail start_ts="2018-06-22 00:20:00+00:00" end_ts="2018-06-22 04:20:00+00:00"/>
+        <detail start_ts="2018-06-22 07:20:00+00:00" end_ts="2018-06-22 14:20:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="DEC2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-6714038198859201070">
+        <detail start_ts="2018-06-22 00:30:00+00:00" end_ts="2018-06-22 04:30:00+00:00"/>
+        <detail start_ts="2018-06-22 06:30:00+00:00" end_ts="2018-06-22 14:30:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="DEC2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="2210321696360180843">
+        <detail start_ts="2018-06-22 00:40:00+00:00" end_ts="2018-06-22 04:40:00+00:00"/>
+        <detail start_ts="2018-06-22 06:40:00+00:00" end_ts="2018-06-22 14:40:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="DEC2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="2960315436914856127">
+        <detail start_ts="2018-06-22 00:50:00+00:00" end_ts="2018-06-22 04:50:00+00:00"/>
+        <detail start_ts="2018-06-22 06:50:00+00:00" end_ts="2018-06-22 14:50:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="FEB2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="-157368082468224153">
+        <detail start_ts="2018-06-22 01:00:00+00:00" end_ts="2018-06-22 05:00:00+00:00"/>
+        <detail start_ts="2018-06-22 07:00:00+00:00" end_ts="2018-06-22 15:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="FEB2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="-5859001858956900953">
+        <detail start_ts="2018-06-22 00:10:00+00:00" end_ts="2018-06-22 05:10:00+00:00"/>
+        <detail start_ts="2018-06-22 07:10:00+00:00" end_ts="2018-06-22 14:10:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="FEB2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="2570707463296429081">
+        <detail start_ts="2018-06-22 00:20:00+00:00" end_ts="2018-06-22 04:20:00+00:00"/>
+        <detail start_ts="2018-06-22 07:20:00+00:00" end_ts="2018-06-22 14:20:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="FEB2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-387921073322160252">
+        <detail start_ts="2018-06-22 00:30:00+00:00" end_ts="2018-06-22 04:30:00+00:00"/>
+        <detail start_ts="2018-06-22 06:30:00+00:00" end_ts="2018-06-22 14:30:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="FEB2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="4854279521753580729">
+        <detail start_ts="2018-06-22 00:40:00+00:00" end_ts="2018-06-22 04:40:00+00:00"/>
+        <detail start_ts="2018-06-22 06:40:00+00:00" end_ts="2018-06-22 14:40:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="FEB2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-921013491537378203">
+        <detail start_ts="2018-06-22 00:50:00+00:00" end_ts="2018-06-22 04:50:00+00:00"/>
+        <detail start_ts="2018-06-22 06:50:00+00:00" end_ts="2018-06-22 14:50:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JAN2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="-1734927493800479157">
+        <detail start_ts="2018-06-22 01:00:00+00:00" end_ts="2018-06-22 05:00:00+00:00"/>
+        <detail start_ts="2018-06-22 07:00:00+00:00" end_ts="2018-06-22 15:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JAN2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="-7923707980822290549">
+        <detail start_ts="2018-06-22 00:10:00+00:00" end_ts="2018-06-22 05:10:00+00:00"/>
+        <detail start_ts="2018-06-22 07:10:00+00:00" end_ts="2018-06-22 14:10:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JAN2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="-7285478310529858051">
+        <detail start_ts="2018-06-22 00:20:00+00:00" end_ts="2018-06-22 04:20:00+00:00"/>
+        <detail start_ts="2018-06-22 07:20:00+00:00" end_ts="2018-06-22 14:20:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JAN2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-6860953477055243104">
+        <detail start_ts="2018-06-22 00:30:00+00:00" end_ts="2018-06-22 04:30:00+00:00"/>
+        <detail start_ts="2018-06-22 06:30:00+00:00" end_ts="2018-06-22 14:30:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JAN2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-2151802441471222883">
+        <detail start_ts="2018-06-22 00:40:00+00:00" end_ts="2018-06-22 04:40:00+00:00"/>
+        <detail start_ts="2018-06-22 06:40:00+00:00" end_ts="2018-06-22 14:40:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JAN2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="3878284511501323249">
+        <detail start_ts="2018-06-22 00:50:00+00:00" end_ts="2018-06-22 04:50:00+00:00"/>
+        <detail start_ts="2018-06-22 06:50:00+00:00" end_ts="2018-06-22 14:50:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="2546661693322961216">
+        <detail start_ts="2018-06-22 00:00:00+00:00" end_ts="2018-06-22 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="1497785738052841472">
+        <detail start_ts="2018-06-22 00:00:00+00:00" end_ts="2018-06-22 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="-7211756162116810254">
+        <detail start_ts="2018-06-22 00:00:00+00:00" end_ts="2018-06-22 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-2071302339964525269">
+        <detail start_ts="2018-06-22 00:00:00+00:00" end_ts="2018-06-22 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="536911641152460434">
+        <detail start_ts="2018-06-22 00:00:00+00:00" end_ts="2018-06-22 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-5948593370756791746">
+        <detail start_ts="2018-06-22 00:00:00+00:00" end_ts="2018-06-22 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="978041377569984910">
+        <detail start_ts="2018-06-22 01:00:00+00:00" end_ts="2018-06-22 05:00:00+00:00"/>
+        <detail start_ts="2018-06-22 07:00:00+00:00" end_ts="2018-06-22 15:00:00+00:00"/>
+        <detail start_ts="2018-06-22 22:00:00+00:00" end_ts="2018-06-22 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="-2303253837626456242">
+        <detail start_ts="2018-06-22 00:10:00+00:00" end_ts="2018-06-22 05:10:00+00:00"/>
+        <detail start_ts="2018-06-22 07:10:00+00:00" end_ts="2018-06-22 14:10:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="3274052186836986076">
+        <detail start_ts="2018-06-22 00:20:00+00:00" end_ts="2018-06-22 04:20:00+00:00"/>
+        <detail start_ts="2018-06-22 07:20:00+00:00" end_ts="2018-06-22 14:20:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="8853485365172153665">
+        <detail start_ts="2018-06-22 00:30:00+00:00" end_ts="2018-06-22 04:30:00+00:00"/>
+        <detail start_ts="2018-06-22 06:30:00+00:00" end_ts="2018-06-22 14:30:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-4789123795842494852">
+        <detail start_ts="2018-06-22 00:40:00+00:00" end_ts="2018-06-22 04:40:00+00:00"/>
+        <detail start_ts="2018-06-22 06:40:00+00:00" end_ts="2018-06-22 14:40:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="708446824404521456">
+        <detail start_ts="2018-06-22 00:50:00+00:00" end_ts="2018-06-22 04:50:00+00:00"/>
+        <detail start_ts="2018-06-22 06:50:00+00:00" end_ts="2018-06-22 14:50:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUN2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="3945589051215663292">
+        <detail start_ts="2018-06-22 01:00:00+00:00" end_ts="2018-06-22 05:00:00+00:00"/>
+        <detail start_ts="2018-06-22 07:00:00+00:00" end_ts="2018-06-22 15:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUN2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="6252431322517830140">
+        <detail start_ts="2018-06-22 00:10:00+00:00" end_ts="2018-06-22 05:10:00+00:00"/>
+        <detail start_ts="2018-06-22 07:10:00+00:00" end_ts="2018-06-22 14:10:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUN2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="-2325324398133108626">
+        <detail start_ts="2018-06-22 00:20:00+00:00" end_ts="2018-06-22 04:20:00+00:00"/>
+        <detail start_ts="2018-06-22 07:20:00+00:00" end_ts="2018-06-22 14:20:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUN2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="6923067628084822575">
+        <detail start_ts="2018-06-22 00:30:00+00:00" end_ts="2018-06-22 04:30:00+00:00"/>
+        <detail start_ts="2018-06-22 06:30:00+00:00" end_ts="2018-06-22 14:30:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUN2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-2269901255172990002">
+        <detail start_ts="2018-06-22 00:40:00+00:00" end_ts="2018-06-22 04:40:00+00:00"/>
+        <detail start_ts="2018-06-22 06:40:00+00:00" end_ts="2018-06-22 14:40:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUN2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="5383169475911369538">
+        <detail start_ts="2018-06-22 00:50:00+00:00" end_ts="2018-06-22 04:50:00+00:00"/>
+        <detail start_ts="2018-06-22 06:50:00+00:00" end_ts="2018-06-22 14:50:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="MAR2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="-3504988143758684605">
+        <detail start_ts="2018-06-22 01:00:00+00:00" end_ts="2018-06-22 05:00:00+00:00"/>
+        <detail start_ts="2018-06-22 07:00:00+00:00" end_ts="2018-06-22 15:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="MAR2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="-7847744755448822781">
+        <detail start_ts="2018-06-22 00:10:00+00:00" end_ts="2018-06-22 05:10:00+00:00"/>
+        <detail start_ts="2018-06-22 07:10:00+00:00" end_ts="2018-06-22 14:10:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="MAR2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="542814662431972853">
+        <detail start_ts="2018-06-22 00:20:00+00:00" end_ts="2018-06-22 04:20:00+00:00"/>
+        <detail start_ts="2018-06-22 07:20:00+00:00" end_ts="2018-06-22 14:20:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="MAR2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="5813323238237324840">
+        <detail start_ts="2018-06-22 00:30:00+00:00" end_ts="2018-06-22 04:30:00+00:00"/>
+        <detail start_ts="2018-06-22 06:30:00+00:00" end_ts="2018-06-22 14:30:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="MAR2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-5259536417439890539">
+        <detail start_ts="2018-06-22 00:40:00+00:00" end_ts="2018-06-22 04:40:00+00:00"/>
+        <detail start_ts="2018-06-22 06:40:00+00:00" end_ts="2018-06-22 14:40:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="MAR2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="3060005174404073225">
+        <detail start_ts="2018-06-22 00:50:00+00:00" end_ts="2018-06-22 04:50:00+00:00"/>
+        <detail start_ts="2018-06-22 06:50:00+00:00" end_ts="2018-06-22 14:50:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="MAY2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="681442426272571202">
+        <detail start_ts="2018-06-22 01:00:00+00:00" end_ts="2018-06-22 05:00:00+00:00"/>
+        <detail start_ts="2018-06-22 07:00:00+00:00" end_ts="2018-06-22 15:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="MAY2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="6289112681142903170">
+        <detail start_ts="2018-06-22 00:10:00+00:00" end_ts="2018-06-22 05:10:00+00:00"/>
+        <detail start_ts="2018-06-22 07:10:00+00:00" end_ts="2018-06-22 14:10:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="MAY2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="-5903071035116056688">
+        <detail start_ts="2018-06-22 00:20:00+00:00" end_ts="2018-06-22 04:20:00+00:00"/>
+        <detail start_ts="2018-06-22 07:20:00+00:00" end_ts="2018-06-22 14:20:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="MAY2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-3221888212293342195">
+        <detail start_ts="2018-06-22 00:30:00+00:00" end_ts="2018-06-22 04:30:00+00:00"/>
+        <detail start_ts="2018-06-22 06:30:00+00:00" end_ts="2018-06-22 14:30:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="MAY2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-7138922356218976208">
+        <detail start_ts="2018-06-22 00:40:00+00:00" end_ts="2018-06-22 04:40:00+00:00"/>
+        <detail start_ts="2018-06-22 06:40:00+00:00" end_ts="2018-06-22 14:40:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="MAY2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="8639478015777408188">
+        <detail start_ts="2018-06-22 00:50:00+00:00" end_ts="2018-06-22 04:50:00+00:00"/>
+        <detail start_ts="2018-06-22 06:50:00+00:00" end_ts="2018-06-22 14:50:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="NOV2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="6943542221010988329">
+        <detail start_ts="2018-06-22 01:00:00+00:00" end_ts="2018-06-22 05:00:00+00:00"/>
+        <detail start_ts="2018-06-22 07:00:00+00:00" end_ts="2018-06-22 15:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="NOV2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="-7921773058546452631">
+        <detail start_ts="2018-06-22 00:10:00+00:00" end_ts="2018-06-22 05:10:00+00:00"/>
+        <detail start_ts="2018-06-22 07:10:00+00:00" end_ts="2018-06-22 14:10:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="NOV2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="2162585187351305591">
+        <detail start_ts="2018-06-22 00:20:00+00:00" end_ts="2018-06-22 04:20:00+00:00"/>
+        <detail start_ts="2018-06-22 07:20:00+00:00" end_ts="2018-06-22 14:20:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="NOV2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="2953719813957867046">
+        <detail start_ts="2018-06-22 00:30:00+00:00" end_ts="2018-06-22 04:30:00+00:00"/>
+        <detail start_ts="2018-06-22 06:30:00+00:00" end_ts="2018-06-22 14:30:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="NOV2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="7099266997937503767">
+        <detail start_ts="2018-06-22 00:40:00+00:00" end_ts="2018-06-22 04:40:00+00:00"/>
+        <detail start_ts="2018-06-22 06:40:00+00:00" end_ts="2018-06-22 14:40:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="NOV2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-5749308072275977565">
+        <detail start_ts="2018-06-22 00:50:00+00:00" end_ts="2018-06-22 04:50:00+00:00"/>
+        <detail start_ts="2018-06-22 06:50:00+00:00" end_ts="2018-06-22 14:50:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="OCT2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="6423720864062688914">
+        <detail start_ts="2018-06-22 01:00:00+00:00" end_ts="2018-06-22 05:00:00+00:00"/>
+        <detail start_ts="2018-06-22 07:00:00+00:00" end_ts="2018-06-22 15:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="OCT2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="-2818877539242564270">
+        <detail start_ts="2018-06-22 00:10:00+00:00" end_ts="2018-06-22 05:10:00+00:00"/>
+        <detail start_ts="2018-06-22 07:10:00+00:00" end_ts="2018-06-22 14:10:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="OCT2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="-6723396725704655136">
+        <detail start_ts="2018-06-22 00:20:00+00:00" end_ts="2018-06-22 04:20:00+00:00"/>
+        <detail start_ts="2018-06-22 07:20:00+00:00" end_ts="2018-06-22 14:20:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="OCT2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-7479679056778926019">
+        <detail start_ts="2018-06-22 00:30:00+00:00" end_ts="2018-06-22 04:30:00+00:00"/>
+        <detail start_ts="2018-06-22 06:30:00+00:00" end_ts="2018-06-22 14:30:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="OCT2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="380444082650310976">
+        <detail start_ts="2018-06-22 00:40:00+00:00" end_ts="2018-06-22 04:40:00+00:00"/>
+        <detail start_ts="2018-06-22 06:40:00+00:00" end_ts="2018-06-22 14:40:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="OCT2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-5463465746822596372">
+        <detail start_ts="2018-06-22 00:50:00+00:00" end_ts="2018-06-22 04:50:00+00:00"/>
+        <detail start_ts="2018-06-22 06:50:00+00:00" end_ts="2018-06-22 14:50:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="SEP2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="5836791793005631873">
+        <detail start_ts="2018-06-22 01:00:00+00:00" end_ts="2018-06-22 05:00:00+00:00"/>
+        <detail start_ts="2018-06-22 07:00:00+00:00" end_ts="2018-06-22 15:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="SEP2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="4018096992848845761">
+        <detail start_ts="2018-06-22 00:10:00+00:00" end_ts="2018-06-22 05:10:00+00:00"/>
+        <detail start_ts="2018-06-22 07:10:00+00:00" end_ts="2018-06-22 14:10:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="SEP2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="5534615122249599439">
+        <detail start_ts="2018-06-22 00:20:00+00:00" end_ts="2018-06-22 04:20:00+00:00"/>
+        <detail start_ts="2018-06-22 07:20:00+00:00" end_ts="2018-06-22 14:20:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="SEP2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="2708696744017326542">
+        <detail start_ts="2018-06-22 00:30:00+00:00" end_ts="2018-06-22 04:30:00+00:00"/>
+        <detail start_ts="2018-06-22 06:30:00+00:00" end_ts="2018-06-22 14:30:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="SEP2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="5499383437177344047">
+        <detail start_ts="2018-06-22 00:40:00+00:00" end_ts="2018-06-22 04:40:00+00:00"/>
+        <detail start_ts="2018-06-22 06:40:00+00:00" end_ts="2018-06-22 14:40:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="SEP2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="7068112044910893243">
+        <detail start_ts="2018-06-22 00:50:00+00:00" end_ts="2018-06-22 04:50:00+00:00"/>
+        <detail start_ts="2018-06-22 06:50:00+00:00" end_ts="2018-06-22 14:50:00+00:00"/>
+      </bar>
+    </gaps>
+  </record>
+  <record date="2018-06-25" timezone="UTC">
+    <gaps>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="6306112493344481639">
+        <detail start_ts="2018-06-25 00:00:00+00:00" end_ts="2018-06-25 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="4209188877455418279">
+        <detail start_ts="2018-06-25 00:00:00+00:00" end_ts="2018-06-25 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="3961543977264106009">
+        <detail start_ts="2018-06-25 00:00:00+00:00" end_ts="2018-06-25 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-8776698550783086204">
+        <detail start_ts="2018-06-25 00:00:00+00:00" end_ts="2018-06-25 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-521315651094657351">
+        <detail start_ts="2018-06-25 00:00:00+00:00" end_ts="2018-06-25 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-1501742064962207131">
+        <detail start_ts="2018-06-25 00:00:00+00:00" end_ts="2018-06-25 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="2546661693322961216">
+        <detail start_ts="2018-06-25 00:00:00+00:00" end_ts="2018-06-25 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="1497785738052841472">
+        <detail start_ts="2018-06-25 00:00:00+00:00" end_ts="2018-06-25 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="-7211756162116810254">
+        <detail start_ts="2018-06-25 00:00:00+00:00" end_ts="2018-06-25 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-2071302339964525269">
+        <detail start_ts="2018-06-25 00:00:00+00:00" end_ts="2018-06-25 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="536911641152460434">
+        <detail start_ts="2018-06-25 00:00:00+00:00" end_ts="2018-06-25 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-5948593370756791746">
+        <detail start_ts="2018-06-25 00:00:00+00:00" end_ts="2018-06-25 22:00:00+00:00"/>
+      </bar>
+    </gaps>
+  </record>
+  <record date="2018-06-26" timezone="UTC">
+    <gaps>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="6306112493344481639">
+        <detail start_ts="2018-06-26 00:00:00+00:00" end_ts="2018-06-26 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="4209188877455418279">
+        <detail start_ts="2018-06-26 00:00:00+00:00" end_ts="2018-06-26 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="3961543977264106009">
+        <detail start_ts="2018-06-26 00:00:00+00:00" end_ts="2018-06-26 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-8776698550783086204">
+        <detail start_ts="2018-06-26 00:00:00+00:00" end_ts="2018-06-26 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-521315651094657351">
+        <detail start_ts="2018-06-26 00:00:00+00:00" end_ts="2018-06-26 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-1501742064962207131">
+        <detail start_ts="2018-06-26 00:00:00+00:00" end_ts="2018-06-26 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="2546661693322961216">
+        <detail start_ts="2018-06-26 00:00:00+00:00" end_ts="2018-06-26 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="1497785738052841472">
+        <detail start_ts="2018-06-26 00:00:00+00:00" end_ts="2018-06-26 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="-7211756162116810254">
+        <detail start_ts="2018-06-26 00:00:00+00:00" end_ts="2018-06-26 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-2071302339964525269">
+        <detail start_ts="2018-06-26 00:00:00+00:00" end_ts="2018-06-26 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="536911641152460434">
+        <detail start_ts="2018-06-26 00:00:00+00:00" end_ts="2018-06-26 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-5948593370756791746">
+        <detail start_ts="2018-06-26 00:00:00+00:00" end_ts="2018-06-26 22:00:00+00:00"/>
+      </bar>
+    </gaps>
+  </record>
+  <record date="2018-06-27" timezone="UTC">
+    <gaps>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="6306112493344481639">
+        <detail start_ts="2018-06-27 00:00:00+00:00" end_ts="2018-06-27 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="4209188877455418279">
+        <detail start_ts="2018-06-27 00:00:00+00:00" end_ts="2018-06-27 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="3961543977264106009">
+        <detail start_ts="2018-06-27 00:00:00+00:00" end_ts="2018-06-27 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-8776698550783086204">
+        <detail start_ts="2018-06-27 00:00:00+00:00" end_ts="2018-06-27 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-521315651094657351">
+        <detail start_ts="2018-06-27 00:00:00+00:00" end_ts="2018-06-27 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-1501742064962207131">
+        <detail start_ts="2018-06-27 00:00:00+00:00" end_ts="2018-06-27 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="2546661693322961216">
+        <detail start_ts="2018-06-27 00:00:00+00:00" end_ts="2018-06-27 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="1497785738052841472">
+        <detail start_ts="2018-06-27 00:00:00+00:00" end_ts="2018-06-27 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="-7211756162116810254">
+        <detail start_ts="2018-06-27 00:00:00+00:00" end_ts="2018-06-27 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-2071302339964525269">
+        <detail start_ts="2018-06-27 00:00:00+00:00" end_ts="2018-06-27 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="536911641152460434">
+        <detail start_ts="2018-06-27 00:00:00+00:00" end_ts="2018-06-27 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-5948593370756791746">
+        <detail start_ts="2018-06-27 00:00:00+00:00" end_ts="2018-06-27 22:00:00+00:00"/>
+      </bar>
+    </gaps>
+  </record>
+  <record date="2018-06-28" timezone="UTC">
+    <gaps>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="6306112493344481639">
+        <detail start_ts="2018-06-28 00:00:00+00:00" end_ts="2018-06-28 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="4209188877455418279">
+        <detail start_ts="2018-06-28 00:00:00+00:00" end_ts="2018-06-28 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="3961543977264106009">
+        <detail start_ts="2018-06-28 00:00:00+00:00" end_ts="2018-06-28 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-8776698550783086204">
+        <detail start_ts="2018-06-28 00:00:00+00:00" end_ts="2018-06-28 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-521315651094657351">
+        <detail start_ts="2018-06-28 00:00:00+00:00" end_ts="2018-06-28 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-1501742064962207131">
+        <detail start_ts="2018-06-28 00:00:00+00:00" end_ts="2018-06-28 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="2546661693322961216">
+        <detail start_ts="2018-06-28 00:00:00+00:00" end_ts="2018-06-28 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="1497785738052841472">
+        <detail start_ts="2018-06-28 00:00:00+00:00" end_ts="2018-06-28 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="-7211756162116810254">
+        <detail start_ts="2018-06-28 00:00:00+00:00" end_ts="2018-06-28 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-2071302339964525269">
+        <detail start_ts="2018-06-28 00:00:00+00:00" end_ts="2018-06-28 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="536911641152460434">
+        <detail start_ts="2018-06-28 00:00:00+00:00" end_ts="2018-06-28 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-5948593370756791746">
+        <detail start_ts="2018-06-28 00:00:00+00:00" end_ts="2018-06-28 22:00:00+00:00"/>
+      </bar>
+    </gaps>
+  </record>
+  <record date="2018-06-29" timezone="UTC">
+    <gaps>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="6306112493344481639">
+        <detail start_ts="2018-06-29 00:00:00+00:00" end_ts="2018-06-29 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="4209188877455418279">
+        <detail start_ts="2018-06-29 00:00:00+00:00" end_ts="2018-06-29 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="3961543977264106009">
+        <detail start_ts="2018-06-29 00:00:00+00:00" end_ts="2018-06-29 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-8776698550783086204">
+        <detail start_ts="2018-06-29 00:00:00+00:00" end_ts="2018-06-29 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-521315651094657351">
+        <detail start_ts="2018-06-29 00:00:00+00:00" end_ts="2018-06-29 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-1501742064962207131">
+        <detail start_ts="2018-06-29 00:00:00+00:00" end_ts="2018-06-29 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="2546661693322961216">
+        <detail start_ts="2018-06-29 00:00:00+00:00" end_ts="2018-06-29 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="1497785738052841472">
+        <detail start_ts="2018-06-29 00:00:00+00:00" end_ts="2018-06-29 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="-7211756162116810254">
+        <detail start_ts="2018-06-29 00:00:00+00:00" end_ts="2018-06-29 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-2071302339964525269">
+        <detail start_ts="2018-06-29 00:00:00+00:00" end_ts="2018-06-29 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="536911641152460434">
+        <detail start_ts="2018-06-29 00:00:00+00:00" end_ts="2018-06-29 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-5948593370756791746">
+        <detail start_ts="2018-06-29 00:00:00+00:00" end_ts="2018-06-29 22:00:00+00:00"/>
+      </bar>
+    </gaps>
+  </record>
+  <record date="2018-07-02" timezone="UTC">
+    <gaps>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="APR2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="9208980146350770250">
+        <detail start_ts="2018-07-02 06:00:00+00:00" end_ts="2018-07-02 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="APR2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="6624746005305935370">
+        <detail start_ts="2018-07-02 06:10:00+00:00" end_ts="2018-07-02 21:10:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="APR2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="8575328932859207576">
+        <detail start_ts="2018-07-02 06:20:00+00:00" end_ts="2018-07-02 21:20:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="APR2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-7437974662682218875">
+        <detail start_ts="2018-07-02 06:30:00+00:00" end_ts="2018-07-02 21:30:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="APR2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-2788533786864204040">
+        <detail start_ts="2018-07-02 06:40:00+00:00" end_ts="2018-07-02 21:40:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="APR2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="6862414661168396708">
+        <detail start_ts="2018-07-02 06:50:00+00:00" end_ts="2018-07-02 21:50:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="1620649630420155135">
+        <detail start_ts="2018-07-02 06:00:00+00:00" end_ts="2018-07-02 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="4126873616197005503">
+        <detail start_ts="2018-07-02 06:10:00+00:00" end_ts="2018-07-02 21:10:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="-568531910774682959">
+        <detail start_ts="2018-07-02 06:20:00+00:00" end_ts="2018-07-02 21:20:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="6553864935328700780">
+        <detail start_ts="2018-07-02 06:30:00+00:00" end_ts="2018-07-02 21:30:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="6526404490473031185">
+        <detail start_ts="2018-07-02 06:40:00+00:00" end_ts="2018-07-02 21:40:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-1768779983327044419">
+        <detail start_ts="2018-07-02 06:50:00+00:00" end_ts="2018-07-02 21:50:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="6306112493344481639">
+        <detail start_ts="2018-07-02 06:00:00+00:00" end_ts="2018-07-02 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="4209188877455418279">
+        <detail start_ts="2018-07-02 06:10:00+00:00" end_ts="2018-07-02 21:10:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="3961543977264106009">
+        <detail start_ts="2018-07-02 06:20:00+00:00" end_ts="2018-07-02 21:20:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-8776698550783086204">
+        <detail start_ts="2018-07-02 06:30:00+00:00" end_ts="2018-07-02 21:30:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-521315651094657351">
+        <detail start_ts="2018-07-02 06:40:00+00:00" end_ts="2018-07-02 21:40:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-1501742064962207131">
+        <detail start_ts="2018-07-02 06:50:00+00:00" end_ts="2018-07-02 21:50:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="DEC2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="-2763932187828104323">
+        <detail start_ts="2018-07-02 06:00:00+00:00" end_ts="2018-07-02 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="DEC2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="-1769619085174719299">
+        <detail start_ts="2018-07-02 06:10:00+00:00" end_ts="2018-07-02 21:10:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="DEC2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="4181280481352608459">
+        <detail start_ts="2018-07-02 06:20:00+00:00" end_ts="2018-07-02 21:20:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="DEC2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-6714038198859201070">
+        <detail start_ts="2018-07-02 06:30:00+00:00" end_ts="2018-07-02 21:30:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="DEC2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="2210321696360180843">
+        <detail start_ts="2018-07-02 06:40:00+00:00" end_ts="2018-07-02 21:40:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="DEC2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="2960315436914856127">
+        <detail start_ts="2018-07-02 06:50:00+00:00" end_ts="2018-07-02 21:50:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="FEB2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="-157368082468224153">
+        <detail start_ts="2018-07-02 06:00:00+00:00" end_ts="2018-07-02 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="FEB2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="-5859001858956900953">
+        <detail start_ts="2018-07-02 06:10:00+00:00" end_ts="2018-07-02 21:10:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="FEB2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="2570707463296429081">
+        <detail start_ts="2018-07-02 06:20:00+00:00" end_ts="2018-07-02 21:20:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="FEB2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-387921073322160252">
+        <detail start_ts="2018-07-02 06:30:00+00:00" end_ts="2018-07-02 21:30:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="FEB2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="4854279521753580729">
+        <detail start_ts="2018-07-02 06:40:00+00:00" end_ts="2018-07-02 21:40:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="FEB2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-921013491537378203">
+        <detail start_ts="2018-07-02 06:50:00+00:00" end_ts="2018-07-02 21:50:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JAN2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="-1734927493800479157">
+        <detail start_ts="2018-07-02 06:00:00+00:00" end_ts="2018-07-02 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JAN2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="-7923707980822290549">
+        <detail start_ts="2018-07-02 06:10:00+00:00" end_ts="2018-07-02 21:10:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JAN2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="-7285478310529858051">
+        <detail start_ts="2018-07-02 06:20:00+00:00" end_ts="2018-07-02 21:20:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JAN2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-6860953477055243104">
+        <detail start_ts="2018-07-02 06:30:00+00:00" end_ts="2018-07-02 21:30:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JAN2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-2151802441471222883">
+        <detail start_ts="2018-07-02 06:40:00+00:00" end_ts="2018-07-02 21:40:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JAN2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="3878284511501323249">
+        <detail start_ts="2018-07-02 06:50:00+00:00" end_ts="2018-07-02 21:50:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="2546661693322961216">
+        <detail start_ts="2018-07-02 00:00:00+00:00" end_ts="2018-07-02 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="1497785738052841472">
+        <detail start_ts="2018-07-02 00:00:00+00:00" end_ts="2018-07-02 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="-7211756162116810254">
+        <detail start_ts="2018-07-02 00:00:00+00:00" end_ts="2018-07-02 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-2071302339964525269">
+        <detail start_ts="2018-07-02 00:00:00+00:00" end_ts="2018-07-02 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="536911641152460434">
+        <detail start_ts="2018-07-02 00:00:00+00:00" end_ts="2018-07-02 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-5948593370756791746">
+        <detail start_ts="2018-07-02 00:00:00+00:00" end_ts="2018-07-02 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="978041377569984910">
+        <detail start_ts="2018-07-02 06:00:00+00:00" end_ts="2018-07-02 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="-2303253837626456242">
+        <detail start_ts="2018-07-02 06:10:00+00:00" end_ts="2018-07-02 21:10:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="3274052186836986076">
+        <detail start_ts="2018-07-02 06:20:00+00:00" end_ts="2018-07-02 21:20:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="8853485365172153665">
+        <detail start_ts="2018-07-02 06:30:00+00:00" end_ts="2018-07-02 21:30:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-4789123795842494852">
+        <detail start_ts="2018-07-02 06:40:00+00:00" end_ts="2018-07-02 21:40:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="708446824404521456">
+        <detail start_ts="2018-07-02 06:50:00+00:00" end_ts="2018-07-02 21:50:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUN2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="3945589051215663292">
+        <detail start_ts="2018-07-02 06:00:00+00:00" end_ts="2018-07-02 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUN2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="6252431322517830140">
+        <detail start_ts="2018-07-02 06:10:00+00:00" end_ts="2018-07-02 21:10:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUN2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="-2325324398133108626">
+        <detail start_ts="2018-07-02 06:20:00+00:00" end_ts="2018-07-02 21:20:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUN2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="6923067628084822575">
+        <detail start_ts="2018-07-02 06:30:00+00:00" end_ts="2018-07-02 21:30:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUN2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-2269901255172990002">
+        <detail start_ts="2018-07-02 06:40:00+00:00" end_ts="2018-07-02 21:40:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="JUN2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="5383169475911369538">
+        <detail start_ts="2018-07-02 06:50:00+00:00" end_ts="2018-07-02 21:50:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="MAR2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="-3504988143758684605">
+        <detail start_ts="2018-07-02 06:00:00+00:00" end_ts="2018-07-02 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="MAR2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="-7847744755448822781">
+        <detail start_ts="2018-07-02 06:10:00+00:00" end_ts="2018-07-02 21:10:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="MAR2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="542814662431972853">
+        <detail start_ts="2018-07-02 06:20:00+00:00" end_ts="2018-07-02 21:20:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="MAR2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="5813323238237324840">
+        <detail start_ts="2018-07-02 06:30:00+00:00" end_ts="2018-07-02 21:30:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="MAR2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-5259536417439890539">
+        <detail start_ts="2018-07-02 06:40:00+00:00" end_ts="2018-07-02 21:40:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="MAR2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="3060005174404073225">
+        <detail start_ts="2018-07-02 06:50:00+00:00" end_ts="2018-07-02 21:50:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="MAY2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="681442426272571202">
+        <detail start_ts="2018-07-02 06:00:00+00:00" end_ts="2018-07-02 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="MAY2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="6289112681142903170">
+        <detail start_ts="2018-07-02 06:10:00+00:00" end_ts="2018-07-02 21:10:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="MAY2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="-5903071035116056688">
+        <detail start_ts="2018-07-02 06:20:00+00:00" end_ts="2018-07-02 21:20:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="MAY2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-3221888212293342195">
+        <detail start_ts="2018-07-02 06:30:00+00:00" end_ts="2018-07-02 21:30:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="MAY2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-7138922356218976208">
+        <detail start_ts="2018-07-02 06:40:00+00:00" end_ts="2018-07-02 21:40:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="MAY2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="8639478015777408188">
+        <detail start_ts="2018-07-02 06:50:00+00:00" end_ts="2018-07-02 21:50:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="NOV2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="6943542221010988329">
+        <detail start_ts="2018-07-02 06:00:00+00:00" end_ts="2018-07-02 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="NOV2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="-7921773058546452631">
+        <detail start_ts="2018-07-02 06:10:00+00:00" end_ts="2018-07-02 21:10:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="NOV2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="2162585187351305591">
+        <detail start_ts="2018-07-02 06:20:00+00:00" end_ts="2018-07-02 21:20:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="NOV2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="2953719813957867046">
+        <detail start_ts="2018-07-02 06:30:00+00:00" end_ts="2018-07-02 21:30:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="NOV2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="7099266997937503767">
+        <detail start_ts="2018-07-02 06:40:00+00:00" end_ts="2018-07-02 21:40:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="NOV2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-5749308072275977565">
+        <detail start_ts="2018-07-02 06:50:00+00:00" end_ts="2018-07-02 21:50:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="OCT2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="6423720864062688914">
+        <detail start_ts="2018-07-02 06:00:00+00:00" end_ts="2018-07-02 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="OCT2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="-2818877539242564270">
+        <detail start_ts="2018-07-02 06:10:00+00:00" end_ts="2018-07-02 21:10:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="OCT2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="-6723396725704655136">
+        <detail start_ts="2018-07-02 06:20:00+00:00" end_ts="2018-07-02 21:20:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="OCT2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-7479679056778926019">
+        <detail start_ts="2018-07-02 06:30:00+00:00" end_ts="2018-07-02 21:30:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="OCT2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="380444082650310976">
+        <detail start_ts="2018-07-02 06:40:00+00:00" end_ts="2018-07-02 21:40:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="OCT2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-5463465746822596372">
+        <detail start_ts="2018-07-02 06:50:00+00:00" end_ts="2018-07-02 21:50:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="SEP2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="5836791793005631873">
+        <detail start_ts="2018-07-02 06:00:00+00:00" end_ts="2018-07-02 22:00:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="SEP2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="4018096992848845761">
+        <detail start_ts="2018-07-02 06:10:00+00:00" end_ts="2018-07-02 21:10:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="SEP2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="5534615122249599439">
+        <detail start_ts="2018-07-02 06:20:00+00:00" end_ts="2018-07-02 21:20:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="SEP2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="2708696744017326542">
+        <detail start_ts="2018-07-02 06:30:00+00:00" end_ts="2018-07-02 21:30:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="SEP2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="5499383437177344047">
+        <detail start_ts="2018-07-02 06:40:00+00:00" end_ts="2018-07-02 21:40:00+00:00"/>
+      </bar>
+      <bar PRODUCT="CL" TYPE="F" EXPIRY="SEP2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="7068112044910893243">
+        <detail start_ts="2018-07-02 06:50:00+00:00" end_ts="2018-07-02 21:50:00+00:00"/>
+      </bar>
+    </gaps>
+  </record>
+</report>

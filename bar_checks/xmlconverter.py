@@ -48,12 +48,27 @@ def rcsv_addto_etree(value, root):
     return root
 
 
-def to_xslstyle_xml(xml, xsl, stream):
-    header = '<?xml version="1.0" encoding="utf-8"?>\n'
-    xsl_ref = '<?xml-stylesheet type="text/xsl" href="{}"?>\n'.format(xsl)
-    stream.write(header)
-    stream.write(xsl_ref)
-    text = etree.tostring(xml, pretty_print=True).decode('ascii')
-    stream.write(text)
+def to_xsl_instructed_xml(xml, xsl, outpath, encoding='utf-8'):
+    header = u'<?xml version="1.0" encoding="{}"?>\n'.format(encoding)
+    xsl_pi = u'<?xml-stylesheet type="text/xsl" href="{}"?>\n'.format(xsl)
+
+    with open(outpath, 'w+', encoding=encoding) as stream:
+        stream.write(header)
+        stream.write(xsl_pi)
+        text = etree.tostring(xml, pretty_print=True).decode(encoding)
+        stream.write(text)
+    return xml
     # etree.ElementTree(xml).write(stream)
 
+
+def to_styled_xml(xml, xsl, outpath=None, encoding='utf-8'):
+    dom = xml
+    if not etree.iselement(dom):
+        dom = etree.parse(xml)
+    transform = etree.XSLT(etree.parse(xsl))
+    newdom = transform(dom)
+    if outpath is not None:
+        with open(outpath, mode='w+') as stream:
+            text = etree.tostring(newdom, pretty_print=True).decode(encoding)
+            stream.write(text)
+    return newdom
