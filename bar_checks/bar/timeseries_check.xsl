@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 	<xsl:output method="html" indent="yes"/>
-	<xsl:key use="@id" match="bar" name ="bartype"/>
+	<xsl:key use="concat(generate-id(ancestor::record), '|', @id)" match="bar" name ="bartype"/>
 	<xsl:template match="report">
 		<html>
 			<head>
@@ -73,19 +73,14 @@
 	</xsl:template>
 	
 	<xsl:template match="record" mode="bars">
-		<xsl:for-each select=".//bar[generate-id()=generate-id(key('bartype', @id)[1])]">
+		<xsl:for-each select=".//bar[generate-id()=generate-id(key('bartype', concat(generate-id(current()), '|', @id))[1])]">
 			<xsl:apply-templates select="." mode="bar" />
 		</xsl:for-each>
-		<!--<xsl:for-each-group select=".//bar" group-by="@id">
-			<xsl:apply-templates select="." mode="bar">
-				<xsl:with-param name="bargroup" select="current-group()" />
-			</xsl:apply-templates>
-		</xsl:for-each-group>-->
 	</xsl:template>
 	
 	<xsl:template match="bar" mode="bar">
 		<xsl:variable name="barid" select="@id"/>
-		<xsl:variable name="bargroup" select="key('bartype', @id)" />
+		<xsl:variable name="bargroup" select="key('bartype', concat(generate-id(ancestor::record), '|', @id))" />
 		<tr>
 			<xsl:for-each select="@*[name()!='id']">
 				<th headers="Bar {local-name(.)}" class="lv3" rowspan="{count($bargroup)}" scope="rowgroup">
@@ -94,7 +89,6 @@
 			</xsl:for-each>
 			<xsl:apply-templates select="." mode="error" />
 		</tr>
-		<!--<xsl:for-each select="$bargroup[position() > 1]">-->
 		<xsl:for-each select="$bargroup[position() > 1]">
 			<tr>
 				<xsl:apply-templates select="." mode="error" />

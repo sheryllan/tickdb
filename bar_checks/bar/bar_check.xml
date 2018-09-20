@@ -1,28 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <?xml-stylesheet type="text/xsl" href="bar_check.xsl"?>
-<report start_date="2018-06-01" end_date="2018-09-18">
-  <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="-6930363706052100071">
+<report start_date="2018-06-01" end_date="2018-09-20">
+  <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="8647943526124442512">
     <record time="2018-06-07 17:00:00+00:00" high_low_check="hask &lt; high" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
   </bar>
-  <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="-6986520479127594764">
+  <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="-7720306066371738142">
     <record time="2018-06-07 17:10:00+00:00" high_low_check="hask &lt; high" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
   </bar>
-  <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="2955780170417615120">
+  <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="-1847715065046051940">
     <record time="2018-06-07 00:20:00+00:00" high_low_check="hask &lt; high" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-07 17:20:00+00:00" high_low_check="hask &lt; high" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
   </bar>
-  <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="3921586597307396785">
+  <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="7226325339042908067">
     <record time="2018-06-07 00:30:00+00:00" high_low_check="hask &lt; high" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-07 17:30:00+00:00" high_low_check="hask &lt; high" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
   </bar>
-  <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-4702514805458751228">
+  <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="4342554723378820344">
     <record time="2018-06-07 00:40:00+00:00" high_low_check="hask &lt; high" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-07 16:40:00+00:00" high_low_check="hask &lt; high" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
   </bar>
-  <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-3414809938622262638">
+  <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-5645851267520308421">
     <record time="2018-06-07 16:50:00+00:00" high_low_check="hask &lt; high" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
   </bar>
-  <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="5035466419003787298">
+  <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="1036329564784570759">
     <record time="2018-07-02 00:00:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-07-02 01:00:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-07-02 02:00:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
@@ -30,7 +30,7 @@
     <record time="2018-07-02 04:00:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-07-02 05:00:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
   </bar>
-  <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="829527637040967307">
+  <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="-8097246602119639143">
     <record time="2018-07-02 00:10:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-07-02 01:10:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-07-02 02:10:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
@@ -38,7 +38,7 @@
     <record time="2018-07-02 04:10:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-07-02 05:10:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
   </bar>
-  <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="-7940909342105050425">
+  <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="-2967235710033840973">
     <record time="2018-07-02 00:20:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-07-02 01:20:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-07-02 02:20:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
@@ -46,7 +46,7 @@
     <record time="2018-07-02 04:20:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-07-02 05:20:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
   </bar>
-  <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="4054572495209875962">
+  <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="2302862216498704556">
     <record time="2018-07-02 00:30:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-07-02 01:30:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2&#10;cask2 &lt;= cask1" bid_ask_check="cask2 &lt;= cbid2&#10;cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-07-02 02:30:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
@@ -54,7 +54,7 @@
     <record time="2018-07-02 04:30:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-07-02 05:30:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
   </bar>
-  <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="330222626350967931">
+  <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-5431195853968697841">
     <record time="2018-07-02 00:40:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-07-02 01:40:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-07-02 02:40:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
@@ -62,7 +62,7 @@
     <record time="2018-07-02 04:40:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2&#10;cask2 &lt;= cask1" bid_ask_check="cask2 &lt;= cbid2&#10;cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-07-02 05:40:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
   </bar>
-  <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="576415571454057897">
+  <bar PRODUCT="CL" TYPE="F" EXPIRY="AUG2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="862686297744081796">
     <record time="2018-07-02 00:50:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-07-02 01:50:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-07-02 02:50:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
@@ -70,7 +70,7 @@
     <record time="2018-07-02 04:50:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-07-02 05:50:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
   </bar>
-  <bar PRODUCT="CL" TYPE="F" EXPIRY="DEC2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="6370639201088542692">
+  <bar PRODUCT="CL" TYPE="F" EXPIRY="DEC2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="310560310147628023">
     <record time="2018-06-01 13:00:00+00:00" high_low_check="low &lt; lbid" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-12 12:00:00+00:00" high_low_check="low &lt; lbid" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-13 15:00:00+00:00" high_low_check="hask &lt; high" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
@@ -78,35 +78,35 @@
     <record time="2018-06-18 21:00:00+00:00" high_low_check="low &lt; lbid" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-19 21:00:00+00:00" high_low_check="hask &lt; high" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
   </bar>
-  <bar PRODUCT="CL" TYPE="F" EXPIRY="DEC2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="-318849643077455031">
+  <bar PRODUCT="CL" TYPE="F" EXPIRY="DEC2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="-3047116153858144183">
     <record time="2018-06-01 13:10:00+00:00" high_low_check="low &lt; lbid" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-12 12:10:00+00:00" high_low_check="low &lt; lbid" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-13 15:10:00+00:00" high_low_check="hask &lt; high" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-14 11:10:00+00:00" high_low_check="low &lt; lbid" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
   </bar>
-  <bar PRODUCT="CL" TYPE="F" EXPIRY="DEC2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="-5880283012594727187">
+  <bar PRODUCT="CL" TYPE="F" EXPIRY="DEC2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="-8476108862734031869">
     <record time="2018-06-01 13:20:00+00:00" high_low_check="low &lt; lbid" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-13 15:20:00+00:00" high_low_check="hask &lt; high" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-14 11:20:00+00:00" high_low_check="low &lt; lbid" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-29 15:20:00+00:00" high_low_check="hask &lt; high" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
   </bar>
-  <bar PRODUCT="CL" TYPE="F" EXPIRY="DEC2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="7529218533787839756">
+  <bar PRODUCT="CL" TYPE="F" EXPIRY="DEC2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-1731723923536808388">
     <record time="2018-06-01 13:30:00+00:00" high_low_check="low &lt; lbid" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-13 15:30:00+00:00" high_low_check="hask &lt; high" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-14 11:30:00+00:00" high_low_check="low &lt; lbid" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-29 15:30:00+00:00" high_low_check="hask &lt; high" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
   </bar>
-  <bar PRODUCT="CL" TYPE="F" EXPIRY="DEC2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-7250197608286270151">
+  <bar PRODUCT="CL" TYPE="F" EXPIRY="DEC2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="4614535343756150111">
     <record time="2018-06-01 12:40:00+00:00" high_low_check="low &lt; lbid" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-13 14:40:00+00:00" high_low_check="hask &lt; high" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-14 11:40:00+00:00" high_low_check="low &lt; lbid" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
   </bar>
-  <bar PRODUCT="CL" TYPE="F" EXPIRY="DEC2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="8449599006848835371">
+  <bar PRODUCT="CL" TYPE="F" EXPIRY="DEC2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-7863161084962653484">
     <record time="2018-06-01 12:50:00+00:00" high_low_check="low &lt; lbid" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-13 14:50:00+00:00" high_low_check="hask &lt; high" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-14 10:50:00+00:00" high_low_check="low &lt; lbid" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
   </bar>
-  <bar PRODUCT="CL" TYPE="F" EXPIRY="FEB2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="-5937442588475194973">
+  <bar PRODUCT="CL" TYPE="F" EXPIRY="FEB2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="-7312328560175092803">
     <record time="2018-06-25 21:00:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-26 00:00:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-26 01:00:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
@@ -135,7 +135,7 @@
     <record time="2018-07-02 02:00:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-07-02 03:00:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
   </bar>
-  <bar PRODUCT="CL" TYPE="F" EXPIRY="FEB2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="-2146977045232181398">
+  <bar PRODUCT="CL" TYPE="F" EXPIRY="FEB2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="-2237832001735043669">
     <record time="2018-06-26 00:10:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-26 01:10:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-26 02:10:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
@@ -156,7 +156,7 @@
     <record time="2018-07-02 02:10:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-07-02 03:10:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
   </bar>
-  <bar PRODUCT="CL" TYPE="F" EXPIRY="FEB2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="4122449837153440510">
+  <bar PRODUCT="CL" TYPE="F" EXPIRY="FEB2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="-7443448561030041455">
     <record time="2018-06-26 00:20:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-26 01:20:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-26 02:20:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
@@ -177,7 +177,7 @@
     <record time="2018-07-02 02:20:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-07-02 03:20:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
   </bar>
-  <bar PRODUCT="CL" TYPE="F" EXPIRY="FEB2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="514918336499697659">
+  <bar PRODUCT="CL" TYPE="F" EXPIRY="FEB2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-2574974985728225078">
     <record time="2018-06-26 00:30:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-26 01:30:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-26 02:30:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
@@ -198,7 +198,7 @@
     <record time="2018-07-02 01:30:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-07-02 02:30:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
   </bar>
-  <bar PRODUCT="CL" TYPE="F" EXPIRY="FEB2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="4375526204864238970">
+  <bar PRODUCT="CL" TYPE="F" EXPIRY="FEB2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="8581977803269852981">
     <record time="2018-06-26 00:40:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-26 01:40:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-26 02:40:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
@@ -216,7 +216,7 @@
     <record time="2018-07-02 01:40:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-07-02 02:40:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
   </bar>
-  <bar PRODUCT="CL" TYPE="F" EXPIRY="FEB2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="3113537590219097564">
+  <bar PRODUCT="CL" TYPE="F" EXPIRY="FEB2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="3108499742394019570">
     <record time="2018-06-26 00:50:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-26 01:50:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-26 02:50:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
@@ -235,16 +235,16 @@
     <record time="2018-07-02 01:50:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-07-02 02:50:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
   </bar>
-  <bar PRODUCT="CL" TYPE="F" EXPIRY="JAN2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="2843750857685940707">
+  <bar PRODUCT="CL" TYPE="F" EXPIRY="JAN2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="3139903326068800572">
     <record time="2018-06-18 03:00:00+00:00" high_low_check="hask &lt; high" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
   </bar>
-  <bar PRODUCT="CL" TYPE="F" EXPIRY="JAN2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-8793567253864133732">
+  <bar PRODUCT="CL" TYPE="F" EXPIRY="JAN2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="8579863873634500815">
     <record time="2018-06-18 02:50:00+00:00" high_low_check="hask &lt; high" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
   </bar>
-  <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="4821931326235260957">
+  <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="-6674473867412426960">
     <record time="2018-06-19 18:20:00+00:00" high_low_check="hask &lt; high" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
   </bar>
-  <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="3153531354434104152">
+  <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="1195095499239927000">
     <record time="2018-06-04 00:00:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-04 01:00:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-04 02:00:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
@@ -498,7 +498,7 @@
     <record time="2018-06-21 21:00:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2&#10;cask2 &lt;= cask1&#10;cbid2 &lt;= cbid3" bid_ask_check="cask2 &lt;= cbid2&#10;cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-22 21:00:00+00:00" high_low_check="" pclv_order_check="cbid2 &lt;= cbid3" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
   </bar>
-  <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="301971646037945781">
+  <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="-6593278383512646934">
     <record time="2018-06-04 00:10:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-04 01:10:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-04 02:10:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
@@ -736,7 +736,7 @@
     <record time="2018-06-19 15:10:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-19 18:10:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
   </bar>
-  <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="-6918651846892947327">
+  <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="-8158238794911624188">
     <record time="2018-06-04 00:20:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-04 01:20:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2&#10;cask2 &lt;= cask1" bid_ask_check="cask2 &lt;= cbid2&#10;cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-04 02:20:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
@@ -972,7 +972,7 @@
     <record time="2018-06-19 15:20:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-19 17:20:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
   </bar>
-  <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="7561379163811015488">
+  <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-8102167673238899765">
     <record time="2018-06-04 00:30:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-04 01:30:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-04 02:30:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
@@ -1210,7 +1210,7 @@
     <record time="2018-06-19 20:30:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2&#10;cask2 &lt;= cask1&#10;cbid2 &lt;= cbid3" bid_ask_check="cask2 &lt;= cbid2&#10;cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-20 14:30:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2&#10;cask2 &lt;= cask1&#10;cbid2 &lt;= cbid3" bid_ask_check="cask2 &lt;= cbid2&#10;cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
   </bar>
-  <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-2819970226059684923">
+  <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="5125420765516224240">
     <record time="2018-06-04 00:40:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-04 01:40:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-04 02:40:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2&#10;cask2 &lt;= cask1" bid_ask_check="cask2 &lt;= cbid2&#10;cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
@@ -1448,7 +1448,7 @@
     <record time="2018-06-19 15:40:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-19 20:40:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
   </bar>
-  <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-3163855510738150561">
+  <bar PRODUCT="CL" TYPE="F" EXPIRY="JUL2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-1853903095532025805">
     <record time="2018-06-04 00:50:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-04 01:50:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-04 02:50:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
@@ -1690,52 +1690,52 @@
     <record time="2018-06-19 20:50:00+00:00" high_low_check="" pclv_order_check="cask3 &lt;= cask2" bid_ask_check="cask3 &lt;= cbid3" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-22 20:50:00+00:00" high_low_check="" pclv_order_check="cbid2 &lt;= cbid3" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
   </bar>
-  <bar PRODUCT="CL" TYPE="F" EXPIRY="JUN2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="-4481956121682305425">
+  <bar PRODUCT="CL" TYPE="F" EXPIRY="JUN2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="3157789990966355675">
     <record time="2018-06-18 03:00:00+00:00" high_low_check="hask &lt; high" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
   </bar>
-  <bar PRODUCT="CL" TYPE="F" EXPIRY="JUN2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-874832593787740824">
+  <bar PRODUCT="CL" TYPE="F" EXPIRY="JUN2019" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-1253281270359681488">
     <record time="2018-06-18 02:50:00+00:00" high_low_check="hask &lt; high" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
   </bar>
-  <bar PRODUCT="CL" TYPE="F" EXPIRY="NOV2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="2178702294211772763">
+  <bar PRODUCT="CL" TYPE="F" EXPIRY="NOV2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="-8886222773631349519">
     <record time="2018-06-07 21:00:00+00:00" high_low_check="low &lt; lbid" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
   </bar>
-  <bar PRODUCT="CL" TYPE="F" EXPIRY="OCT2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-6596780817331630903">
+  <bar PRODUCT="CL" TYPE="F" EXPIRY="OCT2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-5905542074567718242">
     <record time="2018-06-08 18:30:00+00:00" high_low_check="low &lt; lbid" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
   </bar>
-  <bar PRODUCT="CL" TYPE="F" EXPIRY="OCT2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="2027594859239379324">
+  <bar PRODUCT="CL" TYPE="F" EXPIRY="OCT2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="9125356383325531265">
     <record time="2018-06-08 18:40:00+00:00" high_low_check="low &lt; lbid" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-15 15:40:00+00:00" high_low_check="hask &lt; high" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
   </bar>
-  <bar PRODUCT="CL" TYPE="F" EXPIRY="OCT2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-495244485997700838">
+  <bar PRODUCT="CL" TYPE="F" EXPIRY="OCT2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="1649795535661929846">
     <record time="2018-06-29 17:50:00+00:00" high_low_check="hask &lt; high" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
   </bar>
-  <bar PRODUCT="CL" TYPE="F" EXPIRY="SEP2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="-7816303121082936582">
+  <bar PRODUCT="CL" TYPE="F" EXPIRY="SEP2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="0" id="6976682314975133322">
     <record time="2018-06-06 21:00:00+00:00" high_low_check="low &lt; lbid" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-18 21:00:00+00:00" high_low_check="hask &lt; high" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-22 18:00:00+00:00" high_low_check="hask &lt; high" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-28 04:00:00+00:00" high_low_check="low &lt; lbid" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
   </bar>
-  <bar PRODUCT="CL" TYPE="F" EXPIRY="SEP2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="402285995587277107">
+  <bar PRODUCT="CL" TYPE="F" EXPIRY="SEP2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="10" id="-4024665083162643912">
     <record time="2018-06-21 14:10:00+00:00" high_low_check="hask &lt; high" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-22 18:10:00+00:00" high_low_check="hask &lt; high" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-28 04:10:00+00:00" high_low_check="low &lt; lbid" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
   </bar>
-  <bar PRODUCT="CL" TYPE="F" EXPIRY="SEP2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="3161462165361654943">
+  <bar PRODUCT="CL" TYPE="F" EXPIRY="SEP2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="20" id="-1878911382694697546">
     <record time="2018-06-21 14:20:00+00:00" high_low_check="hask &lt; high" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-22 18:20:00+00:00" high_low_check="hask &lt; high" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-28 04:20:00+00:00" high_low_check="low &lt; lbid" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
   </bar>
-  <bar PRODUCT="CL" TYPE="F" EXPIRY="SEP2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="-3863117670170697950">
+  <bar PRODUCT="CL" TYPE="F" EXPIRY="SEP2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="30" id="2922827732335170429">
     <record time="2018-06-11 08:30:00+00:00" high_low_check="hask &lt; high" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-28 04:30:00+00:00" high_low_check="low &lt; lbid" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-29 12:30:00+00:00" high_low_check="low &lt; lbid" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
   </bar>
-  <bar PRODUCT="CL" TYPE="F" EXPIRY="SEP2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-5295506081106729437">
+  <bar PRODUCT="CL" TYPE="F" EXPIRY="SEP2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="40" id="-4153818445808539486">
     <record time="2018-06-11 08:40:00+00:00" high_low_check="hask &lt; high" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-12 08:40:00+00:00" high_low_check="low &lt; lbid" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-28 04:40:00+00:00" high_low_check="low &lt; lbid" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
   </bar>
-  <bar PRODUCT="CL" TYPE="F" EXPIRY="SEP2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-2376580866198904511">
+  <bar PRODUCT="CL" TYPE="F" EXPIRY="SEP2018" CLOCK_TYPE="M" WIDTH="60" OFFSET="50" id="-665606970292916507">
     <record time="2018-06-12 08:50:00+00:00" high_low_check="low &lt; lbid" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
     <record time="2018-06-28 04:50:00+00:00" high_low_check="low &lt; lbid" pclv_order_check="" bid_ask_check="" net_volume_check="" vol_on_lv1_check="" vol_on_lv2_check="" vol_on_lv3_check=""/>
   </bar>

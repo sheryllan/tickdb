@@ -62,13 +62,13 @@ def to_xsl_instructed_xml(xml, xsl, outpath, encoding='utf-8'):
 
 
 def to_styled_xml(xml, xsl, outpath=None, encoding='utf-8'):
-    dom = xml
-    if not etree.iselement(dom):
-        dom = etree.parse(xml)
+    doc = xml
+    if not etree.iselement(doc):
+        doc = etree.parse(xml)
     transform = etree.XSLT(etree.parse(xsl))
-    newdom = transform(dom)
+    newdoc = transform(doc)
     if outpath is not None:
         with open(outpath, mode='w+') as stream:
-            text = etree.tostring(newdom, pretty_print=True).decode(encoding)
+            text = etree.tostring(newdoc, pretty_print=True).decode(encoding)
             stream.write(text)
-    return newdom
+    return newdoc

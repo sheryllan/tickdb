@@ -384,11 +384,11 @@ class CheckTask(object):
             raise ValueError('No data selected for {}'.format({k: v for k, v in msg.items()}))
 
         data = data.between_time(*self.task_window, *closed_convert(self.task_closed))
-        # self.bar_checks_xml(data, self.task_barxsl, self.task_barxml)
-        # self.timeseries_checks_xmls(data, self.task_tsxsl, self.task_tsxml)
+        barxml = self.bar_checks_xml(data, self.task_barxsl, self.task_barxml)
+        tsxml = self.timeseries_checks_xmls(data, self.task_tsxsl, self.task_tsxml)
 
-        to_styled_xml(self.task_barxml, self.task_barxsl, self.task_barhtml)
-        # to_styled_xml(self.task_tsxml, self.task_tsxsl, self.task_tshtml)
+        to_styled_xml(barxml, self.task_barxsl, self.task_barhtml)
+        to_styled_xml(tsxml, self.task_tsxsl, self.task_tshtml)
 
 
 if __name__ == '__main__':
