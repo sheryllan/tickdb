@@ -115,7 +115,6 @@ class BScheduler(object):
                 yield (start, end)
 
 
-
 NewYear = Holiday('New Years Day', month=1, day=1, observance=nearest_workday)
 Xmas = Holiday('Christmas', month=12, day=25, observance=nearest_workday)
 
@@ -127,12 +126,7 @@ class GeneralCalendar(AbstractHolidayCalendar):
     ]
 
 
-class CMESchedule(object):
-    calendar = GeneralCalendar()
-    open_time = '18:00'
-    close_time = '17:00'
-    tzinfo = pytz.timezone('America/Chicago')
-    custom_schedule = {offsets.Week(weekday=6): ('17:00', '16:00')}
+
 
 
 

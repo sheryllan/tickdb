@@ -4,11 +4,18 @@ from collections import namedtuple
 
 from influxdb import DataFrameClient
 
+from bar.taskconfig import *
 from bar.quantdb1_config import *
 from bar.timeseries_check import *
-from holidaycalendar import *
+from schedulefactory import *
 from influxcommon import *
 from xmlconverter import *
+
+import premailer
+from getpass import getpass
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 
 Fields = EnrichedOHLCVN.Fields
@@ -216,19 +223,24 @@ class CheckTask(object):
     BAR = 'bar'  # tag
     WINDOW_FMT = '%H:%M'
 
-    BAR_CHECK = 'bar_check'
-    TIMESERIES_CHECK = 'timeseries_check'
-    WINDOW = ('00:00', '21:00')
-
-    def __init__(self, settings):
+    def __init__(self):
         self.client = DataFrameClient(host=HOSTNAME, port=PORT, database=DBNAME)
-        self.scheduler = BScheduler(settings.calendar, (settings.open_time, settings.close_time),
-                                    settings.tzinfo, settings.custom_schedule)
-        self.schecker = SeriesChecker(self.scheduler)
+        self._schedule = None
+        self.schecker = None
         self.aparser = argparse.ArgumentParser()
-        self.aparser.add_argument('--window', nargs='*', type=str, default=os.getenv('WINDOW', self.WINDOW),
+
+        self.aparser.add_argument('--product', nargs='*', type=str,
+                                  help='the product(s) for checking, all if not set')
+        self.aparser.add_argument('--ptype', nargs='*', type=str,
+                                  help='the product type(s) for checking, all if not set')
+        self.aparser.add_argument('--expiry', nargs='*', type=str,
+                                  help='the expiry(ies) for checking, all if not set')
+
+        self.aparser.add_argument('--schedule', nargs='*', type=str, default=SCHEDULE,
+                                  help='the schedule name(or and the refdata file) for the timeseries check')
+        self.aparser.add_argument('--window', nargs='*', type=str, default=WINDOW,
                                   help='the check timeslot window, please define start/end time in mm:ss')
-        self.aparser.add_argument('--closed', nargs='?', type=str, default=os.getenv('CLOSED', None),
+        self.aparser.add_argument('--closed', nargs='?', type=str,
                                   help="""defines how the window will be closed: "left" or "right", 
                                   defaults to None(both sides)""")
         self.aparser.add_argument('--dfrom', nargs='*', type=int, default=(last_n_days().timetuple()[0:3]),
@@ -237,25 +249,38 @@ class CheckTask(object):
                                   help='the check end date in format (yyyy, mm, dd), defaults to today')
 
         self.aparser.add_argument('--barxml', nargs='?', type=str,
-                                  default=os.getenv('BARXML', '{}.xml'.format(self.BAR_CHECK)),
                                   help='the xml output path of bar check')
         self.aparser.add_argument('--barxsl', nargs='?', type=str,
-                                  default=os.getenv('BARXSL', '{}.xsl'.format(self.BAR_CHECK)),
+                                  default=BARXSL,
                                   help='the path of xsl file for styling the bar check output xml')
         self.aparser.add_argument('--tsxml', nargs='?', type=str,
-                                  default=os.getenv('TSXML', '{}.xml'.format(self.TIMESERIES_CHECK)),
                                   help='the xml output path of timeseries check')
         self.aparser.add_argument('--tsxsl', nargs='?', type=str,
-                                  default=os.getenv('TSXSL', '{}.xsl'.format(self.TIMESERIES_CHECK)),
+                                  default=TSXSL,
                                   help='the path of xsl file for styling the timeseries check output xml')
         self.aparser.add_argument('--barhtml', nargs='?', type=str,
-                                  default=os.getenv('BARHTML', '{}.html'.format(self.BAR_CHECK)),
                                   help='the html output path of bar check after xsl transformation')
         self.aparser.add_argument('--tshtml', nargs='?', type=str,
-                                  default=os.getenv('TSHTML', '{}.html'.format(self.TIMESERIES_CHECK)),
                                   help='the html output path of timeseries check after xsl transformation')
 
-        self.task_args = self.aparser.parse_args()
+        self.aparser.add_argument('--sender', nargs='?', type=str, default=SENDER,
+                                  help='the email address of sender')
+        self.aparser.add_argument('--recipients', nargs='*', type=str, default=RECIPIENTS,
+                                  help='the email address of recipients')
+
+        self.set_taskargs()
+
+    @property
+    def task_product(self):
+        return self.task_args.product
+
+    @property
+    def task_ptype(self):
+        return self.task_args.ptype
+
+    @property
+    def task_expiry(self):
+        return self.task_args.expiry
 
     @property
     def task_window(self):
@@ -324,6 +349,14 @@ class CheckTask(object):
     def task_tshtml(self):
         return self.task_args.tshtml
 
+    @property
+    def task_sender(self):
+        return self.task_args.sender
+
+    @property
+    def task_recipients(self):
+        return self.task_args.recipients
+
     def get_data(self, time_from, product=None, ptype=None, time_to=None, expiry=None):
         fields = {Tags.PRODUCT: product, Tags.TYPE: ptype, Tags.EXPIRY: expiry}
         terms = format_arith_terms(fields)
@@ -370,16 +403,28 @@ class CheckTask(object):
 
         return xml
 
+    def set_schecker(self):
+        if self._schedule != self.task_args.schedule:
+            self._schedule = self.task_args.schedule
+            settings = get_schedule(self._schedule) \
+                if isinstance(self._schedule, str) else get_schedule(*self._schedule)
+
+            scheduler = BScheduler(settings.calendar, (settings.open_time, settings.close_time),
+                                   settings.tzinfo, settings.custom_schedule)
+            self.schecker = SeriesChecker(scheduler)
+
     def set_taskargs(self, **kwargs):
         self.task_args = self.aparser.parse_args()
         for kw in kwargs:
             self.task_args.__dict__[kw] = kwargs[kw]
 
-    def run_checks(self, product=None, ptype=None, expiry=None, **kwargs):
+        self.set_schecker()
+
+    def run_checks(self, **kwargs):
         self.set_taskargs(**kwargs)
-        data = self.get_data(self.task_dfrom, product, ptype, self.task_dto, expiry)
+        data = self.get_data(self.task_dfrom, self.task_product, self.task_ptype, self.task_dto, self.task_expiry)
         if data is None:
-            msg = {'product': product, 'ptype': ptype, 'expiry': expiry,
+            msg = {'product': self.task_product, 'ptype': self.task_ptype, 'expiry': self.task_expiry,
                    'dfrom': self.task_dfrom, 'dto': self.task_dfrom}
             raise ValueError('No data selected for {}'.format({k: v for k, v in msg.items()}))
 
@@ -390,19 +435,31 @@ class CheckTask(object):
         to_styled_xml(barxml, self.task_barxsl, self.task_barhtml)
         to_styled_xml(tsxml, self.task_tsxsl, self.task_tshtml)
 
+    def email(self, files, subject):
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = subject
+        msg['From'] = self.task_sender
+        recipients = ', '.join(self.task_recipients)
+        msg['To'] = recipients
+
+        smtp = smtplib.SMTP_SSL('smtp.gmail.com')
+        password = getpass('Enter the password for: '.format(self.task_sender))
+        smtp.login(self.task_sender, password)
+
+        for f in files:
+            with open(f) as fh:
+                html = fh.read()
+
+            inline = premailer.transform(html)
+            report = MIMEText(inline, 'html')
+            msg.attach(report)
+            smtp.sendmail(self.task_sender, recipients, msg.as_string())
+
+        smtp.quit()
+
 
 if __name__ == '__main__':
-    c = CheckTask(CMESchedule)
-    # to_styled_xml(c.task_tsxml, c.task_tsxsl, c.task_tshtml)
-    # to_styled_xml(c.task_barxml, c.task_barxsl, c.task_barhtml)
-    c.run_checks('CL', 'F', dfrom=dt.date(2018, 6, 1))
+    task = CheckTask()
+    task.run_checks(product='CL', ptype='F', dfrom=dt.date(2018, 6, 1), schedule='CMESchedule')
+    task.email([task.task_barhtml, task.task_tshtml], BAR_TITILE)
     # c.run_checks('CL', 'F', closed='right', dfrom=dt.date(2018, 6, 1), dto=dt.date(2018, 6, 23))
-
-# self.aparser = argparse.ArgumentParser()
-# self.aparser.add_argument('--dfrom', nargs=3, type=int, help='type from date in year(yyyy), month, and day')
-# self.aparser.add_argument('--dto', nargs='*', type=int, help='type to date in year(yyyy), month, and day')
-# self.aparser.add_argument('--product', nargs='?', type=str)
-# self.aparser.add_argument('--type', nargs='?', type=str)
-# self.aparser.add_argument('--expiry', nargs='?', type=str)
-# self.task_args = self.aparser.parse_args()
-# self.data = self.get_data()

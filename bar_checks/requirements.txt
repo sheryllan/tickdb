@@ -1,11 +1,14 @@
-certifi==2018.8.13
+certifi==2018.8.24
 chardet==3.0.4
+cssselect==1.0.3
+cssutils==1.0.2
 Cython==0.28.5
 idna==2.7
 influxdb==5.2.0
-lxml==4.2.4
-numpy==1.15.0
+lxml==4.2.5
+numpy==1.15.2
 pandas==0.23.4
+premailer==3.2.0
 py4j==0.10.7
 python-dateutil==2.7.3
 pytz==2018.5

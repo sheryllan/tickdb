@@ -7,9 +7,15 @@ def format_logic_join(terms, relation='AND'):
     return separator.join(filter(None, terms))
 
 
+def format_where_value(value):
+    if nontypes_iterable(value):
+        return '/{}/'.format('|'.join(value))
+    return "'{}'".format(value)
+
+
 def format_arith_terms(fields, operator='=', relation='AND'):
     return format_logic_join(
-        ('"{}" {} \'{}\''.format(k, operator, v) for k, v in fields.items() if v is not None),
+        ('"{}" {} {}'.format(k, operator, format_where_value(v)) for k, v in fields.items() if v is not None),
         relation)
 
 

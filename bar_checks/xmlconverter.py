@@ -58,7 +58,6 @@ def to_xsl_instructed_xml(xml, xsl, outpath, encoding='utf-8'):
         text = etree.tostring(xml, pretty_print=True).decode(encoding)
         stream.write(text)
     return xml
-    # etree.ElementTree(xml).write(stream)
 
 
 def to_styled_xml(xml, xsl, outpath=None, encoding='utf-8'):

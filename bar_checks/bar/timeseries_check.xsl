@@ -6,7 +6,6 @@
 		<html>
 			<head>
 				<style media="screen" type="text/css">
-					.flex-container { display: inline-flex; flex-direction: column; align-items: center; }
 					table { 
 					text-align:center; border-collapse: collapse; margin-bottom: 25px;
 					border-left-style: hidden; border-right-style: hidden;
@@ -29,10 +28,7 @@
 			</head>
 			
 			<body>
-				<div class="flex-container">
-					<h3>Timeseries Integrity Check Report</h3>
-					<xsl:apply-templates select="record" mode="record" />
-				</div>
+				<xsl:apply-templates select="record" mode="record" />
 			</body>
 			
 		</html>

@@ -5,9 +5,8 @@
 		<html>
 			<head>
 				<style media="screen" type="text/css">
-					.flex-container { display: inline-flex; flex-direction: column; align-items: center; }
 					table { border-collapse:collapse; text-align:center; font-family:"Lucida Grande","Lucida Sans Unicode","Bitstream Vera Sans","Trebuchet MS",Verdana,sans-serif}
-					table th, td { border:1px padding:3px 7px 2px; font-size: small; border: 2px solid #f2f2f2; }
+					table th, td { padding:3px 7px 2px; font-size: small; border: 2px solid #f2f2f2; }
 					table caption { text-align: left; }
 					
 					th.lv1 { color: #000000; background-color: #888888; text-align:center; }
@@ -23,24 +22,21 @@
 			</head>
 			
 			<body>
-				<div class="flex-container">
-					<h3>Bar Integrity Check Report</h3>
-					<table> 
-						<caption>
-							Time: <xsl:value-of select="@start_date" /> to <xsl:value-of select="@end_date"/>
-						</caption>
-						<thead>
-							<tr>
-								<xsl:apply-templates select="bar[1]/record[1]" mode="header" />
-							</tr>
-						</thead>
-						<tbody>
-							<xsl:apply-templates select="bar" mode="bar">
-								<xsl:with-param name="colspan" select="count(bar[1]/record[1]/@*)"/>
-							</xsl:apply-templates>
-						</tbody>
-					</table>
-				</div>
+				<table> 
+					<caption>
+						Time: <xsl:value-of select="@start_date" /> to <xsl:value-of select="@end_date"/>
+					</caption>
+					<thead>
+						<tr>
+							<xsl:apply-templates select="bar[1]/record[1]" mode="header" />
+						</tr>
+					</thead>
+					<tbody>
+						<xsl:apply-templates select="bar" mode="bar">
+							<xsl:with-param name="colspan" select="count(bar[1]/record[1]/@*)"/>
+						</xsl:apply-templates>
+					</tbody>
+				</table>
 			</body>
 			
 		</html>
