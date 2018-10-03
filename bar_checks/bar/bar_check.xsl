@@ -5,6 +5,10 @@
 		<html>
 			<head>
 				<style media="screen" type="text/css">
+					dl dt { font-weight: bold; padding: 7px 0;}
+					dl dd { display:inline-block; }
+					dl dd:before { content: '\00a0\2022\00a0\00a0'; color:#999;	color:rgba(0,0,0,0.5); font-size:11px; }
+					
 					table { border-collapse:collapse; text-align:center; font-family:"Lucida Grande","Lucida Sans Unicode","Bitstream Vera Sans","Trebuchet MS",Verdana,sans-serif}
 					table th, td { padding:3px 7px 2px; font-size: small; border: 2px solid #f2f2f2; }
 					table caption { text-align: left; }
@@ -22,9 +26,10 @@
 			</head>
 			
 			<body>
+				<xsl:apply-templates select="missing_products" />
 				<table> 
 					<caption>
-						Time: <xsl:value-of select="@start_date" /> to <xsl:value-of select="@end_date"/>
+						Time: <xsl:value-of select="@start" /> to <xsl:value-of select="@end"/>
 					</caption>
 					<thead>
 						<tr>
@@ -40,6 +45,17 @@
 			</body>
 			
 		</html>
+	</xsl:template>
+	
+	<xsl:template match="missing_products">
+		<dl>
+			<dt>Missing Products</dt>
+			<xsl:for-each select="product">
+				<dd>
+					<xsl:value-of select="text()" />
+				</dd>
+			</xsl:for-each>
+		</dl>
 	</xsl:template>
 			
 	<xsl:template match="record" mode="record">

@@ -1,20 +1,5 @@
 from itertools import groupby, islice
-from commonlib import *
-
-
-def to_nanosecond(time_in_unit, unit):
-    time_in_unit = float(time_in_unit)
-    if unit == 'sec':
-        return time_in_unit * 1E+9
-
-    elif unit == 'min':
-        return time_in_unit * 6E+10
-
-    elif unit == 'hr':
-        return time_in_unit * 3.6E+12
-
-    elif unit == 'day':
-        return time_in_unit * 24 * 3.6E+12
+from holidaycalendar import *
 
 
 def closed_convert(closed):
@@ -27,16 +12,23 @@ def closed_convert(closed):
     return include_start, include_end
 
 
-# def dtrange_between_time(dtrange, start, end, closed):
-#     include_start, include_end = closed_convert(closed)
-#     return pd.Series(index=dtrange).between_time(start, end, include_start, include_end).index
-#
-#
-# def all_valid_timestamps(start_dtime, end_dtime, offset, interval, unit=offsets.Minute, closed=None):
-#     offset, freq = unit(float(offset)), unit(float(interval))
-#     offset_start = start_dtime + offset
-#     dtrange = pd.date_range(offset_start, end_dtime, freq=freq)
-#     return dtrange_between_time(dtrange, start_dtime.time(), end_dtime.time(), closed)
+def isin_closed(value, start, end, closed):
+    if not isinstance(value, dt.datetime):
+        return False
+
+    include_start, include_end = closed if isinstance(closed, tuple) else closed_convert(closed)
+    left = value >= start if include_start else value > start
+    right = value <= end if include_end else value < end
+    return left and right
+
+
+def if_idx_between_time(data, start, end, closed, window_tz=None):
+    delta = timedelta_between(end, start)
+    iter_data = data.iterrows() if isinstance(data, pd.DataFrame) else data.items()
+    for (date, tz), rows in groupby(iter_data, lambda x: (x[0].date(), x[0].tz)):
+        db_start = to_tz_datetime(date=date, time=start, from_tz=window_tz, to_tz=tz)
+        db_end = db_start + delta
+        yield from (isin_closed(row[0], db_start, db_end, closed) for row in rows)
 
 
 class StepTimestampGenerator(object):
@@ -70,16 +62,9 @@ class StepTimestampGenerator(object):
             offset = self.unit(float(offset))
         return dt.timedelta(0) + offset
 
-    def isin_closed(self, value, start, end):
-        if not isinstance(value, dt.datetime):
-            return False
-        left = value >= start if self._include_start else value > start
-        right = value <= end if self._include_end else value < end
-        return left and right
-
     def is_valid(self, ts):
         start_ts, end_ts = self.schedules[ts.date()]
-        if not self.isin_closed(ts, start_ts, end_ts):
+        if not isin_closed(ts, start_ts, end_ts, (self._include_start, self._include_end)):
             return False
         delta = ts - start_ts - self.offset
         return delta % self.freq == dt.timedelta(0)
@@ -90,7 +75,7 @@ class StepTimestampGenerator(object):
         start_ts, end_ts = self.schedules[date]
         curr = start_ts + self.offset
         while curr <= end_ts:
-            if self.isin_closed(curr, start_ts, end_ts):
+            if isin_closed(curr, start_ts, end_ts, (self._include_start, self._include_end)):
                 yield curr
             curr += self.freq
 
@@ -100,7 +85,8 @@ class StepTimestampGenerator(object):
 
             # the first to yield should be the one right after the consecutive isin_closed() == False at the start
             # the last to yield should be the one right before the consecutive isin_closed() == False at the end
-            groupby_closed = groupby(date_timestamps, lambda x: self.isin_closed(x, start, end))
+            groupby_closed = groupby(date_timestamps,
+                                     lambda x: isin_closed(x, start, end, (self._include_start, self._include_end)))
             groupby_closed = [(is_closed, list(seq)) for is_closed, seq in groupby_closed]
             first = None if groupby_closed[0][0] else 1
             last = None if groupby_closed[-1][0] else len(groupby_closed) - 1
@@ -169,5 +155,29 @@ class KnownTimestampValidation(object):
             i_iter += 1
 
 
+# region unused
+# def to_nanosecond(time_in_unit, unit):
+#     time_in_unit = float(time_in_unit)
+#     if unit == 'sec':
+#         return time_in_unit * 1E+9
+#
+#     elif unit == 'min':
+#         return time_in_unit * 6E+10
+#
+#     elif unit == 'hr':
+#         return time_in_unit * 3.6E+12
+#
+#     elif unit == 'day':
+#         return time_in_unit * 24 * 3.6E+12
 
-
+# def dtrange_between_time(dtrange, start, end, closed):
+#     include_start, include_end = closed_convert(closed)
+#     return pd.Series(index=dtrange).between_time(start, end, include_start, include_end).index
+#
+#
+# def all_valid_timestamps(start_dtime, end_dtime, offset, interval, unit=offsets.Minute, closed=None):
+#     offset, freq = unit(float(offset)), unit(float(interval))
+#     offset_start = start_dtime + offset
+#     dtrange = pd.date_range(offset_start, end_dtime, freq=freq)
+#     return dtrange_between_time(dtrange, start_dtime.time(), end_dtime.time(), closed)
+# endregion

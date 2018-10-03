@@ -2,6 +2,7 @@
 BARXSL = 'bar_check.xsl'
 TSXSL = 'timeseries_check.xsl'
 
+TIMEZONE = None
 WINDOW = ('00:00', '21:00')
 SCHEDULE = 'ScheduleBase'
 

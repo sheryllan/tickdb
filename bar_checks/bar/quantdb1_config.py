@@ -9,6 +9,8 @@ PORT = 8086
 DBNAME = 'bar'
 TIME_IDX = 'time'
 
+UNDEFINED = 999999999998
+
 
 class StrEnum(str, Enum):
     def __str__(self):

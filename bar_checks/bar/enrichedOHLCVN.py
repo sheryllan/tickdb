@@ -1,12 +1,11 @@
 import argparse
-import os
 from collections import namedtuple
 
 from influxdb import DataFrameClient
 
 from bar.taskconfig import *
 from bar.quantdb1_config import *
-from bar.timeseries_check import *
+from timeutils import *
 from schedulefactory import *
 from influxcommon import *
 from xmlconverter import *
@@ -16,7 +15,7 @@ from getpass import getpass
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-
+import logging
 
 Fields = EnrichedOHLCVN.Fields
 Tags = EnrichedOHLCVN.Tags
@@ -35,10 +34,12 @@ class BarChecker(object):
     HIGH_LOW_CHECK = 'high_low_check'
     PCLV_ORDER_CHECK = 'pclv_order_check'
     BID_ASK_CHECK = 'bid_ask_check'
-    NET_VOLUME_CHECK = 'net_volume_check'
+    VOLUME_CHECK = 'volume_check'
     VOL_ON_LV1_CHECK = 'vol_on_lv1_check'
     VOL_ON_LV2_CHECK = 'vol_on_lv2_check'
     VOL_ON_LV3_CHECK = 'vol_on_lv3_check'
+    PRICES_ROLLOVER_CHECK = 'prices_rollover_check'
+    VWAP_CHECK = 'vwap_check'
     # endregion
 
     # region check details
@@ -58,25 +59,57 @@ class BarChecker(object):
     LASK_LBID = 'lask <= lbid'
 
     NET_VOLUME = 'tbuyv - tsellv != net_volume'
+    TOTAL_VOLUME = 'tbuyv + tsellv > volume'
 
-    CASK1_CASKV1 = 'xor(cask1 = 0, caskv1 = 0)'
-    CBID1_CBIDV1 = 'xor(cbid1 = 0, cbidv1 = 0)'
-    CASK2_CASKV2 = 'xor(cask2 = 0, caskv2 = 0)'
-    CBID2_CBIDV2 = 'xor(cbid2 = 0, cbidv2 = 0)'
-    CASK3_CASKV3 = 'xor(cask3 = 0, caskv3 = 0)'
-    CBID3_CBIDV3 = 'xor(cbid3 = 0, cbidv3 = 0)'
+    CASKV1_MISSING = 'cask1 defined, caskv1 = 0/undefined'
+    CBIDV1_MISSING = 'cbid1 defined, cbidv1 = 0/undefined'
+    CASKV2_MISSING = 'cask2 defined, caskv2 = 0/undefined'
+    CBIDV2_MISSING = 'cbid2 defined, cbidv2 = 0/undefined'
+    CASKV3_MISSING = 'cask3 defined, caskv3 = 0/undefined'
+    CBIDV3_MISSING = 'cbid3 defined, cbidv3 = 0/undefined'
+
+    CASKV1_INCONSISTENT = 'cask1 undefined, caskv1 defined'
+    CBIDV1_INCONSISTENT = 'cbid1 undefined, cbidv1 defined'
+    CASKV2_INCONSISTENT = 'cask2 undefined, caskv2 defined'
+    CBIDV2_INCONSISTENT = 'cbid2 undefined, cbidv2 defined'
+    CASKV3_INCONSISTENT = 'cask3 undefined, caskv3 defined'
+    CBIDV3_INCONSISTENT = 'cbid3 undefined, cbidv3 defined'
+
+    OPEN_NRO = 'open not rolled over'
+    CLOSE_NRO = 'close not rolled over'
+    HIGH_NRO = 'high not rolled over'
+    LOW_NRO = 'low not rolled over'
+
+    OPEN_UNDEFINED = 'open undefined'
+    CLOSE_UNDEFINED = 'close undefined'
+    HIGH_UNDEFINED = 'high undefined'
+    LOW_UNDEFINED = 'low undefined'
+
+    TBUYVWAP_UNDEFINED = 'tbuyvwap undefined'
+    TSELLVWAP_UNDEFINED = 'tsellvwap undefined'
     # endregion
 
-    CHECK_COLS = [HIGH_LOW_CHECK, PCLV_ORDER_CHECK, BID_ASK_CHECK, NET_VOLUME_CHECK,
-                  VOL_ON_LV1_CHECK, VOL_ON_LV2_CHECK, VOL_ON_LV3_CHECK]
-
+    CHECK_COLS = [PRICES_ROLLOVER_CHECK, HIGH_LOW_CHECK, PCLV_ORDER_CHECK, BID_ASK_CHECK, VOLUME_CHECK,
+                  VOL_ON_LV1_CHECK, VOL_ON_LV2_CHECK, VOL_ON_LV3_CHECK, VWAP_CHECK]
 
     @classmethod
-    def join_details(cls, cols, details):
-        cols = list(cols)
-        index = cols[0].index
-        rows = ('\n'.join(detail for val, detail in zip(row, details) if not val) for row in zip(*cols))
-        return pd.Series(rows, index)
+    def join_details(cls, cols, details=None):
+        if details is None:
+            return ['\n'.join(filter(None, row)) for row in zip(*cols)]
+        return ['\n'.join(detail for val, detail in zip(row, details) if val is not True) for row in zip(*cols)]
+
+    @classmethod
+    def zero_or_undefined(cls, value):
+        return (value == 0) | (value == UNDEFINED)
+
+    @classmethod
+    def nullify_undefined(cls, df):
+        df = df.replace(UNDEFINED, np.nan)
+        lv_volumes = [Fields.CASKV1, Fields.CBIDV1, Fields.CASKV2, Fields.CBIDV2, Fields.CASKV3, Fields.CBIDV3]
+        df[lv_volumes] = df[lv_volumes].replace(0, np.nan)
+        tvolumes = [Fields.TBUYV, Fields.TSELLV, Fields.NET_VOLUME, Fields.VOLUME]
+        df[tvolumes] = df[tvolumes].replace(np.nan, 0)
+        return df
 
     @classmethod
     def check_high_low(cls, df):
@@ -87,8 +120,7 @@ class BarChecker(object):
         cols = [high >= low, volume | (hask >= high), volume | (low >= lbid)]
         details = [cls.HIGH_LOW, cls.HASK_HIGH, cls.LOW_LBID]
 
-        df[cls.HIGH_LOW_CHECK] = cls.join_details(cols, details)
-        return df
+        return pd.Series(cls.join_details(cols, details), df.index, name=cls.HIGH_LOW_CHECK)
 
     @classmethod
     def check_pclv_order(cls, df):
@@ -98,8 +130,7 @@ class BarChecker(object):
         cols = [cask3 > cask2, cask2 > cask1, cbid1 > cbid2, cbid2 > cbid3]
         details = [cls.CASK3_CASK2, cls.CASK2_CASK1, cls.CBID1_CBID2, cls.CBID2_CBID3]
 
-        df[cls.PCLV_ORDER_CHECK] = cls.join_details(cols, details)
-        return df
+        return pd.Series(cls.join_details(cols, details), df.index, name=cls.PCLV_ORDER_CHECK)
 
     @classmethod
     def check_bid_ask(cls, df):
@@ -111,37 +142,86 @@ class BarChecker(object):
         cols = [cask1 > cbid1, cask2 > cbid2, cask3 > cbid3, hask > hbid, lask > lbid]
         details = [cls.CASK1_CBID1, cls.CASK2_CBID2, cls.CASK3_CBID3, cls.HASK_HBID, cls.LASK_LBID]
 
-        df[cls.BID_ASK_CHECK] = cls.join_details(cols, details)
-        return df
+        return pd.Series(cls.join_details(cols, details), df.index, name=cls.BID_ASK_CHECK)
 
     @classmethod
-    def check_net_volume(cls, df):
-        cols = [df[Fields.TBUYV] - df[Fields.TSELLV] == df[Fields.NET_VOLUME]]
-        details = [cls.NET_VOLUME]
-        df[cls.NET_VOLUME_CHECK] = cls.join_details(cols, details)
-        return df
+    def check_volume(cls, df):
+        tbuyv, tsellv, net_volume, volume = Fields.TBUYV, Fields.TSELLV, Fields.NET_VOLUME, Fields.VOLUME
+        cols = [df[tbuyv] - df[tsellv] == df[net_volume],
+                df[tbuyv] + df[tsellv] <= df[volume]]
+        details = [cls.NET_VOLUME, cls.TOTAL_VOLUME]
+
+        return pd.Series(cls.join_details(cols, details), df.index, name=cls.VOLUME_CHECK)
 
     @classmethod
     def check_vol_on_lv(cls, df):
-        ask1 = ~((df[Fields.CASK1] != 0) ^ (df[Fields.CASKV1] != 0))
-        bid1 = ~((df[Fields.CBID1] != 0) ^ (df[Fields.CBIDV1] != 0))
-        ask2 = ~((df[Fields.CASK2] != 0) ^ (df[Fields.CASKV2] != 0))
-        bid2 = ~((df[Fields.CBID2] != 0) ^ (df[Fields.CBIDV2] != 0))
-        ask3 = ~((df[Fields.CASK3] != 0) ^ (df[Fields.CASKV3] != 0))
-        bid3 = ~((df[Fields.CBID3] != 0) ^ (df[Fields.CBIDV3] != 0))
+        cask1, caskv1, cbid1, cbidv1 = df[Fields.CASK1], df[Fields.CASKV1], df[Fields.CBID1], df[Fields.CBIDV1]
+        cask2, caskv2, cbid2, cbidv2 = df[Fields.CASK2], df[Fields.CASKV2], df[Fields.CBID2], df[Fields.CBIDV2]
+        cask3, caskv3, cbid3, cbidv3 = df[Fields.CASK3], df[Fields.CASKV3], df[Fields.CBID3], df[Fields.CBIDV3]
 
-        cols1, details1 = [ask1, bid1], [cls.CASK1_CASKV1, cls.CBID1_CBIDV1]
-        cols2, details2 = [ask2, bid2], [cls.CASK2_CASKV2, cls.CBID2_CBIDV2]
-        cols3, details3 = [ask3, bid3], [cls.CASK3_CASKV3, cls.CBID3_CBIDV3]
+        askv1_missing = cask1.notna() & caskv1.isna()
+        askv1_inconsistent = cask1.isna() & caskv1.notna()
+        bidv1_missing = cbid1.notna() & cbidv1.isna()
+        bidv1_inconsistent = cbid1.isna() & cbidv1.notna()
 
-        df[cls.VOL_ON_LV1_CHECK] = cls.join_details(cols1, details1)
-        df[cls.VOL_ON_LV2_CHECK] = cls.join_details(cols2, details2)
-        df[cls.VOL_ON_LV3_CHECK] = cls.join_details(cols3, details3)
-        return df
+        askv2_missing = cask2.notna() & caskv2.isna()
+        askv2_inconsistent = cask2.isna() & caskv2.notna()
+        bidv2_missing = cbid2.notna() & cbidv2.isna()
+        bidv2_inconsistent = cbid2.isna() & cbidv2.notna()
+
+        askv3_missing = cask3.notna() & caskv3.isna()
+        askv3_inconsistent = cask3.isna() & caskv3.notna()
+        bidv3_missing = cbid3.notna() & cbidv3.isna()
+        bidv3_inconsistent = cbid3.isna() & cbidv3.notna()
+
+        cols1 = [~askv1_missing, ~askv1_inconsistent, ~bidv1_missing, ~bidv1_inconsistent]
+        cols2 = [~askv2_missing, ~askv2_inconsistent, ~bidv2_missing, ~bidv2_inconsistent]
+        cols3 = [~askv3_missing, ~askv3_inconsistent, ~bidv3_missing, ~bidv3_inconsistent]
+
+        details1 = [cls.CASKV1_MISSING, cls.CASKV1_INCONSISTENT, cls.CBIDV1_MISSING, cls.CBIDV1_INCONSISTENT]
+        details2 = [cls.CASKV2_MISSING, cls.CASKV2_INCONSISTENT, cls.CBIDV2_MISSING, cls.CBIDV2_INCONSISTENT]
+        details3 = [cls.CASKV3_MISSING, cls.CASKV3_INCONSISTENT, cls.CBIDV3_MISSING, cls.CBIDV3_INCONSISTENT]
+
+        values = [pd.Series(cls.join_details(cols1, details1), df.index, name=cls.VOL_ON_LV1_CHECK),
+                  pd.Series(cls.join_details(cols2, details2), df.index, name=cls.VOL_ON_LV2_CHECK),
+                  pd.Series(cls.join_details(cols3, details3), df.index, name=cls.VOL_ON_LV3_CHECK)]
+        return pd.concat(values, axis=1)
+
+    @classmethod
+    def check_prices_rollover(cls, df):
+        fopen, fclose, fhigh, flow = [Fields.OPEN, Fields.CLOSE, Fields.HIGH, Fields.LOW]
+        details = [cls.OPEN_NRO, cls.CLOSE_NRO, cls.HIGH_NRO, cls.LOW_NRO]
+
+        def check():
+            last_defined = df.iloc[0]
+            for i, row in df.iterrows():
+                if row[Fields.VOLUME] == 0:
+                    cols = [[row[fopen] == last_defined[fclose]],
+                            [row[fclose] == last_defined[fclose]],
+                            [row[fhigh] == last_defined[fclose]],
+                            [row[flow] == last_defined[fclose]]]
+                else:
+                    last_defined = row
+                    cols = [[pd.notna(row[fopen])],
+                            [pd.notna(row[fclose])],
+                            [pd.notna(row[fhigh])],
+                            [pd.notna(row[flow])]]
+
+                yield cls.join_details(cols, details)[0]
+
+        return pd.Series(list(check()), df.index, name=cls.PRICES_ROLLOVER_CHECK)
+
+    @classmethod
+    def check_vwap(cls, df):
+        tbuyv, tbuyvwap, tsellv, tsellvwap = Fields.TBUYV, Fields.TBUYVWAP, Fields.TSELLV, Fields.TSELLVWAP
+        cols = [~((df[tbuyv] == 0) ^ (df[tbuyvwap].isna())),
+                ~((df[tsellv] == 0) ^ (df[tsellvwap].isna()))]
+        details = [cls.TBUYVWAP_UNDEFINED, cls.TSELLVWAP_UNDEFINED]
+
+        return pd.Series(cls.join_details(cols, details), df.index, name=cls.VWAP_CHECK)
 
 
 class SeriesChecker(object):
-
     ERRORTYPE = 'error_type'
     ERRORVAL = 'error_value'
 
@@ -165,10 +245,10 @@ class SeriesChecker(object):
     def __init__(self, scheduler):
         self.scheduler = scheduler
 
-    def validate(self, data, window, closed):
+    def validate(self, data, window, closed, tzinfo=None):
         for tz, tz_df in data.groupby(lambda x: x.tz):
             start_date, end_date = tz_df.index[0].date(), tz_df.index[-1].date()
-            schedules = list(self.scheduler.get_schedules(start_date, end_date, *window, tz))
+            schedules = list(self.scheduler.get_schedules(start_date, end_date, *window, tz if tzinfo is None else tzinfo))
             for (clock_type, width), bars_df in tz_df.groupby([Tags.CLOCK_TYPE, Tags.WIDTH]):
                 step, unit = width, self.OFFSET_MAPPING[clock_type]
                 tsgenerator = StepTimestampGenerator(schedules, step, unit, closed=closed)
@@ -214,8 +294,12 @@ class SeriesChecker(object):
 
 class CheckTask(object):
     REPORT = 'report'  # tag
-    START_DATE = 'start_date'  # attribute
-    END_DATE = 'end_date'  # attribute
+    START_DT = 'start'  # attribute
+    END_DT = 'end'  # attribute
+
+    MISSING_PRODS = 'missing_products'  # tag
+    PRODUCT = 'product'  # tag
+
     START_TIME = 'start_time'  # attribute
     END_TIME = 'end_time'  # attribute
 
@@ -243,10 +327,12 @@ class CheckTask(object):
         self.aparser.add_argument('--closed', nargs='?', type=str,
                                   help="""defines how the window will be closed: "left" or "right", 
                                   defaults to None(both sides)""")
-        self.aparser.add_argument('--dfrom', nargs='*', type=int, default=(last_n_days().timetuple()[0:3]),
+        self.aparser.add_argument('--dtfrom', nargs='*', type=int, default=(last_n_days().timetuple()[0:3]),
                                   help='the check start date in format (yyyy, mm, dd), defaults to yesterday')
-        self.aparser.add_argument('--dto', nargs='*', type=int, default=(last_n_days(0).timetuple()[0:3]),
+        self.aparser.add_argument('--dtto', nargs='*', type=int, default=(last_n_days(0).timetuple()[0:3]),
                                   help='the check end date in format (yyyy, mm, dd), defaults to today')
+        self.aparser.add_argument('--timezone', nargs='*', type=str, default=TIMEZONE,
+                                  help='the timezone for the check to run')
 
         self.aparser.add_argument('--barxml', nargs='?', type=str,
                                   help='the xml output path of bar check')
@@ -293,38 +379,45 @@ class CheckTask(object):
 
     @property
     def task_closed(self):
+        if self.task_args.closed not in ['left', 'right', None]:
+            raise ValueError('The value for argument "closed" must be "left"/"right", or if not set, None by default')
         return self.task_args.closed
 
     @property
-    def task_dfrom(self):
-        dfrom = self.task_args.dfrom
-        if isinstance(dfrom, dt.date):
-            return dfrom
-        elif isinstance(dfrom, (dt.datetime, pd.Timestamp)):
-            return dfrom.date()
-        elif isinstance(dfrom, tuple):
-            return dt.date(*dfrom)
+    def task_dtfrom(self):
+        dtfrom = self.task_args.dtfrom
+        if isinstance(dtfrom, tuple):
+            dtfrom = pd.Timestamp(*dtfrom)
+
+        if isinstance(dtfrom, (dt.date, dt.datetime)):
+            dtfrom = pd.Timestamp(dtfrom)
+            return self.task_timezone.localize(dtfrom) if self.task_timezone is not None else dtfrom
         else:
             raise TypeError('Invalid dfrom: must be (yyyy, mm, dd) or a datetime.date/datetime/pandas.Timestamp object')
 
     @property
-    def task_dto(self):
-        dto = self.task_args.dto
-        if isinstance(dto, dt.date):
-            return dto
-        elif isinstance(dto, (dt.datetime, pd.Timestamp)):
-            return dto.date()
-        elif isinstance(dto, tuple):
-            return dt.date(*dto)
+    def task_dtto(self):
+        dtto = self.task_args.dtto
+        if isinstance(dtto, tuple):
+            dtto = pd.Timestamp(*dtto)
+
+        if isinstance(dtto, (dt.date, dt.datetime, tuple)):
+            dtto = pd.Timestamp(dtto)
+            return self.task_timezone.localize(dtto) if self.task_timezone is not None else dtto
         else:
             raise TypeError('Invalid dfrom: must be (yyyy, mm, dd) or a datetime.date/datetime/pandas.Timestamp object')
+
+    @property
+    def task_timezone(self):
+        if self.task_args.timezone is None:
+            return None
+        return pytz.timezone(self.task_args.timezone)
 
     @property
     def task_report_etree(self):
-        return rcsv_addto_etree({self.START_DATE: self.task_dfrom,
-                                 self.END_DATE: self.task_dto},
+        return rcsv_addto_etree({self.START_DT: self.task_dtfrom,
+                                 self.END_DT: self.task_dtto},
                                 self.REPORT)
-
     @property
     def task_barxml(self):
         return self.task_args.barxml
@@ -364,21 +457,34 @@ class CheckTask(object):
         return self.client.query(qstring).get(EnrichedOHLCVN.name(), None)
 
     def run_bar_checks(self, data):
-        BarChecker.check_high_low(data)
-        BarChecker.check_pclv_order(data)
-        BarChecker.check_bid_ask(data)
-        BarChecker.check_net_volume(data)
-        BarChecker.check_vol_on_lv(data)
+        data = BarChecker.nullify_undefined(data)
+        data_cap = data.loc[if_idx_between_time(data, *self.task_window, self.task_closed, self.task_timezone)]
+        checks = [
+            BarChecker.check_prices_rollover(data)
+            [if_idx_between_time(data, *self.task_window, self.task_closed, self.task_timezone)],
+            BarChecker.check_high_low(data_cap),
+            BarChecker.check_pclv_order(data_cap),
+            BarChecker.check_bid_ask(data_cap),
+            BarChecker.check_volume(data_cap),
+            BarChecker.check_vol_on_lv(data_cap),
+            BarChecker.check_vwap(data_cap)]
 
-        return data[data[BarChecker.CHECK_COLS].any(axis=1)]
+        results = pd.concat(checks, axis=1)
+
+        return results[results[BarChecker.CHECK_COLS].any(axis=1)]
 
     def bar_checks_xml(self, data, xsl=None, outpath=None):
-        results = self.run_bar_checks(data)
-
         xml = self.task_report_etree
-        for bar, bar_df in results.groupby(Tags.values()):
+        prods = set(data[Tags.PRODUCT])
+        missing_prods = [(self.PRODUCT, p) for p in to_iter(self.task_product) if p not in prods]
+        if missing_prods:
+            xml.append(rcsv_addto_etree(missing_prods, self.MISSING_PRODS))
+
+        for bar, group in data.groupby(Tags.values()):
             root = rcsv_addto_etree(BarId(*bar)._asdict(), self.BAR)
-            xml.append(df_to_xmletree(root, self.RECORD, bar_df[BarChecker.CHECK_COLS], TIME_IDX))
+            results = self.run_bar_checks(group)
+            if not results.empty:
+                xml.append(df_to_xmletree(root, self.RECORD, results[BarChecker.CHECK_COLS], TIME_IDX))
 
         if outpath is not None and xsl is not None:
             to_xsl_instructed_xml(xml, xsl, outpath)
@@ -387,7 +493,7 @@ class CheckTask(object):
 
     def run_timeseries_checks(self, data):
         window, closed = self.task_window, self.task_closed
-        return self.schecker.validate(data, window, closed)
+        return self.schecker.validate(data, window, closed, self.task_timezone)
 
     def timeseries_checks_xmls(self, data, xsl=None, outpath=None):
         xml = self.task_report_etree
@@ -420,38 +526,40 @@ class CheckTask(object):
 
         self.set_schecker()
 
-    def run_checks(self, **kwargs):
+    def run_checks(self, **kwargs):  # TODO report the symbols if not found
         self.set_taskargs(**kwargs)
-        data = self.get_data(self.task_dfrom, self.task_product, self.task_ptype, self.task_dto, self.task_expiry)
-        if data is None:
+        data = self.get_data(self.task_dtfrom, self.task_product, self.task_ptype,
+                             self.task_dtto, self.task_expiry)
+
+        if data is not None:
+            barxml = self.bar_checks_xml(data, self.task_barxsl, self.task_barxml)
+            tsxml = self.timeseries_checks_xmls(data, self.task_tsxsl, self.task_tsxml)
+
+            to_styled_xml(barxml, self.task_barxsl, self.task_barhtml)
+            to_styled_xml(tsxml, self.task_tsxsl, self.task_tshtml)
+
+        else:
             msg = {'product': self.task_product, 'ptype': self.task_ptype, 'expiry': self.task_expiry,
-                   'dfrom': self.task_dfrom, 'dto': self.task_dfrom}
-            raise ValueError('No data selected for {}'.format({k: v for k, v in msg.items()}))
+                   'dfrom': self.task_dtfrom, 'dto': self.task_dtfrom}
+            logging.INFO('No data selected for {}'.format({k: v for k, v in msg.items() if v is not None}))
 
-        data = data.between_time(*self.task_window, *closed_convert(self.task_closed))
-        barxml = self.bar_checks_xml(data, self.task_barxsl, self.task_barxml)
-        tsxml = self.timeseries_checks_xmls(data, self.task_tsxsl, self.task_tsxml)
-
-        to_styled_xml(barxml, self.task_barxsl, self.task_barhtml)
-        to_styled_xml(tsxml, self.task_tsxsl, self.task_tshtml)
-
-    def email(self, files, subject):
-        msg = MIMEMultipart('alternative')
-        msg['Subject'] = subject
-        msg['From'] = self.task_sender
-        recipients = ', '.join(self.task_recipients)
-        msg['To'] = recipients
-
+    def email(self, files, subjects):
         smtp = smtplib.SMTP_SSL('smtp.gmail.com')
         password = getpass('Enter the password for: '.format(self.task_sender))
         smtp.login(self.task_sender, password)
 
-        for f in files:
+        for f, subject in zip(files, subjects):
             with open(f) as fh:
                 html = fh.read()
 
             inline = premailer.transform(html)
             report = MIMEText(inline, 'html')
+
+            msg = MIMEMultipart('alternative')
+            msg['From'] = self.task_sender
+            recipients = ', '.join(self.task_recipients)
+            msg['To'] = recipients
+            msg['Subject'] = subject
             msg.attach(report)
             smtp.sendmail(self.task_sender, recipients, msg.as_string())
 
@@ -460,6 +568,9 @@ class CheckTask(object):
 
 if __name__ == '__main__':
     task = CheckTask()
-    task.run_checks(product='CL', ptype='F', dfrom=dt.date(2018, 6, 1), schedule='CMESchedule')
-    task.email([task.task_barhtml, task.task_tshtml], BAR_TITILE)
+    # products = ['ZF', 'ZN', 'TN', 'ZB', 'UB', 'ES', 'NQ', 'YM', 'EMD', 'RTY', '6A', '6B', '6C', '6E', '6J', '6M', '6N',
+    #             '6S', 'BTC', 'GC', 'SI', 'HG', 'CL', 'HO', 'RB']
+    products = 'ES'
+    task.run_checks(product=products, ptype='F', dtfrom=dt.date(2018, 6, 1), schedule='CMESchedule', barxml='lalalal.xml')
+    task.email([task.task_barhtml, task.task_tshtml], [BAR_TITILE, TS_TITLE])
     # c.run_checks('CL', 'F', closed='right', dfrom=dt.date(2018, 6, 1), dto=dt.date(2018, 6, 23))

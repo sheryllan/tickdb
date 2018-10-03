@@ -15,8 +15,8 @@ def format_where_value(value):
 
 def format_arith_terms(fields, operator='=', relation='AND'):
     return format_logic_join(
-        ('"{}" {} {}'.format(k, operator, format_where_value(v)) for k, v in fields.items() if v is not None),
-        relation)
+        ('"{}" {} {}'.format(k, '=~' if nontypes_iterable(v) else operator, format_where_value(v))
+         for k, v in fields.items() if v is not None), relation)
 
 
 def format_where_clause(terms, relation='AND'):
@@ -31,8 +31,10 @@ def select_query(measurement, fields=None, clauses=None):
 
 
 def select_where_time_bound(measurement, time_from, time_to=None, fields=None, where_terms=None):
-    ts_from = format_arith_terms({TIME_IDX: pd.Timestamp(time_from)}, '>=')
-    ts_to = None if time_to is None else format_arith_terms({TIME_IDX: pd.Timestamp(time_to)}, '<=')
+    str_from = time_from.isoformat() if time_from.tz is not None else str(time_from)
+    str_to = time_to.isoformat() if time_to.tz is not None else str(time_to)
+    ts_from = format_arith_terms({TIME_IDX: str_from}, '>=')
+    ts_to = None if time_to is None else format_arith_terms({TIME_IDX: str_to}, '<=')
     where_clause = format_where_clause([ts_from, ts_to, where_terms])
     return select_query(measurement, fields, [where_clause])
 

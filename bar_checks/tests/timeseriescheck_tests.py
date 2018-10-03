@@ -1,5 +1,5 @@
 import unittest as ut
-from bar.timeseries_check import *
+from timeutils import *
 import pandas as pd
 from pandas.tseries import offsets
 
