@@ -23,6 +23,11 @@ def fmt_date(year, month=None, day=1, fmt='%Y%m'):
     return dt.date(int(year), int(month), int(day)).strftime(fmt)
 
 
+def rreplace(s, old, new, occurrence=1):
+    li = s.rsplit(old, occurrence)
+    return new.join(li)
+
+
 def nontypes_iterable(arg, excl_types=(str,)):
     return isinstance(arg, Iterable) and not isinstance(arg, excl_types)
 

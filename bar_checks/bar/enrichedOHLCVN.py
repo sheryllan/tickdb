@@ -92,15 +92,132 @@ class BarChecker(object):
     CHECK_COLS = [PRICES_ROLLOVER_CHECK, HIGH_LOW_CHECK, PCLV_ORDER_CHECK, BID_ASK_CHECK, VOLUME_CHECK,
                   VOL_ON_LV1_CHECK, VOL_ON_LV2_CHECK, VOL_ON_LV3_CHECK, VWAP_CHECK]
 
-    @classmethod
-    def join_details(cls, cols, details=None):
-        if details is None:
-            return ['\n'.join(filter(None, row)) for row in zip(*cols)]
-        return ['\n'.join(detail for val, detail in zip(row, details) if val is not True) for row in zip(*cols)]
+    SUMMARY = 'summary'
+    DETAIL = 'detail'
+    PASSED = 'passed'
+    FAILED = 'failed'
+    WARNING = 'warning'
 
     @classmethod
-    def zero_or_undefined(cls, value):
-        return (value == 0) | (value == UNDEFINED)
+    def to_na_msg(cls, df_na, na_msg_suffix='undefined', notna_msg=''):
+        return df_na.astype(str).apply(lambda col: col.map(
+            lambda x: ' '.join([col.name, na_msg_suffix]) if x == 'True' else notna_msg),
+            result_type='broadcast')
+
+    @classmethod
+    def format_expression(cls, *args):
+        if not args:
+            return ''
+
+        func_indicators = ('()', '[]')
+        capsule = {'(': ')', '[': ']'}
+        closed = []
+        sym_closing = None
+
+        expr = ''
+        args = iter(args)
+        for arg in args:
+            arg = str(arg)
+
+            if arg in capsule:
+                sym_closing = capsule[arg]
+                closed.append(sym_closing)
+                to_append = ' ' + arg
+            elif arg == sym_closing:
+                closed.pop()
+                sym_closing = closed[-1] if closed else None
+                to_append = ' ' + arg
+            elif arg.endswith(func_indicators):
+                try:
+                    next_op = str(next(args))
+                    if next_op in func_indicators or next_op in capsule or next_op in capsule.values():
+                        raise ValueError('Invalid expression arguments: invalid symbols following a parametric evaluator')
+                    to_append = rreplace(arg, arg[-2:], arg[-2] + next_op + arg[-1])
+                except StopIteration:
+                    raise ValueError('Invalid expression arguments: an evaluator must be followed by an operand')
+            else:
+                to_append = ' ' + arg
+
+            expr = expr + to_append
+
+        if closed:
+            closed.reverse()
+            raise ValueError('Invalid expression arguments: expression is not closed by {}'.format(closed))
+        return expr.strip()
+
+    @classmethod
+    def defined_expr(cls, field):
+        return '( ( {} .notna() ) ) & ( {} != 0 ) )'.format(field, field)
+
+
+    @classmethod
+    def not_xor_expr(cls, f1, f2):
+        return '{} == {}'.format(f1, f2)
+
+    @classmethod
+    def vector_eval(cls, df, rname='result', *args):
+        cols = [arg for arg in args if arg in df]
+        statement = '{} = {}'.format(rname, cls.format_expression(*args))
+        return df[cols].eval(statement)
+
+    @classmethod
+    def vector_map(cls, vector, map_true='', map_false='', mask=None, mask_value=''):
+        results = vector.map(lambda x: map_true if x else map_false)
+        if mask is not None:
+            results[mask] = mask_value
+        return results
+
+    @classmethod
+    def vectors_join(cls, vectors, sep='\n', na_rep=None):
+
+        def join_func(row):
+            if na_rep is None:
+                return sep.join(row.dropna().astype(str))
+            return sep.join(row.replace(np.nan, na_rep).astype(str))
+
+        df_cat = pd.concat(vectors, axis=1)
+        return df_cat.apply(join_func, axis=1)
+
+    @classmethod
+    def map_check_state(cls, details, caveats, pass_msg=''):
+
+        def summary_msg(x):
+            return {cls.SUMMARY: cls.PASSED if x == pass_msg else cls.FAILED,
+                    cls.DETAIL: x}
+
+        def warning_msg(x):
+            return {} if x == pass_msg else {cls.WARNING: x}
+
+        details.name = cls.DETAIL
+        details.name = cls.WARNING
+        df_tmp = pd.concat([details, caveats], axis=1)
+        return df_tmp.apply(lambda x: {**summary_msg(x[cls.DETAIL]), **warning_msg(x[cls.WARNING])}, axis=1)
+
+    @classmethod
+    def get_check_info(cls, df, expressions, errmsgs, na_validate=True):
+        unique_cols = set()
+        rcol = 'rcol'
+
+        def evaluate():
+            for e in expressions:
+                df_eval = cls.vector_eval(df, rcol, *e)
+                cols_orig = [c for c in df_eval.columns if c != rcol]
+                if na_validate:
+                    unique_cols.update(cols_orig)
+                yield cols_orig, df_eval[rcol]
+
+        df_isna = df[list(unique_cols)].isna()
+        caveats = cls.to_na_msg(df_isna)
+
+        def mask(cols):
+            return df_isna[cols].any(axis=1) if not na_validate else None
+
+        dvectors = [cls.vector_map(v, map_false=msg, mask=mask(c), mask_value=np.nan)
+                    for (c, v), msg in zip(evaluate(), errmsgs)]
+        details = cls.vectors_join(dvectors)
+
+        return cls.map_check_state(details, caveats)
+
 
     @classmethod
     def nullify_undefined(cls, df):
@@ -115,22 +232,32 @@ class BarChecker(object):
     def check_high_low(cls, df):
         hask, high, hbid = df[Fields.HASK], df[Fields.HIGH], df[Fields.HBID]
         lask, low, lbid = df[Fields.LASK], df[Fields.LOW], df[Fields.LBID]
-        volume = df[Fields.VOLUME] == 0
+        volume = df[Fields.VOLUME]
 
-        cols = [high >= low, volume | (hask >= high), volume | (low >= lbid)]
-        details = [cls.HIGH_LOW, cls.HASK_HIGH, cls.LOW_LBID]
+        expressions = [(high, '>=', low),
+                       (volume, '==', 0, '|', hask, '>=', high),
+                       (volume, '==', 0, '|', low, '>=', lbid)]
+        errmsgs = ['high < low',
+                   'hask < high',
+                   'low < lbid']
 
-        return pd.Series(cls.join_details(cols, details), df.index, name=cls.HIGH_LOW_CHECK)
+        results = cls.get_check_info(df, expressions, errmsgs, True)
+        results.rename(cls.HIGH_LOW_CHECK)
+        return results
 
     @classmethod
     def check_pclv_order(cls, df):
         cask1, cask2, cask3 = df[Fields.CASK1], df[Fields.CASK2], df[Fields.CASK3]
         cbid1, cbid2, cbid3 = df[Fields.CBID1], df[Fields.CBID2], df[Fields.CBID3]
 
-        cols = [cask3 > cask2, cask2 > cask1, cbid1 > cbid2, cbid2 > cbid3]
-        details = [cls.CASK3_CASK2, cls.CASK2_CASK1, cls.CBID1_CBID2, cls.CBID2_CBID3]
+        expressions = [(cask3, '>', cask2, '>', cask1),
+                       (cbid1, '>', cbid2, '>', cbid3)]
+        errmsgs = ['cask3 <= cask2 <= cask1',
+                   'cbid1 <= cbid2 <= cbid3']
 
-        return pd.Series(cls.join_details(cols, details), df.index, name=cls.PCLV_ORDER_CHECK)
+        results = cls.get_check_info(df, expressions, errmsgs, True)
+        results.rename(cls.PCLV_ORDER_CHECK)
+        return results
 
     @classmethod
     def check_bid_ask(cls, df):
@@ -139,19 +266,34 @@ class BarChecker(object):
         hask, lask = df[Fields.HASK], df[Fields.LASK]
         hbid, lbid = df[Fields.HBID], df[Fields.LBID]
 
-        cols = [cask1 > cbid1, cask2 > cbid2, cask3 > cbid3, hask > hbid, lask > lbid]
-        details = [cls.CASK1_CBID1, cls.CASK2_CBID2, cls.CASK3_CBID3, cls.HASK_HBID, cls.LASK_LBID]
+        expressions = [(cask1, '>', cbid1),
+                       (cask2, '>', cbid2),
+                       (cask3, '>', cbid3),
+                       (hask, '>', hbid),
+                       (lask, '>', lbid)]
+        errmsgs = ['cask1 <= cbid1',
+                   'cask2 <= cbid2',
+                   'cask3 <= cbid3',
+                   'hask <= hbid',
+                   'lask <= lbid']
 
-        return pd.Series(cls.join_details(cols, details), df.index, name=cls.BID_ASK_CHECK)
+        results = cls.get_check_info(df, expressions, errmsgs, True)
+        results.rename(cls.BID_ASK_CHECK)
+        return results
 
     @classmethod
     def check_volume(cls, df):
         tbuyv, tsellv, net_volume, volume = Fields.TBUYV, Fields.TSELLV, Fields.NET_VOLUME, Fields.VOLUME
-        cols = [df[tbuyv] - df[tsellv] == df[net_volume],
-                df[tbuyv] + df[tsellv] <= df[volume]]
-        details = [cls.NET_VOLUME, cls.TOTAL_VOLUME]
 
-        return pd.Series(cls.join_details(cols, details), df.index, name=cls.VOLUME_CHECK)
+        expressions = [(tbuyv, '-', tsellv, '==', net_volume),
+                       (tbuyv, '+', tsellv, '<=', volume)]
+
+        errmsgs = ['tbuyv - tsellv != net_volume',
+                   'tbuyv + tsellv > volume']
+
+        results = cls.get_check_info(df, expressions, errmsgs, True)
+        results.rename(cls.VOLUME_CHECK)
+        return results
 
     @classmethod
     def check_vol_on_lv(cls, df):
@@ -173,6 +315,12 @@ class BarChecker(object):
         askv3_inconsistent = cask3.isna() & caskv3.notna()
         bidv3_missing = cbid3.notna() & cbidv3.isna()
         bidv3_inconsistent = cbid3.isna() & cbidv3.notna()
+
+        expressions1 = [tuple(cls.not_xor_expr(cls.defined_expr(cask1), cls.defined_expr(caskv1)).split()),
+                        ]
+        expressions2 = [tuple(cls.not_xor_expr(cls.defined_expr(cask2), cls.defined_expr(caskv2)).split()),
+                        ]
+        expressions3 = [tuple(cls.not_xor_expr(cls.defined_expr(cask3), cls.defined_expr(caskv3)).split())]
 
         cols1 = [~askv1_missing, ~askv1_inconsistent, ~bidv1_missing, ~bidv1_inconsistent]
         cols2 = [~askv2_missing, ~askv2_inconsistent, ~bidv2_missing, ~bidv2_inconsistent]

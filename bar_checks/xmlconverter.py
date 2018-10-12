@@ -17,8 +17,7 @@ def df_to_xmletree(root, sub_name, df, index_name=None):
         subelement = etree.Element(sub_name)
         if index_name is not None:
             subelement.set(index_name, str(i))
-        for k, v in row.items():
-            subelement.set(k, str(v))
+        rcsv_addto_etree(row.items(), subelement)
 
         xml.append(subelement)
 
