@@ -19,9 +19,12 @@
 					th.lv1 { background-color: #888888; padding:3px 7px; }
 					th.lv2 { background-color: #d9d9d9; padding:2px 5px; }
 					
+					
 					td.good { color: #00AA00; font-weight: bold; font-size: small; }
 					td.bad { color: #AA0000; font-weight: bold; font-size: small; }
-					td.warning { color: #ff790d; font-weight: bold; font-size: small; }
+					
+					pre.detail { font-weight: normal; }
+					pre.warning { color: #cccc00; font-weight: normal; }
 				</style>
 			</head>
 			
@@ -38,7 +41,7 @@
 					</thead>
 					<tbody>
 						<xsl:apply-templates select="bar" mode="bar">
-							<xsl:with-param name="colspan" select="count(bar[1]/record[1]/@*)"/>
+							<xsl:with-param name="colspan" select="count(bar[1]/record[1]/*) + 1"/>
 						</xsl:apply-templates>
 					</tbody>
 				</table>
@@ -59,30 +62,45 @@
 	</xsl:template>
 			
 	<xsl:template match="record" mode="record">
-		<xsl:variable name="barid" select="generate-id(parent::*)" />
+		<xsl:variable name="barid" select="../bar/@id" />
 		<td headers="{$barid} {local-name(.)}">
 			<xsl:value-of select="@time"/>
 		</td>
-		<xsl:for-each select="@*">
-			<xsl:if test="name() != 'time'">
-				<xsl:choose>
-					<xsl:when test=".=''">
-						<td class="good" headers="{$barid} {local-name(.)}">
-							Passed
-						</td>
-					</xsl:when>
-					<xsl:otherwise>
-						<td class="bad" headers="{$barid} {local-name(.)}">
-							<details>
-								<summary>Failed</summary>
-								<pre>
-									<xsl:value-of select="." />
+		<xsl:for-each select="./*">
+			<xsl:choose>
+				<xsl:when test="@summary='passed'">
+					<td class="good" headers="{$barid} {local-name(.)}">
+						<xsl:choose>
+							<xsl:when test="@warning">
+								<details>
+									<summary>Passed</summary>
+									<pre class="warning">
+										<xsl:value-of select="@warning" />
+									</pre>
+								</details>
+							</xsl:when>
+							<xsl:otherwise>
+								<xsl:text>Passed</xsl:text>
+							</xsl:otherwise>
+						</xsl:choose>
+					</td>
+				</xsl:when>
+				<xsl:otherwise>
+					<td class="bad" headers="{$barid} {local-name(.)}">
+						<details>
+							<summary>Failed</summary>
+							<pre class="detail">
+								<xsl:value-of select="@detail" />
+							</pre>
+							<xsl:if test="@warning">
+								<pre class="warning">
+									<xsl:value-of select="@warning" />
 								</pre>
-							</details>
-						</td>
-					</xsl:otherwise>
-				</xsl:choose>
-			</xsl:if>
+							</xsl:if>
+						</details>
+					</td>
+				</xsl:otherwise>
+			</xsl:choose>
 		</xsl:for-each>
 		
 	</xsl:template>
@@ -110,7 +128,10 @@
 	</xsl:template>
 	
 	<xsl:template match="record" mode="header">
-		<xsl:for-each select="@*">            
+		<th class="lv1" id="{local-name(@time)}" scope="col">
+			 <xsl:value-of select="local-name(@time)"/>
+		</th>
+		<xsl:for-each select="./*">            
 			 <th class="lv1" id="{local-name(.)}" scope="col">
 				 <xsl:value-of select="local-name(.)"/>
 			</th>

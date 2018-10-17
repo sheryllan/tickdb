@@ -93,6 +93,10 @@ def hierarchical_group_by(items, keys, itemfunc=lambda x: x, sort_keys=None, sor
     return results
 
 
+def na_equal(v1, v2):
+    return (pd.isna(v1) & pd.isna(v2)) | (v1 == v2)
+
+
 # def hierarchical_group_by(items, keys, itemfunc=None):
 #     if isinstance(items, pd.DataFrame):
 #         flat_keys = list(flatten_iter(keys))

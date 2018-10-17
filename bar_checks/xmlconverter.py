@@ -1,5 +1,7 @@
-from lxml import etree
 from collections import Mapping
+
+from lxml import etree
+
 from commonlib import *
 
 

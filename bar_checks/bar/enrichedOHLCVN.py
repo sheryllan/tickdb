@@ -1,10 +1,12 @@
 import argparse
 from collections import namedtuple
+from types import MappingProxyType
 
 from influxdb import DataFrameClient
 
 from bar.taskconfig import *
 from bar.quantdb1_config import *
+from dfutils import *
 from timeutils import *
 from schedulefactory import *
 from influxcommon import *
@@ -29,6 +31,42 @@ class BarId(namedtuple('BarId', Tags.__members__.keys())):
         return {**super()._asdict(), 'id': self.id}
 
 
+class CheckInfo(Mapping):
+    SUMMARY = 'summary'
+    DETAIL = 'detail'
+    PASSED = 'passed'
+    FAILED = 'failed'
+    WARNING = 'warning'
+
+    def __init__(self, detail, caveat='', pass_msg='', no_warning=''):
+        self.passed = detail == pass_msg
+        info = {self.SUMMARY: self.PASSED} if self.passed else {self.SUMMARY: self.FAILED, self.DETAIL: detail}
+
+        self.warning_free = caveat == no_warning
+        if not self.warning_free:
+            info.update({self.WARNING: caveat})
+
+        self._data = MappingProxyType(info)
+
+    def __getitem__(self, key):
+        return self._data[key]
+
+    def __len__(self):
+        return len(self._data)
+
+    def __iter__(self):
+        return iter(self._data)
+
+    def __repr__(self):
+        return self._data.__repr__()
+
+    def __str__(self):
+        return self._data.__str__()
+
+    def __bool__(self):
+        return self.passed and self.warning_free
+
+
 class BarChecker(object):
     # region check columns
     HIGH_LOW_CHECK = 'high_low_check'
@@ -40,53 +78,6 @@ class BarChecker(object):
     VOL_ON_LV3_CHECK = 'vol_on_lv3_check'
     PRICES_ROLLOVER_CHECK = 'prices_rollover_check'
     VWAP_CHECK = 'vwap_check'
-    # endregion
-
-    # region check details
-    HIGH_LOW = 'high < low'
-    HASK_HIGH = 'hask < high'
-    LOW_LBID = 'low < lbid'
-
-    CASK3_CASK2 = 'cask3 <= cask2'
-    CASK2_CASK1 = 'cask2 <= cask1'
-    CBID1_CBID2 = 'cbid1 <= cbid2'
-    CBID2_CBID3 = 'cbid2 <= cbid3'
-
-    CASK1_CBID1 = 'cask1 <= cbid1'
-    CASK2_CBID2 = 'cask2 <= cbid2'
-    CASK3_CBID3 = 'cask3 <= cbid3'
-    HASK_HBID = 'hask <= hbid'
-    LASK_LBID = 'lask <= lbid'
-
-    NET_VOLUME = 'tbuyv - tsellv != net_volume'
-    TOTAL_VOLUME = 'tbuyv + tsellv > volume'
-
-    CASKV1_MISSING = 'cask1 defined, caskv1 = 0/undefined'
-    CBIDV1_MISSING = 'cbid1 defined, cbidv1 = 0/undefined'
-    CASKV2_MISSING = 'cask2 defined, caskv2 = 0/undefined'
-    CBIDV2_MISSING = 'cbid2 defined, cbidv2 = 0/undefined'
-    CASKV3_MISSING = 'cask3 defined, caskv3 = 0/undefined'
-    CBIDV3_MISSING = 'cbid3 defined, cbidv3 = 0/undefined'
-
-    CASKV1_INCONSISTENT = 'cask1 undefined, caskv1 defined'
-    CBIDV1_INCONSISTENT = 'cbid1 undefined, cbidv1 defined'
-    CASKV2_INCONSISTENT = 'cask2 undefined, caskv2 defined'
-    CBIDV2_INCONSISTENT = 'cbid2 undefined, cbidv2 defined'
-    CASKV3_INCONSISTENT = 'cask3 undefined, caskv3 defined'
-    CBIDV3_INCONSISTENT = 'cbid3 undefined, cbidv3 defined'
-
-    OPEN_NRO = 'open not rolled over'
-    CLOSE_NRO = 'close not rolled over'
-    HIGH_NRO = 'high not rolled over'
-    LOW_NRO = 'low not rolled over'
-
-    OPEN_UNDEFINED = 'open undefined'
-    CLOSE_UNDEFINED = 'close undefined'
-    HIGH_UNDEFINED = 'high undefined'
-    LOW_UNDEFINED = 'low undefined'
-
-    TBUYVWAP_UNDEFINED = 'tbuyvwap undefined'
-    TSELLVWAP_UNDEFINED = 'tsellvwap undefined'
     # endregion
 
     CHECK_COLS = [PRICES_ROLLOVER_CHECK, HIGH_LOW_CHECK, PCLV_ORDER_CHECK, BID_ASK_CHECK, VOLUME_CHECK,
@@ -105,166 +96,86 @@ class BarChecker(object):
             result_type='broadcast')
 
     @classmethod
-    def format_expression(cls, *args):
-        if not args:
-            return ''
+    def map_check_state(cls, details, caveats=None, pass_msg='', name=None):
+        df_tmp = details.to_frame('0')
+        if caveats is not None:
+            df_tmp['1'] = caveats
 
-        func_indicators = ('()', '[]')
-        capsule = {'(': ')', '[': ']'}
-        closed = []
-        sym_closing = None
-
-        expr = ''
-        args = iter(args)
-        for arg in args:
-            arg = str(arg)
-
-            if arg in capsule:
-                sym_closing = capsule[arg]
-                closed.append(sym_closing)
-                to_append = ' ' + arg
-            elif arg == sym_closing:
-                closed.pop()
-                sym_closing = closed[-1] if closed else None
-                to_append = ' ' + arg
-            elif arg.endswith(func_indicators):
-                try:
-                    next_op = str(next(args))
-                    if next_op in func_indicators or next_op in capsule or next_op in capsule.values():
-                        raise ValueError('Invalid expression arguments: invalid symbols following a parametric evaluator')
-                    to_append = rreplace(arg, arg[-2:], arg[-2] + next_op + arg[-1])
-                except StopIteration:
-                    raise ValueError('Invalid expression arguments: an evaluator must be followed by an operand')
-            else:
-                to_append = ' ' + arg
-
-            expr = expr + to_append
-
-        if closed:
-            closed.reverse()
-            raise ValueError('Invalid expression arguments: expression is not closed by {}'.format(closed))
-        return expr.strip()
+        mapped = df_tmp.apply(lambda x: CheckInfo(*x, pass_msg=pass_msg), axis=1)
+        mapped.name = name
+        return mapped
 
     @classmethod
-    def defined_expr(cls, field):
-        return '( ( {} .notna() ) ) & ( {} != 0 ) )'.format(field, field)
-
-
-    @classmethod
-    def not_xor_expr(cls, f1, f2):
-        return '{} == {}'.format(f1, f2)
-
-    @classmethod
-    def vector_eval(cls, df, rname='result', *args):
-        cols = [arg for arg in args if arg in df]
-        statement = '{} = {}'.format(rname, cls.format_expression(*args))
-        return df[cols].eval(statement)
-
-    @classmethod
-    def vector_map(cls, vector, map_true='', map_false='', mask=None, mask_value=''):
-        results = vector.map(lambda x: map_true if x else map_false)
-        if mask is not None:
-            results[mask] = mask_value
-        return results
-
-    @classmethod
-    def vectors_join(cls, vectors, sep='\n', na_rep=None):
-
-        def join_func(row):
-            if na_rep is None:
-                return sep.join(row.dropna().astype(str))
-            return sep.join(row.replace(np.nan, na_rep).astype(str))
-
-        df_cat = pd.concat(vectors, axis=1)
-        return df_cat.apply(join_func, axis=1)
-
-    @classmethod
-    def map_check_state(cls, details, caveats, pass_msg=''):
-
-        def summary_msg(x):
-            return {cls.SUMMARY: cls.PASSED if x == pass_msg else cls.FAILED,
-                    cls.DETAIL: x}
-
-        def warning_msg(x):
-            return {} if x == pass_msg else {cls.WARNING: x}
-
-        details.name = cls.DETAIL
-        details.name = cls.WARNING
-        df_tmp = pd.concat([details, caveats], axis=1)
-        return df_tmp.apply(lambda x: {**summary_msg(x[cls.DETAIL]), **warning_msg(x[cls.WARNING])}, axis=1)
-
-    @classmethod
-    def get_check_info(cls, df, expressions, errmsgs, na_validate=True):
-        unique_cols = set()
+    def get_check_info(cls, df, expressions, errmsgs, validate_na=True, name=None, excl_cols=None):
+        df_isna = pd.DataFrame(index=df.index)
+        excl_cols = [] if excl_cols is None else to_iter(excl_cols)
         rcol = 'rcol'
 
         def evaluate():
             for e in expressions:
-                df_eval = cls.vector_eval(df, rcol, *e)
-                cols_orig = [c for c in df_eval.columns if c != rcol]
-                if na_validate:
-                    unique_cols.update(cols_orig)
+                df_eval = vector_eval(df, rcol, *e)
+                cols_orig = [c for c in df_eval.columns if c != rcol and c not in excl_cols]
                 yield cols_orig, df_eval[rcol]
 
-        df_isna = df[list(unique_cols)].isna()
-        caveats = cls.to_na_msg(df_isna)
-
         def mask(cols):
-            return df_isna[cols].any(axis=1) if not na_validate else None
+            cols_new = [c for c in cols if c not in df_isna]
+            df_isna[cols_new] = pd.isna(df[cols_new])
+            return df_isna[cols].any(axis=1) if validate_na else None
 
-        dvectors = [cls.vector_map(v, map_false=msg, mask=mask(c), mask_value=np.nan)
+        dvectors = [vector_map(v, map_false=msg, mask=mask(c), mask_value=np.nan)
                     for (c, v), msg in zip(evaluate(), errmsgs)]
-        details = cls.vectors_join(dvectors)
+        details = vectors_join(dvectors)
 
-        return cls.map_check_state(details, caveats)
+        caveats = vectors_join(cls.to_na_msg(df_isna)) if validate_na else None
+        return cls.map_check_state(details, caveats, name=name)
 
 
     @classmethod
     def nullify_undefined(cls, df):
         df = df.replace(UNDEFINED, np.nan)
         lv_volumes = [Fields.CASKV1, Fields.CBIDV1, Fields.CASKV2, Fields.CBIDV2, Fields.CASKV3, Fields.CBIDV3]
-        df[lv_volumes] = df[lv_volumes].replace(0, np.nan)
-        tvolumes = [Fields.TBUYV, Fields.TSELLV, Fields.NET_VOLUME, Fields.VOLUME]
-        df[tvolumes] = df[tvolumes].replace(np.nan, 0)
+        prices = [Fields.CASK1, Fields.CBID1, Fields.CASK2, Fields.CBID2, Fields.CASK3, Fields.CBID3,
+                  Fields.OPEN, Fields.CLOSE, Fields.HIGH, Fields.CLOSE,
+                  Fields.HIGH, Fields.HASK, Fields.HBID,
+                  Fields.LOW, Fields.LASK, Fields.LBID]
+
+        cols_zero_nan = lv_volumes + prices
+        df[cols_zero_nan] = df[cols_zero_nan].replace(0, np.nan)
         return df
 
     @classmethod
     def check_high_low(cls, df):
-        hask, high, hbid = df[Fields.HASK], df[Fields.HIGH], df[Fields.HBID]
-        lask, low, lbid = df[Fields.LASK], df[Fields.LOW], df[Fields.LBID]
-        volume = df[Fields.VOLUME]
+        hask, high, hbid = Fields.HASK, Fields.HIGH, Fields.HBID
+        lask, low, lbid = Fields.LASK, Fields.LOW, Fields.LBID
+        volume = Fields.VOLUME
 
         expressions = [(high, '>=', low),
-                       (volume, '==', 0, '|', hask, '>=', high),
-                       (volume, '==', 0, '|', low, '>=', lbid)]
+                       split_expr(chained_expr(notna_expr(volume), single_comp_expr(hask, high, '>='), '|')),
+                       split_expr(chained_expr(notna_expr(volume), single_comp_expr(low, lbid, '>='), '|'))]
         errmsgs = ['high < low',
                    'hask < high',
                    'low < lbid']
 
-        results = cls.get_check_info(df, expressions, errmsgs, True)
-        results.rename(cls.HIGH_LOW_CHECK)
-        return results
+        return cls.get_check_info(df, expressions, errmsgs, True, cls.HIGH_LOW_CHECK, volume)
 
     @classmethod
     def check_pclv_order(cls, df):
-        cask1, cask2, cask3 = df[Fields.CASK1], df[Fields.CASK2], df[Fields.CASK3]
-        cbid1, cbid2, cbid3 = df[Fields.CBID1], df[Fields.CBID2], df[Fields.CBID3]
+        cask1, cask2, cask3 = Fields.CASK1, Fields.CASK2, Fields.CASK3
+        cbid1, cbid2, cbid3 = Fields.CBID1, Fields.CBID2, Fields.CBID3
 
         expressions = [(cask3, '>', cask2, '>', cask1),
                        (cbid1, '>', cbid2, '>', cbid3)]
         errmsgs = ['cask3 <= cask2 <= cask1',
                    'cbid1 <= cbid2 <= cbid3']
 
-        results = cls.get_check_info(df, expressions, errmsgs, True)
-        results.rename(cls.PCLV_ORDER_CHECK)
-        return results
+        return cls.get_check_info(df, expressions, errmsgs, True, cls.PCLV_ORDER_CHECK)
 
     @classmethod
     def check_bid_ask(cls, df):
-        cask1, cask2, cask3 = df[Fields.CASK1], df[Fields.CASK2], df[Fields.CASK3]
-        cbid1, cbid2, cbid3 = df[Fields.CBID1], df[Fields.CBID2], df[Fields.CBID3]
-        hask, lask = df[Fields.HASK], df[Fields.LASK]
-        hbid, lbid = df[Fields.HBID], df[Fields.LBID]
+        cask1, cask2, cask3 = Fields.CASK1, Fields.CASK2, Fields.CASK3
+        cbid1, cbid2, cbid3 = Fields.CBID1, Fields.CBID2, Fields.CBID3
+        hask, lask = Fields.HASK, Fields.LASK
+        hbid, lbid = Fields.HBID, Fields.LBID
 
         expressions = [(cask1, '>', cbid1),
                        (cask2, '>', cbid2),
@@ -277,13 +188,14 @@ class BarChecker(object):
                    'hask <= hbid',
                    'lask <= lbid']
 
-        results = cls.get_check_info(df, expressions, errmsgs, True)
-        results.rename(cls.BID_ASK_CHECK)
-        return results
+        return cls.get_check_info(df, expressions, errmsgs, True, cls.BID_ASK_CHECK)
 
     @classmethod
     def check_volume(cls, df):
         tbuyv, tsellv, net_volume, volume = Fields.TBUYV, Fields.TSELLV, Fields.NET_VOLUME, Fields.VOLUME
+
+        cols = [tbuyv, tsellv, net_volume, volume]
+        df[cols].replace(np.nan, 0)
 
         expressions = [(tbuyv, '-', tsellv, '==', net_volume),
                        (tbuyv, '+', tsellv, '<=', volume)]
@@ -291,82 +203,87 @@ class BarChecker(object):
         errmsgs = ['tbuyv - tsellv != net_volume',
                    'tbuyv + tsellv > volume']
 
-        results = cls.get_check_info(df, expressions, errmsgs, True)
-        results.rename(cls.VOLUME_CHECK)
-        return results
+        return cls.get_check_info(df, expressions, errmsgs, True, cls.VOLUME_CHECK)
 
     @classmethod
     def check_vol_on_lv(cls, df):
-        cask1, caskv1, cbid1, cbidv1 = df[Fields.CASK1], df[Fields.CASKV1], df[Fields.CBID1], df[Fields.CBIDV1]
-        cask2, caskv2, cbid2, cbidv2 = df[Fields.CASK2], df[Fields.CASKV2], df[Fields.CBID2], df[Fields.CBIDV2]
-        cask3, caskv3, cbid3, cbidv3 = df[Fields.CASK3], df[Fields.CASKV3], df[Fields.CBID3], df[Fields.CBIDV3]
+        cask1, caskv1, cbid1, cbidv1 = Fields.CASK1, Fields.CASKV1, Fields.CBID1, Fields.CBIDV1
+        cask2, caskv2, cbid2, cbidv2 = Fields.CASK2, Fields.CASKV2, Fields.CBID2, Fields.CBIDV2
+        cask3, caskv3, cbid3, cbidv3 = Fields.CASK3, Fields.CASKV3, Fields.CBID3, Fields.CBIDV3
 
-        askv1_missing = cask1.notna() & caskv1.isna()
-        askv1_inconsistent = cask1.isna() & caskv1.notna()
-        bidv1_missing = cbid1.notna() & cbidv1.isna()
-        bidv1_inconsistent = cbid1.isna() & cbidv1.notna()
+        expressions1 = [split_expr(chained_expr(notna_expr(cask1), isna_expr(caskv1), '|')),
+                        split_expr(chained_expr(isna_expr(cask1), notna_expr(caskv1), '|')),
+                        split_expr(chained_expr(notna_expr(cbid1), isna_expr(cbidv1), '|')),
+                        split_expr(chained_expr(isna_expr(cbid1), notna_expr(cbidv1), '|'))]
+        expressions2 = [split_expr(chained_expr(notna_expr(cask2), isna_expr(caskv2), '|')),
+                        split_expr(chained_expr(isna_expr(cask2), notna_expr(caskv2), '|')),
+                        split_expr(chained_expr(notna_expr(cbid2), isna_expr(cbidv2), '|')),
+                        split_expr(chained_expr(isna_expr(cbid2), notna_expr(cbidv2), '|'))]
+        expressions3 = [split_expr(chained_expr(notna_expr(cask3), isna_expr(caskv3), '|')),
+                        split_expr(chained_expr(isna_expr(cask3), notna_expr(caskv3), '|')),
+                        split_expr(chained_expr(notna_expr(cbid3), isna_expr(cbidv3), '|')),
+                        split_expr(chained_expr(isna_expr(cbid3), notna_expr(cbidv3), '|'))]
 
-        askv2_missing = cask2.notna() & caskv2.isna()
-        askv2_inconsistent = cask2.isna() & caskv2.notna()
-        bidv2_missing = cbid2.notna() & cbidv2.isna()
-        bidv2_inconsistent = cbid2.isna() & cbidv2.notna()
+        errmsgs1 = ['cask1 defined, caskv1 = 0/undefined',
+                    'cask1 undefined, caskv1 defined',
+                    'cbid1 defined, cbidv1 = 0/undefined',
+                    'cbid1 undefined, cbidv1 defined']
 
-        askv3_missing = cask3.notna() & caskv3.isna()
-        askv3_inconsistent = cask3.isna() & caskv3.notna()
-        bidv3_missing = cbid3.notna() & cbidv3.isna()
-        bidv3_inconsistent = cbid3.isna() & cbidv3.notna()
+        errmsgs2 = ['cask2 defined, caskv2 = 0/undefined',
+                    'cask2 undefined, caskv2 defined',
+                    'cbid2 defined, cbidv2 = 0/undefined',
+                    'cbid2 undefined, cbidv2 defined']
 
-        expressions1 = [tuple(cls.not_xor_expr(cls.defined_expr(cask1), cls.defined_expr(caskv1)).split()),
-                        ]
-        expressions2 = [tuple(cls.not_xor_expr(cls.defined_expr(cask2), cls.defined_expr(caskv2)).split()),
-                        ]
-        expressions3 = [tuple(cls.not_xor_expr(cls.defined_expr(cask3), cls.defined_expr(caskv3)).split())]
+        errmsgs3 = ['cask3 defined, caskv3 = 0/undefined',
+                    'cask3 undefined, caskv3 defined',
+                    'cbid3 defined, cbidv3 = 0/undefined',
+                    'cbid3 undefined, cbidv3 defined']
 
-        cols1 = [~askv1_missing, ~askv1_inconsistent, ~bidv1_missing, ~bidv1_inconsistent]
-        cols2 = [~askv2_missing, ~askv2_inconsistent, ~bidv2_missing, ~bidv2_inconsistent]
-        cols3 = [~askv3_missing, ~askv3_inconsistent, ~bidv3_missing, ~bidv3_inconsistent]
-
-        details1 = [cls.CASKV1_MISSING, cls.CASKV1_INCONSISTENT, cls.CBIDV1_MISSING, cls.CBIDV1_INCONSISTENT]
-        details2 = [cls.CASKV2_MISSING, cls.CASKV2_INCONSISTENT, cls.CBIDV2_MISSING, cls.CBIDV2_INCONSISTENT]
-        details3 = [cls.CASKV3_MISSING, cls.CASKV3_INCONSISTENT, cls.CBIDV3_MISSING, cls.CBIDV3_INCONSISTENT]
-
-        values = [pd.Series(cls.join_details(cols1, details1), df.index, name=cls.VOL_ON_LV1_CHECK),
-                  pd.Series(cls.join_details(cols2, details2), df.index, name=cls.VOL_ON_LV2_CHECK),
-                  pd.Series(cls.join_details(cols3, details3), df.index, name=cls.VOL_ON_LV3_CHECK)]
+        values = [cls.get_check_info(df, expressions1, errmsgs1, False, cls.VOL_ON_LV1_CHECK),
+                  cls.get_check_info(df, expressions2, errmsgs2, False, cls.VOL_ON_LV2_CHECK),
+                  cls.get_check_info(df, expressions3, errmsgs3, False, cls.VOL_ON_LV3_CHECK)]
         return pd.concat(values, axis=1)
 
     @classmethod
     def check_prices_rollover(cls, df):
-        fopen, fclose, fhigh, flow = [Fields.OPEN, Fields.CLOSE, Fields.HIGH, Fields.LOW]
-        details = [cls.OPEN_NRO, cls.CLOSE_NRO, cls.HIGH_NRO, cls.LOW_NRO]
+        volume = Fields.VOLUME
+        fopen, fclose, fhigh, flow = Fields.OPEN, Fields.CLOSE, Fields.HIGH, Fields.LOW
+        errmsgs = pd.Series(['open not rolled over', 'close not rolled over',
+                             'high not rolled over', 'low not rolled over'])
 
         def check():
-            last_defined = df.iloc[0]
-            for i, row in df.iterrows():
-                if row[Fields.VOLUME] == 0:
-                    cols = [[row[fopen] == last_defined[fclose]],
-                            [row[fclose] == last_defined[fclose]],
-                            [row[fhigh] == last_defined[fclose]],
-                            [row[flow] == last_defined[fclose]]]
-                else:
-                    last_defined = row
-                    cols = [[pd.notna(row[fopen])],
-                            [pd.notna(row[fclose])],
-                            [pd.notna(row[fhigh])],
-                            [pd.notna(row[flow])]]
+            for date, gdf in df.groupby(lambda x: x.date()):
+                prev = gdf.iloc[0]
+                for i, row in gdf.iterrows():
+                    if na_equal(row[volume], 0):
+                        cols = [not na_equal(row[fopen], prev[fclose]),
+                                not na_equal(row[fclose], prev[fclose]),
+                                not na_equal(row[fhigh], prev[fclose]),
+                                not na_equal(row[flow], prev[fclose])]
+                    else:
+                        prev = row
+                        cols = [na_equal(row[fopen], 0),
+                                na_equal(row[fclose], 0),
+                                na_equal(row[fhigh], 0),
+                                na_equal(row[flow], 0)]
 
-                yield cls.join_details(cols, details)[0]
+                    yield '\n'.join(errmsgs[cols])
 
-        return pd.Series(list(check()), df.index, name=cls.PRICES_ROLLOVER_CHECK)
+        return cls.map_check_state(pd.Series(check(), df.index), name=cls.PRICES_ROLLOVER_CHECK)
 
     @classmethod
     def check_vwap(cls, df):
         tbuyv, tbuyvwap, tsellv, tsellvwap = Fields.TBUYV, Fields.TBUYVWAP, Fields.TSELLV, Fields.TSELLVWAP
-        cols = [~((df[tbuyv] == 0) ^ (df[tbuyvwap].isna())),
-                ~((df[tsellv] == 0) ^ (df[tsellvwap].isna()))]
-        details = [cls.TBUYVWAP_UNDEFINED, cls.TSELLVWAP_UNDEFINED]
 
-        return pd.Series(cls.join_details(cols, details), df.index, name=cls.VWAP_CHECK)
+        cols = [tbuyv, tbuyvwap, tsellv, tsellvwap]
+        df = df[cols].replace(0, np.nan)
+
+        expressions = [split_expr(chained_expr(isna_expr(tbuyv), isna_expr(tbuyvwap), '==')),
+                       split_expr(chained_expr(isna_expr(tsellv), isna_expr(tsellvwap), '=='))]
+        errmsgs = ['tbuyvwap undefined',
+                   'tsellvwap undefined']
+
+        return cls.get_check_info(df, expressions, errmsgs, False, cls.VWAP_CHECK)
 
 
 class SeriesChecker(object):
@@ -619,7 +536,7 @@ class CheckTask(object):
 
         results = pd.concat(checks, axis=1)
 
-        return results[results[BarChecker.CHECK_COLS].any(axis=1)]
+        return results[~results[BarChecker.CHECK_COLS].all(axis=1)]
 
     def bar_checks_xml(self, data, xsl=None, outpath=None):
         xml = self.task_report_etree
@@ -719,6 +636,6 @@ if __name__ == '__main__':
     # products = ['ZF', 'ZN', 'TN', 'ZB', 'UB', 'ES', 'NQ', 'YM', 'EMD', 'RTY', '6A', '6B', '6C', '6E', '6J', '6M', '6N',
     #             '6S', 'BTC', 'GC', 'SI', 'HG', 'CL', 'HO', 'RB']
     products = 'ES'
-    task.run_checks(product=products, ptype='F', dtfrom=dt.date(2018, 6, 1), schedule='CMESchedule', barxml='lalalal.xml')
+    task.run_checks(product=products, ptype='F', dtfrom=dt.date(2018, 6, 1), schedule='CMESchedule')
     task.email([task.task_barhtml, task.task_tshtml], [BAR_TITILE, TS_TITLE])
     # c.run_checks('CL', 'F', closed='right', dfrom=dt.date(2018, 6, 1), dto=dt.date(2018, 6, 23))
