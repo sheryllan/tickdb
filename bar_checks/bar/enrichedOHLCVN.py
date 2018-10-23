@@ -401,17 +401,15 @@ class CheckTask(object):
 
         self.aparser.add_argument('--barxml', nargs='?', type=str,
                                   help='the xml output path of bar check')
-        self.aparser.add_argument('--barxsl', nargs='?', type=str,
-                                  default=BARXSL,
+        self.aparser.add_argument('--barxsl', nargs='?', type=str, default=BARXSL,
                                   help='the path of xsl file for styling the bar check output xml')
         self.aparser.add_argument('--tsxml', nargs='?', type=str,
                                   help='the xml output path of timeseries check')
-        self.aparser.add_argument('--tsxsl', nargs='?', type=str,
-                                  default=TSXSL,
+        self.aparser.add_argument('--tsxsl', nargs='?', type=str, default=TSXSL,
                                   help='the path of xsl file for styling the timeseries check output xml')
-        self.aparser.add_argument('--barhtml', nargs='?', type=str,
+        self.aparser.add_argument('--barhtml', nargs='?', type=str, default=BARHTML,
                                   help='the html output path of bar check after xsl transformation')
-        self.aparser.add_argument('--tshtml', nargs='?', type=str,
+        self.aparser.add_argument('--tshtml', nargs='?', type=str, default=TSHTML,
                                   help='the html output path of timeseries check after xsl transformation')
 
         self.aparser.add_argument('--sender', nargs='?', type=str, default=SENDER,
