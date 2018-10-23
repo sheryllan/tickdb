@@ -1,6 +1,6 @@
 import os
 
-DIR = os.getcwd()
+DIR = os.path.dirname(os.path.realpath(__file__))
 
 BARXSL = os.path.join(DIR, 'bar_check.xsl')
 TSXSL = os.path.join(DIR, 'timeseries_check.xsl')
