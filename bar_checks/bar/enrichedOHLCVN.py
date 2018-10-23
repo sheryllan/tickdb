@@ -637,5 +637,5 @@ if __name__ == '__main__':
     #             '6S', 'BTC', 'GC', 'SI', 'HG', 'CL', 'HO', 'RB']
     products = 'ES'
     task.run_checks(product=products, ptype='F', dtfrom=dt.date(2018, 6, 1), schedule='CMESchedule')
-    task.email([task.task_barhtml, task.task_tshtml], [BAR_TITILE, TS_TITLE])
+    # task.email([task.task_barhtml, task.task_tshtml], [BAR_TITILE, TS_TITLE])
     # c.run_checks('CL', 'F', closed='right', dfrom=dt.date(2018, 6, 1), dto=dt.date(2018, 6, 23))
