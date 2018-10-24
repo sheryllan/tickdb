@@ -50,6 +50,8 @@
 		</html>
 	</xsl:template>
 	
+	
+	
 	<xsl:template match="missing_products">
 		<dl>
 			<dt>Missing Products</dt>
@@ -60,55 +62,60 @@
 			</xsl:for-each>
 		</dl>
 	</xsl:template>
-			
+	
+	
 	<xsl:template match="record" mode="record">
-		<xsl:variable name="barid" select="../bar/@id" />
-		<td headers="{$barid} {local-name(.)}">
+		<td>
 			<xsl:value-of select="@time"/>
 		</td>
 		<xsl:for-each select="./*">
-			<xsl:choose>
-				<xsl:when test="@summary='passed'">
-					<td class="good" headers="{$barid} {local-name(.)}">
-						<xsl:choose>
-							<xsl:when test="@warning">
-								<details>
-									<summary>Passed</summary>
-									<pre class="warning">
-										<xsl:value-of select="@warning" />
-									</pre>
-								</details>
-							</xsl:when>
-							<xsl:otherwise>
-								<xsl:text>Passed</xsl:text>
-							</xsl:otherwise>
-						</xsl:choose>
-					</td>
-				</xsl:when>
-				<xsl:otherwise>
-					<td class="bad" headers="{$barid} {local-name(.)}">
-						<details>
-							<summary>Failed</summary>
-							<pre class="detail">
-								<xsl:value-of select="@detail" />
-							</pre>
-							<xsl:if test="@warning">
+			<xsl:apply-templates select="." mode="record_child" />
+		</xsl:for-each>
+	</xsl:template>
+	
+	
+	<xsl:template match="record/*" mode="record_child">
+		<xsl:choose>
+			<xsl:when test="@summary='passed'">
+				<td class="good">
+					<xsl:choose>
+						<xsl:when test="@warning">
+							<details>
+								<summary>Passed</summary>
 								<pre class="warning">
 									<xsl:value-of select="@warning" />
 								</pre>
-							</xsl:if>
-						</details>
-					</td>
-				</xsl:otherwise>
-			</xsl:choose>
-		</xsl:for-each>
-		
+							</details>
+						</xsl:when>
+						<xsl:otherwise>
+							<xsl:text>Passed</xsl:text>
+						</xsl:otherwise>
+					</xsl:choose>
+				</td>
+			</xsl:when>
+			<xsl:otherwise>
+				<td class="bad">
+					<details>
+						<summary>Failed</summary>
+						<pre class="detail">
+							<xsl:value-of select="@detail" />
+						</pre>
+						<xsl:if test="@warning">
+							<pre class="warning">
+								<xsl:value-of select="@warning" />
+							</pre>
+						</xsl:if>
+					</details>
+				</td>
+			</xsl:otherwise>
+		</xsl:choose>
 	</xsl:template>
+	
 	
 	<xsl:template match="bar" mode="bar">
 		<xsl:param name="colspan" />  
 		<tr>
-			<th id="{generate-id(.)}" class="span lv2" colspan="{$colspan}" scope="colgroup">
+			<th id="{@id}" class="span lv2" colspan="{$colspan}" scope="colgroup">
 				<xsl:variable name="bartype">
 					<xsl:for-each select="@*[name()!='id']">
 						<xsl:if test="position() > 1">
@@ -127,6 +134,7 @@
 		</xsl:for-each>
 	</xsl:template>
 	
+	
 	<xsl:template match="record" mode="header">
 		<th class="lv1" id="{local-name(@time)}" scope="col">
 			 <xsl:value-of select="local-name(@time)"/>
@@ -137,5 +145,6 @@
 			</th>
 		</xsl:for-each>
 	</xsl:template>
+		
 		
 </xsl:stylesheet>

@@ -39,3 +39,4 @@ include/
 .idea/
 
 bar_checks/**/*.html
+bar_checks/**/*.xml

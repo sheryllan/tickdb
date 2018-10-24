@@ -386,16 +386,16 @@ class CheckTask(object):
                                   help='the expiry(ies) for checking, all if not set')
 
         self.aparser.add_argument('--schedule', nargs='*', type=str, default=SCHEDULE,
-                                  help='the schedule name(or and the refdata file) for the timeseries check')
+                                  help='the schedule name(or and the refdata file) for the time series check')
         self.aparser.add_argument('--window', nargs='*', type=str, default=WINDOW,
                                   help='the check timeslot window, please define start/end time in mm:ss')
         self.aparser.add_argument('--closed', nargs='?', type=str,
                                   help="""defines how the window will be closed: "left" or "right", 
                                   defaults to None(both sides)""")
         self.aparser.add_argument('--dtfrom', nargs='*', type=int, default=(last_n_days().timetuple()[0:3]),
-                                  help='the check start date in format (yyyy, mm, dd), defaults to yesterday')
+                                  help='the check start date as 3 ints(yyyy, M, D), defaults to yesterday')
         self.aparser.add_argument('--dtto', nargs='*', type=int, default=(last_n_days(0).timetuple()[0:3]),
-                                  help='the check end date in format (yyyy, mm, dd), defaults to today')
+                                  help='the check end date as 3 ints(yyyy, M, D), defaults to today')
         self.aparser.add_argument('--timezone', nargs='*', type=str, default=TIMEZONE,
                                   help='the timezone for the check to run')
 
@@ -410,7 +410,7 @@ class CheckTask(object):
         self.aparser.add_argument('--barhtml', nargs='?', type=str, default=BARHTML,
                                   help='the html output path of bar check after xsl transformation')
         self.aparser.add_argument('--tshtml', nargs='?', type=str, default=TSHTML,
-                                  help='the html output path of timeseries check after xsl transformation')
+                                  help='the html output path of time series check after xsl transformation')
 
         self.aparser.add_argument('--sender', nargs='?', type=str, default=SENDER,
                                   help='the email address of sender')
@@ -449,26 +449,26 @@ class CheckTask(object):
     @property
     def task_dtfrom(self):
         dtfrom = self.task_args.dtfrom
-        if isinstance(dtfrom, tuple):
-            dtfrom = pd.Timestamp(*dtfrom)
-
-        if isinstance(dtfrom, (dt.date, dt.datetime)):
+        try:
+            if nontypes_iterable(dtfrom):
+                dtfrom = dt.datetime(*dtfrom)
             dtfrom = pd.Timestamp(dtfrom)
             return self.task_timezone.localize(dtfrom) if self.task_timezone is not None else dtfrom
-        else:
-            raise TypeError('Invalid dfrom: must be (yyyy, mm, dd) or a datetime.date/datetime/pandas.Timestamp object')
+        except Exception as ex:
+            raise TypeError('Invalid dfrom: must be 3 ints(yyyy, M, D) '
+                            'or a datetime.date/datetime/pandas.Timestamp object') from ex
 
     @property
     def task_dtto(self):
         dtto = self.task_args.dtto
-        if isinstance(dtto, tuple):
-            dtto = pd.Timestamp(*dtto)
-
-        if isinstance(dtto, (dt.date, dt.datetime, tuple)):
+        try:
+            if nontypes_iterable(dtto):
+                dtto = pd.Timestamp(*dtto)
             dtto = pd.Timestamp(dtto)
             return self.task_timezone.localize(dtto) if self.task_timezone is not None else dtto
-        else:
-            raise TypeError('Invalid dfrom: must be (yyyy, mm, dd) or a datetime.date/datetime/pandas.Timestamp object')
+        except Exception as ex:
+            raise TypeError('Invalid dfrom: must be 3 ints(yyyy, M, D) '
+                            'or a datetime.date/datetime/pandas.Timestamp object') from ex
 
     @property
     def task_timezone(self):
