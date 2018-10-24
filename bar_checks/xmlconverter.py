@@ -69,6 +69,7 @@ def to_styled_xml(xml, xsl, outpath=None, encoding='utf-8'):
     newdoc = transform(doc)
     if outpath is not None:
         with open(outpath, mode='w+') as stream:
-            text = etree.tostring(newdoc, pretty_print=True).decode(encoding)
+            text = etree.tostring(newdoc, pretty_print=True)
+            text = text.decode(encoding) if text else ''
             stream.write(text)
     return newdoc

@@ -517,7 +517,8 @@ class CheckTask(object):
         fields = {Tags.PRODUCT: product, Tags.TYPE: ptype, Tags.EXPIRY: expiry}
         terms = format_arith_terms(fields)
         qstring = select_where_time_bound(EnrichedOHLCVN.name(), time_from, time_to, where_terms=terms)
-        return self.client.query(qstring).get(EnrichedOHLCVN.name(), None)
+        return self.client.query(qstring).get(EnrichedOHLCVN.name(),
+                                              pd.DataFrame(columns=Fields.values() + Tags.values()))
 
     def run_bar_checks(self, data):
         data = BarChecker.nullify_undefined(data)
@@ -539,9 +540,12 @@ class CheckTask(object):
     def bar_checks_xml(self, data, xsl=None, outpath=None):
         xml = self.task_report_etree
         prods = set(data[Tags.PRODUCT])
-        missing_prods = [(self.PRODUCT, p) for p in to_iter(self.task_product) if p not in prods]
+        missing_prods = [p for p in to_iter(self.task_product) if p not in prods]
         if missing_prods:
-            xml.append(rcsv_addto_etree(missing_prods, self.MISSING_PRODS))
+            xml.append(rcsv_addto_etree(map(lambda x: (self.PRODUCT, x), missing_prods), self.MISSING_PRODS))
+            msg = {'product': missing_prods, 'ptype': self.task_ptype, 'expiry': self.task_expiry,
+                   'dfrom': self.task_dtfrom, 'dto': self.task_dtto}
+            logging.info('No data selected for {}'.format({k: v for k, v in msg.items() if v}))
 
         for bar, group in data.groupby(Tags.values()):
             root = rcsv_addto_etree(BarId(*bar)._asdict(), self.BAR)
@@ -593,18 +597,11 @@ class CheckTask(object):
         self.set_taskargs(**kwargs)
         data = self.get_data(self.task_dtfrom, self.task_product, self.task_ptype,
                              self.task_dtto, self.task_expiry)
+        barxml = self.bar_checks_xml(data, self.task_barxsl, self.task_barxml)
+        tsxml = self.timeseries_checks_xmls(data, self.task_tsxsl, self.task_tsxml)
 
-        if data is not None:
-            barxml = self.bar_checks_xml(data, self.task_barxsl, self.task_barxml)
-            tsxml = self.timeseries_checks_xmls(data, self.task_tsxsl, self.task_tsxml)
-
-            to_styled_xml(barxml, self.task_barxsl, self.task_barhtml)
-            to_styled_xml(tsxml, self.task_tsxsl, self.task_tshtml)
-
-        else:
-            msg = {'product': self.task_product, 'ptype': self.task_ptype, 'expiry': self.task_expiry,
-                   'dfrom': self.task_dtfrom, 'dto': self.task_dtfrom}
-            logging.INFO('No data selected for {}'.format({k: v for k, v in msg.items() if v is not None}))
+        to_styled_xml(barxml, self.task_barxsl, self.task_barhtml)
+        to_styled_xml(tsxml, self.task_tsxsl, self.task_tshtml)
 
     def email(self, files, subjects):
         smtp = smtplib.SMTP_SSL('smtp.gmail.com')
@@ -631,9 +628,11 @@ class CheckTask(object):
 
 if __name__ == '__main__':
     task = CheckTask()
+    logging.basicConfig(level=logging.INFO)
     # products = ['ZF', 'ZN', 'TN', 'ZB', 'UB', 'ES', 'NQ', 'YM', 'EMD', 'RTY', '6A', '6B', '6C', '6E', '6J', '6M', '6N',
     #             '6S', 'BTC', 'GC', 'SI', 'HG', 'CL', 'HO', 'RB']
-    products = 'ES'
-    task.run_checks(product=products, ptype='F', dtfrom=dt.date(2018, 6, 1), schedule='CMESchedule')
-    # task.email([task.task_barhtml, task.task_tshtml], [BAR_TITILE, TS_TITLE])
-    # c.run_checks('CL', 'F', closed='right', dfrom=dt.date(2018, 6, 1), dto=dt.date(2018, 6, 23))
+    # products = ['ZF', 'ZN']
+    # task.run_checks(product=products, ptype=('F', 'O'), dtfrom=dt.date(2018, 7, 1), schedule='CMESchedule')
+    task.run_checks(schedule='CMESchedule')
+    task.email([task.task_barhtml, task.task_tshtml], [BAR_TITILE, TS_TITLE])
+
