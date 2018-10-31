@@ -14,7 +14,7 @@ schedules = {}
 def register(cls):
     try:
         name = cls.name
-    except:
+    except AttributeError:
         name = cls.__name__
     schedules[name] = cls
 

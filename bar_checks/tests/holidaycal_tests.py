@@ -7,7 +7,7 @@ class BScheduleTests(ut.TestCase):
     def setUpClass(cls):
         holidays = [Holiday('h1', month=7, day=1),
                     Holiday('h2', month=7, day=2),
-                    Holiday('h3', month=8, day=9)]
+                    Holiday('h3', month=7, day=9)]
 
         cls.calendar = GeneralCalendar()
         cls.calendar.rules.extend(holidays)

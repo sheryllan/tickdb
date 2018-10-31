@@ -3,6 +3,7 @@ from dateutil.relativedelta import relativedelta
 from collections import Iterable, defaultdict
 from sortedcontainers import SortedDict, SortedList
 import pandas as pd
+import os
 
 
 def last_n_years(n=1, d=dt.date.today()):
@@ -95,6 +96,39 @@ def hierarchical_group_by(items, keys, itemfunc=lambda x: x, sort_keys=None, sor
 
 def na_equal(v1, v2):
     return (pd.isna(v1) & pd.isna(v2)) | (v1 == v2)
+
+
+def func_grouper(iterable, n, func=lambda x: x, chunk_type=list):
+    iteritems = iter(iterable)
+    prev = next(iteritems, None)
+    curr = next(iteritems, None)
+
+    def slice():
+        nonlocal prev, curr
+        count = func(prev)
+
+        while prev is not None:
+            yield prev
+
+            count += 0 if curr is None else func(curr)
+            prev = curr
+            curr = next(iteritems, None)
+            if count >= n:
+                break
+
+    while prev is not None:
+        yield chunk_type(slice())
+
+
+def source_from(src):
+    if not isinstance(src, str):
+        raise TypeError('Invalid source: must be type of str')
+
+    if os.path.isdir(src):
+        with open(src) as fh:
+            return fh.read()
+    else:
+        return src
 
 
 # def hierarchical_group_by(items, keys, itemfunc=None):

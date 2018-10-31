@@ -1,5 +1,5 @@
 import unittest as ut
-from timeutils import *
+from timeseriesutils import *
 import pandas as pd
 from pandas.tseries import offsets
 
@@ -31,7 +31,7 @@ class KnownTimestampValidationTests(ut.TestCase):
         self.validation.timestamps = timestamps
         date = dt.date(2018, 7, 3)
         actual = list(self.validation.reversions(date))
-        expected = [(pd.Timestamp('2018-07-03 03:00:00'), 2, 1,),
+        expected = [(pd.Timestamp('2018-07-03 03:00:00'), 2, 1),
                     (pd.Timestamp('2018-07-03 08:00:00'), 5, 3),
                     (pd.Timestamp('2018-07-03 10:00:00'), 4, 4)]
 

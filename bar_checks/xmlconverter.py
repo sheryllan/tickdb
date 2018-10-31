@@ -1,28 +1,30 @@
-from collections import Mapping
-
+from collections.abc import Mapping
+from os import linesep
 from lxml import etree
 
 from commonlib import *
 
 
-def df_to_xmletree(root, sub_name, df, index_name=None):
+def df_to_xmletree(df, sub_name, root=None, index_name=None):
     if not isinstance(df, pd.DataFrame):
         df = pd.DataFrame(df)
+
+    def subelements():
+        for i, row in df.iterrows():
+            subelement = etree.Element(sub_name)
+            if index_name is not None:
+                subelement.set(index_name, str(i))
+            rcsv_addto_etree(row.items(), subelement)
+
+            yield subelement
+
+    if root is None:
+        return subelements()
 
     xml = root
     if isinstance(root, str):
         xml = etree.Element(root)
-    elif not etree.iselement(root):
-        raise TypeError('Invalid type of root: it must be either a string or etree.Element')
-
-    for i, row in df.iterrows():
-        subelement = etree.Element(sub_name)
-        if index_name is not None:
-            subelement.set(index_name, str(i))
-        rcsv_addto_etree(row.items(), subelement)
-
-        xml.append(subelement)
-
+    xml.extend(subelements())
     return xml
 
 
@@ -49,27 +51,32 @@ def rcsv_addto_etree(value, root):
     return root
 
 
-def to_xsl_instructed_xml(xml, xsl, outpath, encoding='utf-8'):
-    header = u'<?xml version="1.0" encoding="{}"?>\n'.format(encoding)
-    xsl_pi = u'<?xml-stylesheet type="text/xsl" href="{}"?>\n'.format(xsl)
+def etree_tostr(element, outpath=None, xsl=None, header=None, encoding='utf-8'):
+    strings = []
 
-    with open(outpath, 'w+', encoding=encoding) as stream:
-        stream.write(header)
-        stream.write(xsl_pi)
-        text = etree.tostring(xml, pretty_print=True).decode(encoding)
-        stream.write(text)
-    return xml
+    xml_header = '<?xml version="1.0" encoding="{}"?>'.format(encoding)
+    if header == 'xml':
+        strings.append(xml_header)
+        if xsl is not None:
+            xsl_pi = '<?xml-stylesheet type="text/xsl" href="{}"?>'.format(xsl)
+            strings.append(xsl_pi)
+
+    content = etree.tostring(element, pretty_print=True)
+    if content is not None:
+        content = content.decode(encoding)
+        strings.append(content)
+
+    text = linesep.join(strings)
+    if outpath is not None:
+        with open(outpath, 'w+', encoding=encoding) as stream:
+            stream.write(text)
+
+    return text
 
 
-def to_styled_xml(xml, xsl, outpath=None, encoding='utf-8'):
+def to_styled_xml(xml, xsl):
     doc = xml
     if not etree.iselement(doc):
         doc = etree.parse(xml)
     transform = etree.XSLT(etree.parse(xsl))
-    newdoc = transform(doc)
-    if outpath is not None:
-        with open(outpath, mode='w+') as stream:
-            text = etree.tostring(newdoc, pretty_print=True)
-            text = text.decode(encoding) if text else ''
-            stream.write(text)
-    return newdoc
+    return transform(doc)
