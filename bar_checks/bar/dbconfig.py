@@ -67,3 +67,46 @@ class EnrichedOHLCVN(object):
         CLOCK_TYPE = 'clock_type'
         WIDTH = 'width'
         OFFSET = 'offset'
+
+
+class ContinuousContract(object):
+    @classmethod
+    def name(cls):
+        return 'continuous_contract'
+
+    class Fields(StrEnum):
+        SHORT_CODE = 'short_code'
+        TIME_ZONE = 'time_zone'
+
+    class Tags(StrEnum):
+        EXPIRY = 'expiry'
+        PRODUCT = 'product'
+        ROLL_STRATEGY = 'roll_strategy'
+        TYPE = 'type'
+
+
+class Basedb(object):
+    DBNAME = 'bar'
+
+    UNDEFINED = 999999999998
+    ENRICHEDOHLCVN = EnrichedOHLCVN
+
+
+class Quantdb1(Basedb):
+    USERNAME = 'root'
+    PASSWORD = 'root123'
+
+    HOSTNAME = 'lcldn-quantdb1'
+    PORT = 8086
+
+
+class Quantsim1(Basedb):
+    USERNAME = 'root'
+    PASSWORD = 'root123'
+
+    HOSTNAME = 'lcmint-quantsim1'
+    PORT = 8086
+
+    CONTINUOUS_CONTRACT = ContinuousContract
+
+

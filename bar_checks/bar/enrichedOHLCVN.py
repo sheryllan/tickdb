@@ -1,11 +1,10 @@
 import argparse
 from collections import namedtuple
 from types import MappingProxyType
-
 from influxdb import DataFrameClient
 
 from bar.taskconfig import *
-from bar.quantdb1_config import *
+from bar.dbconfig import *
 from dataframeutils import *
 from timeseriesutils import *
 from schedulefactory import *
@@ -15,19 +14,31 @@ from xmlconverter import *
 import logging
 
 
+def set_dbconfig(server):
+    global Server, Enriched
+    global Fields, Tags
+
+    if server == 'quantdb1':
+        Server = Quantdb1
+        Enriched = Server.ENRICHEDOHLCVN
+    elif server == 'quantsim1':
+        Server = Quantsim1
+        Enriched = Server.ENRICHEDOHLCVN
+
+    Fields = Enriched.Fields
+    Tags = Enriched.Tags
 
 
-Fields = EnrichedOHLCVN.Fields
-Tags = EnrichedOHLCVN.Tags
+def create_BarId():
 
+    class BarId(namedtuple('BarId', Tags.__members__.keys())):
+        def __init__(self, *args, **kwargs):
+            self.id = self.__hash__()
 
-class BarId(namedtuple('BarId', Tags.__members__.keys())):
-    def __init__(self, *args, **kwargs):
-        self.id = self.__hash__()
+        def _asdict(self):
+            return {**super()._asdict(), 'id': self.id}
 
-    def _asdict(self):
-        return {**super()._asdict(), 'id': self.id}
-
+    return BarId
 
 class CheckInfo(Mapping):
     SUMMARY = 'summary'
@@ -130,7 +141,7 @@ class BarChecker(object):
 
     @classmethod
     def nullify_undefined(cls, df):
-        df = df.replace(UNDEFINED, np.nan)
+        df = df.replace(Server.UNDEFINED, np.nan)
         lv_volumes = [Fields.CASKV1, Fields.CBIDV1, Fields.CASKV2, Fields.CBIDV2, Fields.CASKV3, Fields.CBIDV3]
         prices = [Fields.CASK1, Fields.CBID1, Fields.CASK2, Fields.CBID2, Fields.CASK3, Fields.CBID3,
                   Fields.OPEN, Fields.CLOSE, Fields.HIGH, Fields.CLOSE,
@@ -307,6 +318,7 @@ class SeriesChecker(object):
 
     def __init__(self, scheduler):
         self.scheduler = scheduler
+        self.BarId = create_BarId()
 
     def validate(self, data, window, closed, tzinfo=None):
         for tz, tz_df in data.groupby(lambda x: x.tz):
@@ -316,7 +328,7 @@ class SeriesChecker(object):
                 step, unit = width, self.OFFSET_MAPPING[clock_type]
                 tsgenerator = StepTimestampGenerator(schedules, step, unit, closed=closed)
                 validation = KnownTimestampValidation(tsgenerator)
-                for barid, barid_df in map(lambda x: (BarId(*x[0]), x[1]), bars_df.groupby(Tags.values())):
+                for barid, barid_df in map(lambda x: (self.BarId(*x[0]), x[1]), bars_df.groupby(Tags.values())):
                     ts_dict = {d: list(ts) for d, ts in groupby(barid_df.index, lambda x: x.date())}
                     for schedule in schedules:
                         date = schedule[0].date()
@@ -370,10 +382,11 @@ class CheckTask(object):
     BAR = 'bar'  # tag
     WINDOW_FMT = '%H:%M'
 
-    def __init__(self, ):
-        self.client = DataFrameClient(host=HOSTNAME, port=PORT, database=DBNAME)
+    def __init__(self):
+        self.client = DataFrameClient(host=Server.HOSTNAME, port=Server.PORT, database=Server.DBNAME)
         self._schedule = None
         self.schecker = None
+        self.BarId = create_BarId()
 
         self.aparser = argparse.ArgumentParser()
 
@@ -467,7 +480,7 @@ class CheckTask(object):
     @property
     def task_timezone(self):
         if self.task_args.timezone is None:
-            return None
+            return pytz.UTC
         return pytz.timezone(self.task_args.timezone)
 
     @property
@@ -517,12 +530,13 @@ class CheckTask(object):
 
         self.set_schecker()
 
-    def get_data(self, tbname, time_from, product=None, ptype=None, time_to=None, expiry=None):
+    def get_data(self, tbname, time_from=None, product=None, ptype=None, time_to=None, expiry=None, filters=None,
+                 include_from=True, include_to=True):
         fields = {Tags.PRODUCT: product, Tags.TYPE: ptype, Tags.EXPIRY: expiry}
         terms = format_arith_terms(fields)
-        qstring = select_where_time_bound(tbname, time_from, time_to, where_terms=terms)
-        return self.client.query(qstring).get(tbname,
-                                              pd.DataFrame(columns=Fields.values() + Tags.values()))
+        qstring = select_where_time_bound(tbname, time_from, time_to, where_terms=terms, others=filters,
+                                          include_from=include_from, include_to=include_to)
+        return self.client.query(qstring).get(tbname, pd.DataFrame(columns=Fields.values() + Tags.values()))
 
     def run_bar_checks(self, data):
         data = BarChecker.nullify_undefined(data)
@@ -559,7 +573,7 @@ class CheckTask(object):
             xml.append(rcsv_addto_etree(map(lambda x: (self.PRODUCT, x), missing_prods), self.MISSING_PRODS))
 
         for bar, group in data.groupby(Tags.values()):
-            bar_ele = rcsv_addto_etree(BarId(*bar)._asdict(), self.BAR)
+            bar_ele = rcsv_addto_etree(self.BarId(*bar)._asdict(), self.BAR)
             results = self.run_bar_checks(group)
             if not results.empty:
                 xml.append(df_to_xmletree(results[BarChecker.CHECK_COLS], self.RECORD, bar_ele, TIME_IDX))
@@ -581,10 +595,7 @@ class CheckTask(object):
         return xml
 
 
-    def run_checks(self, **kwargs):
-        self.set_taskargs(**kwargs)
-        data = self.get_data(EnrichedOHLCVN.name(), self.task_dtfrom, self.task_product, self.task_ptype,
-                             self.task_dtto, self.task_expiry)
+    def check(self, data):
         barxml = self.bar_checks_xml(data, self.task_barxml)
         tsxml = self.timeseries_checks_xml(data, self.task_tsxml)
 
@@ -592,6 +603,13 @@ class CheckTask(object):
         tshtml = etree_tostr(to_styled_xml(tsxml, self.task_tsxsl), self.task_tshtml)
 
         return barhtml, tshtml
+
+
+    def run_checks(self, **kwargs):
+        self.set_taskargs(**kwargs)
+        data = self.get_data(Enriched.name(), self.task_dtfrom, self.task_product, self.task_ptype,
+                             self.task_dtto, self.task_expiry)
+        return self.check(data)
 
 
 
