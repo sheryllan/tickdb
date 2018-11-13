@@ -4,6 +4,7 @@ import bar.enrichedOHLCVN as en
 from htmlprocessor import *
 from itertools import groupby
 from influxcommon import limit, order_by
+from xmlconverter import *
 
 
 en.set_dbconfig('quantsim1')
@@ -38,26 +39,22 @@ class FrontMonthCheckTask(en.CheckTask):
         return self.task_args.recipients
 
 
-    def get_continuous_contracts(self, time_from, product=None, ptype=None, time_to=None):
-        contracts = self.get_data(Continous.name(), time_from, product, ptype)
+    def get_continuous_contracts(self, product=None, ptype=None, time_from=None, time_to=None):
+        fields = {TagsC.PRODUCT: product, TagsC.TYPE: ptype}
+        contracts = self.get_data(Continous.name(), time_from, time_to, empty=pd.DataFrame(), **fields)
+
+        if contracts.empty or contracts.index[0] > time_from:
+            others = [order_by('DESC'), limit(1)]
+            prev_contract = self.get_data(Continous.name(), time_to=time_from, others=others, empty=pd.DataFrame(), **fields)
+            prev_contract.index = pd.Index([time_from])
+            contracts = prev_contract.append(contracts)
+
         start, end = 'start', 'end'
         contracts[start] = contracts.index
-        sr_end = contracts[start][1:].reset_index(drop=True)
-        sr_end.name = end
+        sr_end = contracts[start][1:].append(pd.Series([time_to]), ignore_index=True)
+        contracts[end] = sr_end.tolist()
 
-        results = pd.concat([contracts.reset_index(drop=True), sr_end], axis=1)
-        if (not results.empty) and results.iloc[0][start] > time_from:
-            head = self.get_data(Continous.name(), None, product, ptype, time_from, filters=[order_by('DESC'), limit(1)])
-            if not head.empty:
-                yield (time_from, head.index[0]), head.iloc[0]
-
-        for i, row in results.iterrows():
-            if pd.isna(row[end]):
-                row[end] = None
-
-            if row[end] > time_to >= row[start]:
-                yield (row[start], time_to), row
-                break
+        for i, row in contracts.iterrows():
             yield (row[start], row[end]), row
 
 
@@ -86,14 +83,23 @@ class FrontMonthCheckTask(en.CheckTask):
 
     def run_checks(self, **kwargs):
         self.set_taskargs(**kwargs)
-        contracts = self.get_continuous_contracts(self.task_dtfrom, self.task_product, self.task_ptype, self.task_dtto)
+        contracts = self.get_continuous_contracts(self.task_product, self.task_ptype, self.task_dtfrom, self.task_dtto)
+        fields = [TagsC.PRODUCT, TagsC.TYPE, TagsC.EXPIRY]
 
-        data = pd.concat((self.get_data(en.Enriched.name(), time_start,
-                                        row[TagsC.PRODUCT], row[TagsC.TYPE], time_end, row[TagsC.EXPIRY],
-                                        include_from=True, include_to=False)
-                          for (time_start, time_end), row in contracts))
+        barxml, tsxml = None, None
+        for (time_start, time_end), row in contracts:
+            data = self.get_data(en.Enriched.name(), time_start, time_end, include_to=time_end == self.task_dtto,
+                              **row[fields].to_dict())
 
-        barhtml, tshtml = self.check(data)
+            self.bar_checks_xml(data, barxml, self.task_barxml)
+            self.timeseries_checks_xml(data, tsxml, self.task_tsxml)
+
+        missing_products = self.missing_products()
+        if missing_products is not None:
+            barxml.insert(0, missing_products)
+
+        barhtml = etree_tostr(to_styled_xml(barxml, self.task_barxsl), self.task_barhtml)
+        tshtml = etree_tostr(to_styled_xml(tsxml, self.task_tsxsl), self.task_tshtml)
 
         if self.task_email:
             with EmailSession(*self.task_login, self.split_email) as session:
@@ -108,6 +114,6 @@ if __name__ == '__main__':
     # products = ['ZF', 'ZN', 'TN', 'ZB', 'UB', 'ES', 'NQ', 'YM', 'EMD', 'RTY', '6A', '6B', '6C', '6E', '6J', '6M', '6N',
     #             '6S', 'BTC', 'GC', 'SI', 'HG', 'CL', 'HO', 'RB']
     products = ['ES']
-    task.run_checks(product=products, ptype='F', dtfrom=dt.date(2018, 8, 1), schedule='CMESchedule')
+    task.run_checks(product=products, ptype='F', dtfrom=dt.date(2018, 3, 1), dtto=dt.date(2018, 6, 1), schedule='CMESchedule')
     # task.run_checks(schedule='CMESchedule')
     # task.email([task.task_barhtml, task.task_tshtml], [BAR_TITILE, TS_TITLE])

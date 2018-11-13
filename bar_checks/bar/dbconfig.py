@@ -86,13 +86,13 @@ class ContinuousContract(object):
 
 
 class Basedb(object):
-    DBNAME = 'bar'
-
     UNDEFINED = 999999999998
     ENRICHEDOHLCVN = EnrichedOHLCVN
 
 
 class Quantdb1(Basedb):
+    DBNAME = 'bar'
+
     USERNAME = 'root'
     PASSWORD = 'root123'
 
@@ -101,6 +101,8 @@ class Quantdb1(Basedb):
 
 
 class Quantsim1(Basedb):
+    DBNAME = 'bar_data'
+
     USERNAME = 'root'
     PASSWORD = 'root123'
 

@@ -484,10 +484,19 @@ class CheckTask(object):
         return pytz.timezone(self.task_args.timezone)
 
     @property
-    def task_report_etree(self):
+    def task_bar_etree(self):
         return rcsv_addto_etree({self.START_DT: self.task_dtfrom,
                                  self.END_DT: self.task_dtto},
                                 self.REPORT)
+
+    @property
+    def task_ts_etree(self):
+        et = self.task_bar_etree
+        window = self.task_window
+        et.set(self.START_TIME, str(window[0]))
+        et.set(self.END_TIME, str(window[1]))
+        return et
+
     @property
     def task_barxml(self):
         return self.task_args.barxml
@@ -530,13 +539,13 @@ class CheckTask(object):
 
         self.set_schecker()
 
-    def get_data(self, tbname, time_from=None, product=None, ptype=None, time_to=None, expiry=None, filters=None,
-                 include_from=True, include_to=True):
-        fields = {Tags.PRODUCT: product, Tags.TYPE: ptype, Tags.EXPIRY: expiry}
-        terms = format_arith_terms(fields)
-        qstring = select_where_time_bound(tbname, time_from, time_to, where_terms=terms, others=filters,
-                                          include_from=include_from, include_to=include_to)
-        return self.client.query(qstring).get(tbname, pd.DataFrame(columns=Fields.values() + Tags.values()))
+    def get_data(self, tbname, time_from=None, time_to=None, include_from=True, include_to=True,
+                 others=None, empty=None, **kwargs):
+        terms = [where_term(k, v) for k, v in kwargs.items()]
+        terms = terms + time_terms(time_from, time_to, include_from, include_to)
+        clauses = where_clause(terms) if others is None else [where_clause(terms)] + to_iter(others)
+        qstring = select_query(tbname, clauses=clauses)
+        return self.client.query(qstring).get(tbname, empty)
 
     def run_bar_checks(self, data):
         data = BarChecker.nullify_undefined(data)
@@ -555,22 +564,22 @@ class CheckTask(object):
 
         return results[BarChecker.CHECK_COLS][~results.all(axis=1)]
 
-    def missing_products(self, data):
-        prods = set(data[Tags.PRODUCT])
-        missing_prods = [p for p in to_iter(self.task_product) if p not in prods]
-        if missing_prods:
-            msg = {'product': missing_prods, 'ptype': self.task_ptype, 'expiry': self.task_expiry,
-                   'dfrom': self.task_dtfrom, 'dto': self.task_dtto}
-            logging.info('No data selected for {}'.format({k: v for k, v in msg.items() if v}))
+    def missing_products(self, to_element=True):
+        missing_prods = [p for p in to_iter(self.task_product)
+                         if self.get_data(Enriched.name(), self.task_dtfrom, self.task_dtto, **{Tags.PRODUCT: p}) is None]
 
-        return missing_prods
+        # prods = set(data[Tags.PRODUCT])
+        # missing_prods = [p for p in to_iter(self.task_product) if p not in prods]
+        # if missing_prods:
+        #     msg = {'product': missing_prods, 'ptype': self.task_ptype, 'expiry': self.task_expiry,
+        #            'dfrom': self.task_dtfrom, 'dto': self.task_dtto}
+        #     logging.info('No data selected for {}'.format({k: v for k, v in msg.items() if v}))
 
-    def bar_checks_xml(self, data, outpath=None):
-        xml = self.task_report_etree
+        if to_element and missing_prods:
+            return rcsv_addto_etree(map(lambda x: (self.PRODUCT, x), missing_prods), self.MISSING_PRODS)
 
-        missing_prods = self.missing_products(data)
-        if missing_prods:
-            xml.append(rcsv_addto_etree(map(lambda x: (self.PRODUCT, x), missing_prods), self.MISSING_PRODS))
+    def bar_checks_xml(self, data, root=None, outpath=None):
+        xml = self.task_bar_etree if root is None else root
 
         for bar, group in data.groupby(Tags.values()):
             bar_ele = rcsv_addto_etree(self.BarId(*bar)._asdict(), self.BAR)
@@ -578,38 +587,38 @@ class CheckTask(object):
             if not results.empty:
                 xml.append(df_to_xmletree(results[BarChecker.CHECK_COLS], self.RECORD, bar_ele, TIME_IDX))
 
-        etree_tostr(xml, outpath, self.task_barxsl)
+        if outpath is not None:
+            etree_tostr(xml, outpath, self.task_barxsl)
         return xml
 
-    def timeseries_checks_xml(self, data, outpath=None):
-        xml = self.task_report_etree
-        window = self.task_window
-        xml.set(self.START_TIME, str(window[0]))
-        xml.set(self.END_TIME, str(window[1]))
+    def timeseries_checks_xml(self, data, root=None, outpath=None):
+        xml = self.task_ts_etree if root is None else root
 
-        results = self.schecker.validate(data, window, self.task_closed, self.task_timezone)
+        results = self.schecker.validate(data, self.task_window, self.task_closed, self.task_timezone)
         for record in self.schecker.to_dated_results(results):
             xml.append(rcsv_addto_etree(record, self.RECORD))
 
-        etree_tostr(xml, outpath, self.task_tsxsl)
+        if outpath is not None:
+            etree_tostr(xml, outpath, self.task_tsxsl)
         return xml
 
 
-    def check(self, data):
-        barxml = self.bar_checks_xml(data, self.task_barxml)
-        tsxml = self.timeseries_checks_xml(data, self.task_tsxml)
-
-        barhtml = etree_tostr(to_styled_xml(barxml, self.task_barxsl), self.task_barhtml)
-        tshtml = etree_tostr(to_styled_xml(tsxml, self.task_tsxsl), self.task_tshtml)
-
-        return barhtml, tshtml
-
-
-    def run_checks(self, **kwargs):
-        self.set_taskargs(**kwargs)
-        data = self.get_data(Enriched.name(), self.task_dtfrom, self.task_product, self.task_ptype,
-                             self.task_dtto, self.task_expiry)
-        return self.check(data)
+    # def check(self, data):
+    #     barxml = self.bar_checks_xml(data, self.task_barxml)
+    #     tsxml = self.timeseries_checks_xml(data, self.task_tsxml)
+    #
+    #     barhtml = etree_tostr(to_styled_xml(barxml, self.task_barxsl), self.task_barhtml)
+    #     tshtml = etree_tostr(to_styled_xml(tsxml, self.task_tsxsl), self.task_tshtml)
+    #
+    #     return barhtml, tshtml
+    #
+    #
+    # def run_checks(self, **kwargs):
+    #     self.set_taskargs(**kwargs)
+    #     fields = {Tags.PRODUCT: self.task_product, Tags.TYPE: self.task_ptype, Tags.EXPIRY: self.task_expiry}
+    #     data = self.get_data(Enriched.name(), self.task_dtfrom, self.task_dtto,
+    #                          empty=pd.DataFrame(columns=Fields.values() + Tags.values()), **fields)
+    #     return self.check(data)
 
 
 
