@@ -11,8 +11,3 @@ TIMEZONE = None
 WINDOW = ('00:00', '21:00')
 SCHEDULE = 'ScheduleBase'
 
-BAR_TITILE = 'Bar Integrity Check Report'
-TS_TITLE = 'Timeseries Integrity Check Report'
-
-LOGIN = ('slan@liquidcapital.com', 'atnahqxjoemdtpqa')
-RECIPIENTS = ['slan@liquidcapital.com']

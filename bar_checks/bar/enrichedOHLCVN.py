@@ -3,14 +3,13 @@ from collections import namedtuple
 from types import MappingProxyType
 from influxdb import DataFrameClient
 
-from bar.taskconfig import *
+from bar.checktask_config import *
 from bar.dbconfig import *
 from dataframeutils import *
 from timeseriesutils import *
 from schedulefactory import *
 from influxcommon import *
 from xmlconverter import *
-
 import logging
 
 
@@ -388,8 +387,8 @@ class CheckTask(object):
         self.schecker = None
         self.BarId = create_BarId()
 
+        self.task_args = None
         self.aparser = argparse.ArgumentParser()
-
         self.aparser.add_argument('--product', nargs='*', type=str,
                                   help='the product(s) for checking, all if not set')
         self.aparser.add_argument('--ptype', nargs='*', type=str,
@@ -413,18 +412,12 @@ class CheckTask(object):
 
         self.aparser.add_argument('--barxml', nargs='?', type=str,
                                   help='the xml output path of bar check')
-        self.aparser.add_argument('--barxsl', nargs='?', type=str, default=BARXSL,
-                                  help='the path of xsl file for styling the bar check output xml')
         self.aparser.add_argument('--tsxml', nargs='?', type=str,
                                   help='the xml output path of timeseries check')
-        self.aparser.add_argument('--tsxsl', nargs='?', type=str, default=TSXSL,
-                                  help='the path of xsl file for styling the timeseries check output xml')
         self.aparser.add_argument('--barhtml', nargs='?', type=str, default=BARHTML,
                                   help='the html output path of bar check after xsl transformation')
         self.aparser.add_argument('--tshtml', nargs='?', type=str, default=TSHTML,
                                   help='the html output path of time series check after xsl transformation')
-
-        self.set_taskargs()
 
     @property
     def task_product(self):
@@ -502,16 +495,8 @@ class CheckTask(object):
         return self.task_args.barxml
 
     @property
-    def task_barxsl(self):
-        return self.task_args.barxsl
-
-    @property
     def task_tsxml(self):
         return self.task_args.tsxml
-
-    @property
-    def task_tsxsl(self):
-        return self.task_args.tsxsl
 
     @property
     def task_barhtml(self):
@@ -566,17 +551,15 @@ class CheckTask(object):
 
     def missing_products(self, to_element=True):
         missing_prods = [p for p in to_iter(self.task_product)
-                         if self.get_data(Enriched.name(), self.task_dtfrom, self.task_dtto, **{Tags.PRODUCT: p}) is None]
+                         if self.get_data(Enriched.name(), self.task_dtfrom, self.task_dtto,
+                                          others=limit(1), **{Tags.PRODUCT: p}) is None]
 
-        # prods = set(data[Tags.PRODUCT])
-        # missing_prods = [p for p in to_iter(self.task_product) if p not in prods]
-        # if missing_prods:
-        #     msg = {'product': missing_prods, 'ptype': self.task_ptype, 'expiry': self.task_expiry,
-        #            'dfrom': self.task_dtfrom, 'dto': self.task_dtto}
-        #     logging.info('No data selected for {}'.format({k: v for k, v in msg.items() if v}))
+        if missing_prods:
+            msg = {'product': missing_prods, 'dfrom': self.task_dtfrom, 'dto': self.task_dtto}
+            logging.info('No data selected for {}'.format({k: v for k, v in msg.items() if v}))
 
-        if to_element and missing_prods:
-            return rcsv_addto_etree(map(lambda x: (self.PRODUCT, x), missing_prods), self.MISSING_PRODS)
+            if to_element:
+                return rcsv_addto_etree(map(lambda x: (self.PRODUCT, x), missing_prods), self.MISSING_PRODS)
 
     def bar_checks_xml(self, data, root=None, outpath=None):
         xml = self.task_bar_etree if root is None else root
@@ -588,7 +571,7 @@ class CheckTask(object):
                 xml.append(df_to_xmletree(results[BarChecker.CHECK_COLS], self.RECORD, bar_ele, TIME_IDX))
 
         if outpath is not None:
-            etree_tostr(xml, outpath, self.task_barxsl)
+            etree_tostr(xml, outpath, BARXSL)
         return xml
 
     def timeseries_checks_xml(self, data, root=None, outpath=None):
@@ -599,7 +582,7 @@ class CheckTask(object):
             xml.append(rcsv_addto_etree(record, self.RECORD))
 
         if outpath is not None:
-            etree_tostr(xml, outpath, self.task_tsxsl)
+            etree_tostr(xml, outpath, TSXSL)
         return xml
 
 

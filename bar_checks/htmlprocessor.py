@@ -8,6 +8,9 @@ from contextlib import AbstractContextManager
 from commonlib import *
 
 
+BODY = 'body'
+
+TABLE = 'table'
 TBODY = 'tbody'
 TR = 'tr'
 TH = 'th'
@@ -28,12 +31,12 @@ def extend_multiple(parent, children):
 
 
 def find_all_by_depth(root, tag, depth=1, **kwargs):
-    if depth <= 1:
-        yield from root.find_all(tag, recursive=False, **kwargs)
-
-    else:
-        for child in root.children:
-            yield from find_all_by_depth(child, tag, depth - 1, **kwargs)
+    if isinstance(root, Tag):
+        if depth <= 1:
+            yield from root.find_all(tag, recursive=False, **kwargs)
+        else:
+            for child in root.children:
+                yield from find_all_by_depth(child, tag, depth - 1, **kwargs)
 
 
 def split_tags(tags, buffer_size, grouping=lambda x: x):
@@ -57,7 +60,7 @@ def split_html(html, parent_func, desc_func, buffer_size, split_func, prettify=F
         return str(soup) if not prettify else soup.prettify()
 
     for node, tree in zip(nodes, trees):
-        buffer = buffer_init - len(soup.new_tag(node.name))
+        buffer = buffer_init - len(str(soup.new_tag(node.name)))
         for descendants in split_func(desc_func(node), buffer):
             node_new = extend_multiple(soup.new_tag(node.name), descendants)
             tree.append(node_new)
@@ -67,34 +70,28 @@ def split_html(html, parent_func, desc_func, buffer_size, split_func, prettify=F
 
 class EmailSession(AbstractContextManager):
 
-    def __init__(self, user, password, splitfunc, server='smtp.gmail.com'):
-        self.user = user,
+    def __init__(self, user, password, server='smtp.gmail.com'):
+        self.user = user
         self.password = password
         self.server = server
         self.smtp = smtplib.SMTP_SSL(self.server)
-        self.splitfunc = splitfunc
-
 
     def login(self):
         self.smtp.login(self.user, self.password)
 
 
-    def email(self, recipients, contents, subjects, fmt='html'):
+    def email(self, recipients, contents, subject, splitfunc, fmt='html'):
         msg_to = ', '.join(recipients)
-        for f, subject in zip(contents, subjects):
-            for content in self.splitfunc(source_from(f)):
-                if fmt == 'html':
-                    inline = premailer.transform(content)
-                    body = MIMEText(inline, 'html')
-                else:
-                    body = MIMEText(content)
+        for content in splitfunc(os.linesep.join(source_from(c) for c in to_iter(contents))):
+            body = MIMEText(premailer.transform(content), 'html') if fmt == 'html' else MIMEText(content)
 
-                msg = MIMEMultipart('alternative')
-                msg['From'] = self.user
-                msg['To'] = msg_to
-                msg['Subject'] = subject
-                msg.attach(body)
-                self.smtp.sendmail(self.user, msg_to, msg.as_string())
+            msg = MIMEMultipart('alternative')
+            msg['From'] = self.user
+            msg['To'] = msg_to
+            msg['Subject'] = subject
+            msg.attach(body)
+            self.smtp.sendmail(self.user, msg_to, msg.as_string())
+
 
     def __enter__(self):
         self.login()
