@@ -1,34 +1,15 @@
 from itertools import groupby, islice
-from holidaycalendar import *
+from timeutils.scheduler import *
 
 
-def closed_convert(closed):
-    include_start, include_end = True, True
-    if closed == 'left':
-        include_end = False
-    elif closed == 'right':
-        include_start = False
 
-    return include_start, include_end
-
-
-def isin_closed(value, start, end, closed):
-    if not isinstance(value, dt.datetime):
-        return False
-
-    include_start, include_end = closed if isinstance(closed, tuple) else closed_convert(closed)
-    left = value >= start if include_start else value > start
-    right = value <= end if include_end else value < end
-    return left and right
-
-
-def if_idx_between_time(data, start, end, closed, window_tz=None):
-    delta = timedelta_between(end, start)
-    iter_data = data.iterrows() if isinstance(data, pd.DataFrame) else data.items()
-    for (date, tz), rows in groupby(iter_data, lambda x: (x[0].date(), x[0].tz)):
-        db_start = to_tz_datetime(date=date, time=start, from_tz=window_tz, to_tz=tz)
-        db_end = db_start + delta
-        yield from (isin_closed(row[0], db_start, db_end, closed) for row in rows)
+# def if_idx_between_time(data, start, end, closed, window_tz=None):
+#     delta = timedelta_between(end, start)
+#     iter_data = data.iterrows() if isinstance(data, pd.DataFrame) else data.items()
+#     for (date, tz), rows in groupby(iter_data, lambda x: (x[0].date(), x[0].tz)):
+#         db_start = to_tz_datetime(date=date, time=start, from_tz=window_tz, to_tz=tz)
+#         db_end = db_start + delta
+#         yield from (isin_closed(row[0], db_start, db_end, closed) for row in rows)
 
 
 class StepTimestampGenerator(object):

@@ -93,13 +93,14 @@ class FrontMonthCheckTask(en.CheckTask):
         contracts = self.get_continuous_contracts(self.task_product, self.task_ptype, self.task_dtfrom, self.task_dtto)
         fields = [TagsC.PRODUCT, TagsC.TYPE, TagsC.EXPIRY]
 
-        barxml, tsxml = None, None
+        barxml, tsxml = self.task_bar_etree, self.task_ts_etree
         for (time_start, time_end), row in contracts:
             data = self.get_data(en.Enriched.name(), time_start, time_end, include_to=time_end == self.task_dtto,
                               **row[fields].to_dict())
 
-            barxml = self.bar_checks_xml(data, barxml, self.task_barxml)
-            tsxml = self.timeseries_checks_xml(data, tsxml, self.task_tsxml)
+            if data is not None:
+                barxml = self.bar_checks_xml(data, barxml, self.task_barxml)
+                tsxml = self.timeseries_checks_xml(data, tsxml, self.task_tsxml)
 
         missing_products = self.missing_products()
         if missing_products is not None:

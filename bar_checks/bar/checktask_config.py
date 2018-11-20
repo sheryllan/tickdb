@@ -8,6 +8,8 @@ BARHTML = os.path.join(DIR, 'bar_check.html')
 TSHTML = os.path.join(DIR, 'timeseries_check.html')
 
 TIMEZONE = None
-WINDOW = ('00:00', '21:00')
+WINDOW = ('18:00', '15:00')
+WINDOW_TZ = 'America/Chicago'
 SCHEDULE = 'ScheduleBase'
+
 

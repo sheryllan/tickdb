@@ -1,27 +1,8 @@
-import datetime as dt
-from dateutil.relativedelta import relativedelta
 from collections import Iterable, defaultdict
 from sortedcontainers import SortedDict, SortedList
 import pandas as pd
 import os
 
-
-def last_n_years(n=1, d=dt.date.today()):
-    return d + relativedelta(years=-n)
-
-
-def last_n_months(n=1, d=dt.date.today()):
-    return d + relativedelta(months=-n)
-
-
-def last_n_days(n=1, d=dt.date.today()):
-    return d + relativedelta(days=-n)
-
-
-def fmt_date(year, month=None, day=1, fmt='%Y%m'):
-    if month is None:
-        return str(year)
-    return dt.date(int(year), int(month), int(day)).strftime(fmt)
 
 
 def rreplace(s, old, new, occurrence=1):
