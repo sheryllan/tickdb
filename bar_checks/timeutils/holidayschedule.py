@@ -22,7 +22,7 @@ def add_metaclass(metaclass):
     return wrapper
 
 
-schedules = {}
+rschedules = {}
 
 
 def register(cls):
@@ -30,13 +30,13 @@ def register(cls):
         name = cls.name
     except AttributeError:
         name = cls.__name__
-    schedules[name] = cls
+    rschedules[name] = cls
 
 
 def get_schedule(name, filename=None):
-    if name not in schedules:
+    if name not in rschedules:
         build_schedule(name, filename)
-    return schedules[name]()
+    return rschedules[name]()
 
 
 # TODO  build a schedule class from reference data

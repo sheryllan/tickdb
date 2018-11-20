@@ -65,25 +65,6 @@ def timedelta_between(time1, time2, allow_negative=False):
 
 
 
-def closed_convert(closed):
-    include_start, include_end = True, True
-    if closed == 'left':
-        include_end = False
-    elif closed == 'right':
-        include_start = False
-
-    return include_start, include_end
-
-
-def isin_closed(value, start, end, closed):
-    if not isinstance(value, dt.datetime):
-        return False
-
-    include_start, include_end = closed if isinstance(closed, tuple) else closed_convert(closed)
-    left = value >= start if include_start else value > start
-    right = value <= end if include_end else value < end
-    return left and right
-
 
 # def last_n_years(n=1, d=dt.date.today()):
 #     return d + relativedelta(years=-n)

@@ -100,7 +100,7 @@ class FrontMonthCheckTask(en.CheckTask):
 
             if data is not None:
                 barxml = self.bar_checks_xml(data, barxml, self.task_barxml)
-                tsxml = self.timeseries_checks_xml(data, tsxml, self.task_tsxml)
+                tsxml = self.timeseries_checks_xml(data, tsxml, self.task_tsxml, start_date=time_start, end_date=time_end)
 
         missing_products = self.missing_products()
         if missing_products is not None:

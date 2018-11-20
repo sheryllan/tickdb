@@ -20,7 +20,7 @@ class StepTimestampGenerator(object):
         self._offset = None
         self.offset = offset
         self.closed = closed
-        self._include_start, self._include_end = closed_convert(closed)
+        self._include_start, self._include_end = TimeBound.closed_convert(closed)
 
     @property
     def offset(self):
@@ -45,7 +45,7 @@ class StepTimestampGenerator(object):
 
     def is_valid(self, ts):
         start_ts, end_ts = self.schedules[ts.date()]
-        if not isin_closed(ts, start_ts, end_ts, (self._include_start, self._include_end)):
+        if not TimeBound.isin_closed(ts, start_ts, end_ts, (self._include_start, self._include_end)):
             return False
         delta = ts - start_ts - self.offset
         return delta % self.freq == dt.timedelta(0)
@@ -56,7 +56,7 @@ class StepTimestampGenerator(object):
         start_ts, end_ts = self.schedules[date]
         curr = start_ts + self.offset
         while curr <= end_ts:
-            if isin_closed(curr, start_ts, end_ts, (self._include_start, self._include_end)):
+            if TimeBound.isin_closed(curr, start_ts, end_ts, (self._include_start, self._include_end)):
                 yield curr
             curr += self.freq
 
@@ -67,7 +67,7 @@ class StepTimestampGenerator(object):
             # the first to yield should be the one right after the consecutive isin_closed() == False at the start
             # the last to yield should be the one right before the consecutive isin_closed() == False at the end
             groupby_closed = groupby(date_timestamps,
-                                     lambda x: isin_closed(x, start, end, (self._include_start, self._include_end)))
+                                     lambda x: TimeBound.isin_closed(x, start, end, (self._include_start, self._include_end)))
             groupby_closed = [(is_closed, list(seq)) for is_closed, seq in groupby_closed]
             first = None if groupby_closed[0][0] else 1
             last = None if groupby_closed[-1][0] else len(groupby_closed) - 1

@@ -6,9 +6,9 @@ from commonlib import *
 class BScheduler(object):
     def __init__(self, schedules=None):
         self._schedules = None
-        self.set_schedules(schedules)
+        self.set_schedule_configs(schedules)
 
-    def set_schedules(self, value):
+    def set_schedule_configs(self, value):
         self._schedules = [] if not value else to_iter(value, ittype=tuple)
 
 
@@ -41,22 +41,17 @@ class BScheduler(object):
 
 
     def captime_by_window(self, schedule_open, schedule_close, start_time, end_time, window_tz=None, to_tz=pytz.UTC):
-        window_tz = schedule_open.tzinfo if window_tz is None else window_tz
-        schedule_open = pd.Timestamp(to_tz_datetime(schedule_open, to_tz=window_tz))
-        schedule_close = pd.Timestamp(to_tz_datetime(schedule_close, to_tz=window_tz))
+        schedule_open = pd.Timestamp(to_tz_datetime(schedule_open, to_tz=to_tz))
+        schedule_close = pd.Timestamp(to_tz_datetime(schedule_close, to_tz=to_tz))
 
-        date = schedule_open.date()
         window = timedelta_between(end_time, start_time)
-        if window < timedelta_between(schedule_open.time(), start_time, allow_negative=True):
-            date += dt.timedelta(days=1)
-
-        start_set = pd.Timestamp(to_tz_datetime(date=date, time=start_time, to_tz=window_tz))
+        start_set = pd.Timestamp(to_tz_datetime(date=schedule_open.date(), time=start_time, from_tz=window_tz, to_tz=to_tz))
+        if window < schedule_open - start_set:
+            start_set += dt.timedelta(days=1)
         end_set = start_set + window
 
         start = start_set if start_set > schedule_open else schedule_open
         end = end_set if end_set < schedule_close else schedule_close
-        start, end = to_tz_datetime(start, to_tz=to_tz), to_tz_datetime(end, to_tz=to_tz)
-
         while schedule_open <= start <= end <= schedule_close:
             if start != end:
                 yield start, end
@@ -82,19 +77,54 @@ class BScheduler(object):
                     yield (start, end)
 
 
-    def is_on_schedule(self, times, start_time=None, end_time=None, window_tz=None, closed=None):
-        dtindex = pd.DatetimeIndex(times).sort_values()
-        start_date, end_date = dtindex[0].date(), dtindex[-1].date()
-        schedules = self.get_schedules(start_date, end_date, start_time, end_time, window_tz, None)
+class TimeBound(object):
+    def __init__(self, schedules):
+        self.schedule_dict = {s[0].date(): s for s in schedules}
 
-        i = 0
-        for schedule_open, schedule_close in schedules:
-            while i < len(dtindex) and not isin_closed(dtindex[i], schedule_open, schedule_close, closed):
-                yield False
-                i += 1
-            while i < len(dtindex) and isin_closed(dtindex[i], schedule_open, schedule_close, closed):
-                yield True
-                i += 1
+    @staticmethod
+    def closed_convert(closed):
+        include_start, include_end = True, True
+        if closed == 'left':
+            include_end = False
+        elif closed == 'right':
+            include_start = False
+
+        return include_start, include_end
+
+    @staticmethod
+    def isin_closed(value, start, end, closed):
+        if not isinstance(value, dt.datetime):
+            return False
+
+        include_start, include_end = closed if isinstance(closed, tuple) else TimeBound.closed_convert(closed)
+        left = value >= start if include_start else value > start
+        right = value <= end if include_end else value < end
+        return left and right
+
+    def is_on_schedule(self, ts, closed):
+        today = ts.date()
+        if today in self.schedule_dict and TimeBound.isin_closed(ts, *self.schedule_dict[today], closed):
+            return True
+
+        yesterday = last_n_days(d=today)
+        if yesterday in self.schedule_dict and TimeBound.isin_closed(ts, *self.schedule_dict[yesterday], closed):
+            return True
+
+        return False
+
+
+    def filter_on_schedule(self, timestamps, closed):
+        dtindex = timestamps if isinstance(timestamps, pd.DatetimeIndex) else pd.DatetimeIndex(timestamps)
+        return dtindex[[self.is_on_schedule(i, closed) for i in dtindex]]
+
+
+
+
+
+
+
+
+
 
 
 

@@ -17,6 +17,7 @@ import logging
 def set_dbconfig(server):
     global Server, Enriched
     global Fields, Tags
+    global Barid
 
     if server == 'quantdb1':
         Server = Quantdb1
@@ -27,6 +28,7 @@ def set_dbconfig(server):
 
     Fields = Enriched.Fields
     Tags = Enriched.Tags
+    Barid = create_BarId()
 
 
 def create_BarId():
@@ -316,20 +318,22 @@ class SeriesChecker(object):
 
     OFFSET_MAPPING = {'M': offsets.Minute}
 
-    def __init__(self, scheduler):
-        self.scheduler = scheduler
-        self.BarId = create_BarId()
+    def __init__(self, schedule_times):
+        self.schedule_times = schedule_times
+        # self.BarId = create_BarId()
 
-    def validate(self, data, window, window_tz, closed, to_tz):
-        start_date, end_date = data.index[0].date(), data.index[-1].date()
-        schedules = list(self.scheduler.get_schedules(start_date, end_date, *window, window_tz, to_tz))
+    def validate(self, data, closed, to_tz, start_date=None, end_date=None):
+        start_date = data.index.min().date() if start_date is None else to_datetime(start_date).date()
+        end_date = data.index.max().date() if end_date is None else to_datetime(end_date).date()
+        schedule_times = [(start, end) for start, end in self.schedule_times if start_date <= start.date() <= end_date]
+
         for (clock_type, width), bars_df in data.groupby([Tags.CLOCK_TYPE, Tags.WIDTH]):
             step, unit = width, self.OFFSET_MAPPING[clock_type]
-            tsgenerator = StepTimestampGenerator(schedules, step, unit, closed=closed)
+            tsgenerator = StepTimestampGenerator(schedule_times, step, unit, closed=closed)
             validation = KnownTimestampValidation(tsgenerator)
-            for barid, barid_df in map(lambda x: (self.BarId(*x[0]), x[1]), bars_df.groupby(Tags.values())):
+            for barid, barid_df in map(lambda x: (Barid(*x[0]), x[1]), bars_df.groupby(Tags.values())):
                 ts_dict = {d: list(ts) for d, ts in groupby(barid_df.index, lambda x: x.date())}
-                for schedule in schedules:
+                for schedule in schedule_times:
                     date = schedule[0].date()
                     if date not in ts_dict:
                         invalids, reversions = [], []
@@ -384,9 +388,10 @@ class CheckTask(object):
     def __init__(self):
         self.client = DataFrameClient(host=Server.HOSTNAME, port=Server.PORT, database=Server.DBNAME)
         self.bscheduler = BScheduler()
-        self.schecker = SeriesChecker(self.bscheduler)
+        self.schecker = None
+        self.timebound = None
 
-        self.BarId = create_BarId()
+        # self.BarId = create_BarId()
 
         self.task_args = None
         self.aparser = argparse.ArgumentParser()
@@ -514,7 +519,13 @@ class CheckTask(object):
         for kw in kwargs:
             self.task_args.__dict__[kw] = kwargs[kw]
 
-        self.bscheduler.set_schedules(self.task_schedule)
+        self.bscheduler.set_schedule_configs(self.task_schedule)
+        schedule_times = list(self.bscheduler.get_schedules(self.task_dtfrom, self.task_dtto, *self.task_window,
+                                                            self.task_window_tz, self.task_timezone))
+        self.timebound = TimeBound(schedule_times)
+        self.schecker = SeriesChecker(schedule_times)
+
+
 
     def get_data(self, tbname, time_from=None, time_to=None, include_from=True, include_to=True,
                  others=None, empty=None, **kwargs):
@@ -526,7 +537,7 @@ class CheckTask(object):
 
     def run_bar_checks(self, data):
         data = BarChecker.nullify_undefined(data)
-        index_mask = list(self.bscheduler.is_on_schedule(data.index, *self.task_window, self.task_window_tz, self.task_closed))
+        index_mask = [self.timebound.is_on_schedule(x, self.task_closed) for x in data.index]
         data_cap = data.loc[index_mask]
         checks = [
             BarChecker.check_prices_rollover(data)[index_mask],
@@ -553,11 +564,11 @@ class CheckTask(object):
             if to_element:
                 return rcsv_addto_etree(map(lambda x: (self.PRODUCT, x), missing_prods), self.MISSING_PRODS)
 
-    def bar_checks_xml(self, data, root=None, outpath=None):
+    def bar_checks_xml(self, data, root=None, outpath=None, **kwargs):
         xml = self.task_bar_etree if root is None else root
 
         for bar, group in data.groupby(Tags.values()):
-            bar_ele = rcsv_addto_etree(self.BarId(*bar)._asdict(), self.BAR)
+            bar_ele = rcsv_addto_etree(Barid(*bar)._asdict(), self.BAR)
             results = self.run_bar_checks(group)
             if not results.empty:
                 xml.append(df_to_xmletree(results[BarChecker.CHECK_COLS], self.RECORD, bar_ele, TIME_IDX))
@@ -566,10 +577,11 @@ class CheckTask(object):
             etree_tostr(xml, outpath, BARXSL)
         return xml
 
-    def timeseries_checks_xml(self, data, root=None, outpath=None):
+    def timeseries_checks_xml(self, data, root=None, outpath=None, **kwargs):
         xml = self.task_ts_etree if root is None else root
 
-        results = self.schecker.validate(data, self.task_window, self.task_window_tz, self.task_closed, self.task_timezone)
+        start_date, end_date = kwargs.get('start_date', None), kwargs.get('end_date', None)
+        results = self.schecker.validate(data, self.task_closed, self.task_timezone, start_date, end_date)
         for record in self.schecker.to_dated_results(results):
             xml.append(rcsv_addto_etree(record, self.RECORD))
 
