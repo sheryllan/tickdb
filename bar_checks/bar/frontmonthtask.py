@@ -1,4 +1,5 @@
 import logging
+import datetime as dt
 from bar.checktask_config import *
 from bar.frontmonthtask_config import *
 import bar.enrichedOHLCVN as en
@@ -98,28 +99,31 @@ class FrontMonthCheckTask(en.CheckTask):
             data = self.get_data(en.Enriched.name(), time_start, time_end, include_to=time_end == self.task_dtto,
                               **row[fields].to_dict())
 
-            if data is not None:
-                barxml = self.bar_checks_xml(data, barxml, self.task_barxml)
-                tsxml = self.timeseries_checks_xml(data, tsxml, self.task_tsxml, start_date=time_start, end_date=time_end)
+            data.to_csv('{}.csv'.format(row[TagsC.EXPIRY]))
 
-        missing_products = self.missing_products()
-        if missing_products is not None:
-            barxml.insert(0, missing_products)
-
-        barhtml = etree_tostr(to_styled_xml(barxml, BARXSL), self.task_barhtml)
-        tshtml = etree_tostr(to_styled_xml(tsxml, TSXSL), self.task_tshtml)
-
-        if self.task_email:
-            with EmailSession(*self.task_login) as session:
-                session.email(self.task_recipients, barhtml, BAR_TITILE, self.split_barhtml)
-                session.email(self.task_recipients, tshtml, TS_TITLE, self.split_tshtml)
+        #     if data is not None:
+        #         barxml = self.bar_checks_xml(data, barxml, self.task_barxml)
+        #         tsxml = self.timeseries_checks_xml(data, tsxml, self.task_tsxml, start_date=time_start, end_date=time_end)
+        #
+        # missing_products = self.missing_products()
+        # if missing_products is not None:
+        #     barxml.insert(0, missing_products)
+        #
+        # barhtml = etree_tostr(to_styled_xml(barxml, BARXSL), self.task_barhtml)
+        # tshtml = etree_tostr(to_styled_xml(tsxml, TSXSL), self.task_tshtml)
+        #
+        # if self.task_email:
+        #     with EmailSession(*self.task_login) as session:
+        #         session.email(self.task_recipients, barhtml, BAR_TITILE, self.split_barhtml)
+        #         session.email(self.task_recipients, tshtml, TS_TITLE, self.split_tshtml)
 
 
 if __name__ == '__main__':
     task = FrontMonthCheckTask()
     logging.basicConfig(level=logging.INFO)
+
     # products = ['ZF', 'ZN', 'TN', 'ZB', 'UB', 'ES', 'NQ', 'YM', 'EMD', 'RTY', '6A', '6B', '6C', '6E', '6J', '6M', '6N',
     #             '6S', 'BTC', 'GC', 'SI', 'HG', 'CL', 'HO', 'RB']
-    task.run_checks(schedule='CMESchedule')
-    # task.run_checks(product=products, ptype='F', dtfrom=dt.date(2018, 3, 1), dtto=dt.date(2018, 6, 1), schedule='CMESchedule')
+    # task.run_checks(schedule='CMESchedule')
+    task.run_checks(product='ES', ptype='F', dtfrom=dt.date(2018, 3, 1), dtto=dt.date(2018, 6, 1), schedule='CMESchedule')
     # task.email([task.task_barhtml, task.task_tshtml], [BAR_TITILE, TS_TITLE])

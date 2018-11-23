@@ -64,7 +64,8 @@ def timedelta_between(time1, time2, allow_negative=False):
     return dt.timedelta(seconds=total_seconds)
 
 
-
+def ceildiv(a, b):
+    return -(-a // b)
 
 # def last_n_years(n=1, d=dt.date.today()):
 #     return d + relativedelta(years=-n)

@@ -318,42 +318,71 @@ class SeriesChecker(object):
 
     OFFSET_MAPPING = {'M': offsets.Minute}
 
-    def __init__(self, schedule_times):
-        self.schedule_times = schedule_times
+    def __init__(self, schedule_bound : ScheduleBound):
+        self.schedule_bound = schedule_bound
+        self.schedule_times = schedule_bound.schedule_dict
         # self.BarId = create_BarId()
+
+    def record_dict(self, date, tz, barid):
+        return {self.DATE: str(date), self.TIMEZONE: tz._tzname, self.BAR: barid}
+
+    def error_dict(self, errortype, errorval):
+        return {self.ERRORTYPE: errortype, self.ERRORVAL: errorval}
+
+    def result_dict(self, record, error):
+        return {**record, **error}
+
+
+    def invalids(self, timestamps):
+        return [{self.DETAIL: {self.TIMESTAMP: ts}} for ts in timestamps]
+
+    def gaps(self, tsranges):
+        return [{self.DETAIL: {self.START_TS: tsrange[0], self.END_TS: tsrange[-1]}} for tsrange in tsranges]
+
+    def reversions(self, reversions):
+        return [{self.DETAIL: {self.TIMESTAMP: ts}} for ts, loc, idx in reversions]
+
 
     def validate(self, data, closed, to_tz, start_date=None, end_date=None):
         start_date = data.index.min().date() if start_date is None else to_datetime(start_date).date()
         end_date = data.index.max().date() if end_date is None else to_datetime(end_date).date()
-        schedule_times = [(start, end) for start, end in self.schedule_times if start_date <= start.date() <= end_date]
 
         for (clock_type, width), bars_df in data.groupby([Tags.CLOCK_TYPE, Tags.WIDTH]):
             step, unit = width, self.OFFSET_MAPPING[clock_type]
-            tsgenerator = StepTimestampGenerator(schedule_times, step, unit, closed=closed)
-            validation = KnownTimestampValidation(tsgenerator)
+            tsgenerator = StepTimestampGenerator(step, unit)
+            validation = KnownTimestampValidation(tsgenerator, self.schedule_bound, tz=to_tz)
             for barid, barid_df in map(lambda x: (Barid(*x[0]), x[1]), bars_df.groupby(Tags.values())):
+
+
                 ts_dict = {d: list(ts) for d, ts in groupby(barid_df.index, lambda x: x.date())}
-                for schedule in schedule_times:
-                    date = schedule[0].date()
+                for date in filter(lambda x: start_date <= x <= end_date, self.schedule_times):
+                    record = self.record_dict(date, to_tz, barid)
                     if date not in ts_dict:
-                        invalids, reversions = [], []
-                        gaps = [{self.DETAIL: {self.START_TS: schedule[0], self.END_TS: schedule[1]}}]
+                        gaps = self.gaps(self.schedule_times[date])
+                        yield self.result_dict(record, self.error_dict(self.GAPS, gaps))
                     else:
                         validation.tsgenerator.offset = barid.OFFSET
                         validation.timestamps = ts_dict[date]
-                        invalids = [{self.DETAIL: {self.TIMESTAMP: ts}} for ts in validation.invalids()]
-                        gaps = [{self.DETAIL: {self.START_TS: tsrange[0], self.END_TS: tsrange[-1]}}
-                                for tsrange in validation.gaps(date)]
-                        reversions = [{self.DETAIL: {self.TIMESTAMP: ts, self.LOC: loc, self.INDEX: idx}}
-                                      for ts, loc, idx in validation.reversions(date)]
 
-                    record = {self.DATE: str(date), self.TIMEZONE: to_tz._tzname, self.BAR: barid}
-                    if invalids:
-                        yield {**record, self.ERRORTYPE: self.INVALIDS, self.ERRORVAL: invalids}
-                    if gaps:
-                        yield {**record, self.ERRORTYPE: self.GAPS, self.ERRORVAL: gaps}
-                    if reversions:
-                        yield {**record, self.ERRORTYPE: self.REVERSIONS, self.ERRORVAL: reversions}
+                        errors = {
+                                  self.GAPS: self.gaps(validation.gaps()),
+                                  self.REVERSIONS: self.reversions(validation.invalids_reversions())}
+                        for k, v in errors.items():
+                            if v:
+                                yield self.result_dict(record, self.error_dict(k, v))
+                        # invalids =
+                        # gaps = [{self.DETAIL: {self.START_TS: tsrange[0], self.END_TS: tsrange[-1]}}
+                        #         for tsrange in validation.gaps(date)]
+                        # reversions = [{self.DETAIL: {self.TIMESTAMP: ts, self.LOC: loc, self.INDEX: idx}}
+                        #               for ts, loc, idx in validation.reversions(date)]
+
+                    # record = {self.DATE: str(date), self.TIMEZONE: to_tz._tzname, self.BAR: barid}
+                    # if invalids:
+                    #     yield {**record, self.ERRORTYPE: self.INVALIDS, self.ERRORVAL: invalids}
+                    # if gaps:
+                    #     yield {**record, self.ERRORTYPE: self.GAPS, self.ERRORVAL: gaps}
+                    # if reversions:
+                    #     yield {**record, self.ERRORTYPE: self.REVERSIONS, self.ERRORVAL: reversions}
 
     def to_dated_results(self, data):
         keys = [lambda x: (x[self.DATE], x[self.TIMEZONE]),
@@ -389,7 +418,7 @@ class CheckTask(object):
         self.client = DataFrameClient(host=Server.HOSTNAME, port=Server.PORT, database=Server.DBNAME)
         self.bscheduler = BScheduler()
         self.schecker = None
-        self.timebound = None
+        self.schedule_bound = None
 
         # self.BarId = create_BarId()
 
@@ -522,8 +551,8 @@ class CheckTask(object):
         self.bscheduler.set_schedule_configs(self.task_schedule)
         schedule_times = list(self.bscheduler.get_schedules(self.task_dtfrom, self.task_dtto, *self.task_window,
                                                             self.task_window_tz, self.task_timezone))
-        self.timebound = TimeBound(schedule_times)
-        self.schecker = SeriesChecker(schedule_times)
+        self.schedule_bound = ScheduleBound(schedule_times, self.task_closed, self.task_timezone)
+        self.schecker = SeriesChecker(self.schedule_bound)
 
 
 
@@ -537,7 +566,7 @@ class CheckTask(object):
 
     def run_bar_checks(self, data):
         data = BarChecker.nullify_undefined(data)
-        index_mask = [self.timebound.is_on_schedule(x, self.task_closed) for x in data.index]
+        index_mask = [self.schedule_bound.is_on_schedule(x, self.task_closed) for x in data.index]
         data_cap = data.loc[index_mask]
         checks = [
             BarChecker.check_prices_rollover(data)[index_mask],

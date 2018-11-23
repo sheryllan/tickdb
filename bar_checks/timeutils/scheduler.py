@@ -77,12 +77,32 @@ class BScheduler(object):
                     yield (start, end)
 
 
-class TimeBound(object):
-    def __init__(self, schedules):
-        self.schedule_dict = {s[0].date(): s for s in schedules}
+class ScheduleBound(object):
+    def __init__(self, schedules, closed=None, tz=None):
+        self.closed = self.closed_convert(closed)
+        self.tz = tz
+        self._schedule_dict = None
+        self.schedule_dict = schedules
+
+
+    @property
+    def schedule_dict(self):
+        return self._schedule_dict
+
+    @schedule_dict.setter
+    def schedule_dict(self, value):
+        self._schedule_dict = defaultdict(SortedList)
+        if value is not None:
+            for start, end in value:
+                tz_start = to_tz_datetime(start, to_tz=self.tz)
+                tz_end = to_tz_datetime(end, to_tz=self.tz)
+                self._schedule_dict[tz_start.date()].add((tz_start, tz_end))
 
     @staticmethod
     def closed_convert(closed):
+        if isinstance(closed, tuple):
+            return closed
+
         include_start, include_end = True, True
         if closed == 'left':
             include_end = False
@@ -92,44 +112,49 @@ class TimeBound(object):
         return include_start, include_end
 
     @staticmethod
-    def isin_closed(value, start, end, closed):
-        if not isinstance(value, dt.datetime):
-            return False
-
-        include_start, include_end = closed if isinstance(closed, tuple) else TimeBound.closed_convert(closed)
+    def isin_closed(value: dt.datetime, start: dt.datetime, end: dt.datetime, closed):
+        if value.tzinfo is None:
+            value = to_tz_datetime(value, to_tz=start.tzinfo)
+        include_start, include_end = ScheduleBound.closed_convert(closed)
         left = value >= start if include_start else value > start
         right = value <= end if include_end else value < end
         return left and right
 
-    def is_on_schedule(self, ts, closed):
+    def schedules_on_date(self, ts):
+        ts = to_tz_datetime(ts, to_tz=self.tz)
         today = ts.date()
-        if today in self.schedule_dict and TimeBound.isin_closed(ts, *self.schedule_dict[today], closed):
-            return True
+        if today in self._schedule_dict:
+            return self._schedule_dict[today]
 
         yesterday = last_n_days(d=today)
-        if yesterday in self.schedule_dict and TimeBound.isin_closed(ts, *self.schedule_dict[yesterday], closed):
-            return True
+        if yesterday in self._schedule_dict:
+            return self._schedule_dict[yesterday]
+        return []
 
-        return False
+    def enclosing_schedule(self, ts):
+        for schedule_time in self.schedules_on_date(ts):
+            if schedule_time and ScheduleBound.isin_closed(ts, schedule_time[0], schedule_time[1], self.closed):
+                return schedule_time
 
+    def is_on_schedule(self, ts):
+        return self.enclosing_schedule(ts) is not None
 
-    def filter_on_schedule(self, timestamps, closed):
-        dtindex = timestamps if isinstance(timestamps, pd.DatetimeIndex) else pd.DatetimeIndex(timestamps)
-        return dtindex[[self.is_on_schedule(i, closed) for i in dtindex]]
+    def bound_indices(self, dtindex : pd.DatetimeIndex):
+        if dtindex.empty:
+            return None, None
 
+        i, j = 0, len(dtindex)
+        not_head = not self.is_on_schedule(dtindex[i])
+        not_tail = not self.is_on_schedule(dtindex[j - 1])
+        while i < j and (not_head or not_tail):
+            if not_head:
+                i += 1
+            if not_tail:
+                j -= 1
+            not_head = not self.is_on_schedule(dtindex[i])
+            not_tail = not self.is_on_schedule(dtindex[j - 1])
 
-
-
-
-
-
-
-
-
-
-
-
-
+        return i, j
 
 
 
