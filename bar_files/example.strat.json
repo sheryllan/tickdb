@@ -1,5 +1,5 @@
 {
-"component_path": ["/var/build_asmith/af/modelpipeline/strategy/csv_bars_demo"],
+"component_path": ["/var/build_asmith/af/tickdatabase/bar_files"],
 "order_csv": "orders.csv",
 "trader":
 [

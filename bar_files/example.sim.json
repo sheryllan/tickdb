@@ -1,5 +1,5 @@
 {
-"strategy_json":"/var/build_asmith/af/modelpipeline/strategy/csv_bars_demo/example.strat.json",
+"strategy_json":"/var/build_asmith/af/tickdatabase/bar_files/example.strat.json",
 "risk_json":"",
 "risk_checks":false,
 "log":{
