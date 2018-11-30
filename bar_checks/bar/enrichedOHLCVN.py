@@ -301,6 +301,7 @@ class SeriesChecker(object):
     ERRORTYPE = 'error_type'
     ERRORVAL = 'error_value'
 
+    TIMESLOT = 'timeslot'
     DATE = 'date'  # attribute
     TIMEZONE = 'timezone'  # attribute
 
@@ -320,11 +321,13 @@ class SeriesChecker(object):
 
     def __init__(self, schedule_bound : ScheduleBound):
         self.schedule_bound = schedule_bound
-        self.schedule_times = schedule_bound.schedule_dict
-        # self.BarId = create_BarId()
+        self.schedule_dict = schedule_bound.schedule_dict
+        self.tz = schedule_bound.tz
 
-    def record_dict(self, date, tz, barid):
-        return {self.DATE: str(date), self.TIMEZONE: tz._tzname, self.BAR: barid}
+
+    def record_dict(self, schedule, barid):
+        return {self.TIMESLOT: '{} - {}'.format(str(schedule[0]), str(schedule[1])),
+                self.TIMEZONE: self.tz.zone, self.BAR: barid}
 
     def error_dict(self, errortype, errorval):
         return {self.ERRORTYPE: errortype, self.ERRORVAL: errorval}
@@ -342,6 +345,10 @@ class SeriesChecker(object):
     def reversions(self, reversions):
         return [{self.DETAIL: {self.TIMESTAMP: ts}} for ts, loc, idx in reversions]
 
+    def validate_bar_series(self, validation: SeriesValidation, timestamps: pd.DatetimeIndex):
+
+
+
 
     def validate(self, data, closed, to_tz, start_date=None, end_date=None):
         start_date = data.index.min().date() if start_date is None else to_datetime(start_date).date()
@@ -350,15 +357,18 @@ class SeriesChecker(object):
         for (clock_type, width), bars_df in data.groupby([Tags.CLOCK_TYPE, Tags.WIDTH]):
             step, unit = width, self.OFFSET_MAPPING[clock_type]
             tsgenerator = StepTimestampGenerator(step, unit)
-            validation = KnownTimestampValidation(tsgenerator, self.schedule_bound, tz=to_tz)
+            validation = SeriesValidation(tsgenerator, self.schedule_bound)
             for barid, barid_df in map(lambda x: (Barid(*x[0]), x[1]), bars_df.groupby(Tags.values())):
 
 
+
+
+
                 ts_dict = {d: list(ts) for d, ts in groupby(barid_df.index, lambda x: x.date())}
-                for date in filter(lambda x: start_date <= x <= end_date, self.schedule_times):
+                for date in filter(lambda x: start_date <= x <= end_date, self.schedule_dict):
                     record = self.record_dict(date, to_tz, barid)
                     if date not in ts_dict:
-                        gaps = self.gaps(self.schedule_times[date])
+                        gaps = self.gaps(self.schedule_dict[date])
                         yield self.result_dict(record, self.error_dict(self.GAPS, gaps))
                     else:
                         validation.tsgenerator.offset = barid.OFFSET
@@ -389,7 +399,7 @@ class SeriesChecker(object):
                 lambda x: x[self.ERRORTYPE],
                 lambda x: x[self.BAR]]
         sort_keys = [True, False, False]
-        itemfunc = lambda x: x[self.ERRORVAL]
+        itemfunc = lambda x: to_iter(x[self.ERRORVAL])
 
         dated = hierarchical_group_by(data, keys, itemfunc, sort_keys)
         for d in dated:

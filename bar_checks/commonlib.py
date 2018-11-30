@@ -63,13 +63,13 @@ def hierarchical_group_by(items, keys, itemfunc=lambda x: x, sort_keys=None, sor
             key = keyfunc(item)
             parent = child
 
-        value = to_iter(itemfunc(item))
+        value = itemfunc(item)
         if parent.get(key) is None:
             parent[key] = value_type()
 
         if isinstance(parent[key], list):
             parent[key].extend(value)
-        else:
+        elif isinstance(parent[key], SortedList):
             parent[key].update(value)
 
     return results

@@ -1,4 +1,5 @@
 import datetime as dt
+import pandas as pd
 import pytz
 from dateutil.relativedelta import relativedelta
 import re
@@ -49,12 +50,24 @@ def to_tz_datetime(dttm=None, date=None, time=None, from_tz=None, to_tz=pytz.UTC
     return from_dttm.astimezone(to_tz) if from_dttm.tzinfo is not None else to_tz.localize(from_dttm)
 
 
-    # if from_dttm.tzinfo is None and from_tz is None:
-    #     return to_tz.localize(from_dttm)
-    # elif from_tz is not None:
-    #     return from_tz.localize(from_dttm.replace(tzinfo=None)).astimezone(to_tz)
-    # else:
-    #     return from_dttm.astimezone(to_tz)
+def to_tz_series(timeseries, from_tz=None, to_tz=pytz.UTC):
+    dtindex = pd.DatetimeIndex(timeseries)
+    if dtindex.tz == to_tz:
+        return dtindex
+
+    # if from_tz is None, do nothing
+    if from_tz is not None:
+        if dtindex.tz is None:
+            dtindex.tz_localize(from_tz)
+        elif dtindex.tz is not None:
+            dtindex.tz_convert(from_tz)
+
+    if dtindex.tz is None:
+        return dtindex.tz_localize(to_tz)
+    elif dtindex.tz != to_tz:
+        return dtindex.tz_convert(to_tz)
+    else:
+        return dtindex
 
 
 def timedelta_between(time1, time2, allow_negative=False):
@@ -66,6 +79,10 @@ def timedelta_between(time1, time2, allow_negative=False):
 
 def ceildiv(a, b):
     return -(-a // b)
+
+
+
+
 
 # def last_n_years(n=1, d=dt.date.today()):
 #     return d + relativedelta(years=-n)

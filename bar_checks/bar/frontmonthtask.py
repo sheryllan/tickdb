@@ -99,23 +99,23 @@ class FrontMonthCheckTask(en.CheckTask):
             data = self.get_data(en.Enriched.name(), time_start, time_end, include_to=time_end == self.task_dtto,
                               **row[fields].to_dict())
 
-            data.to_csv('{}.csv'.format(row[TagsC.EXPIRY]))
+            # data.to_csv('{}.csv'.format(row[TagsC.EXPIRY]))
 
-        #     if data is not None:
-        #         barxml = self.bar_checks_xml(data, barxml, self.task_barxml)
-        #         tsxml = self.timeseries_checks_xml(data, tsxml, self.task_tsxml, start_date=time_start, end_date=time_end)
-        #
-        # missing_products = self.missing_products()
-        # if missing_products is not None:
-        #     barxml.insert(0, missing_products)
-        #
-        # barhtml = etree_tostr(to_styled_xml(barxml, BARXSL), self.task_barhtml)
-        # tshtml = etree_tostr(to_styled_xml(tsxml, TSXSL), self.task_tshtml)
-        #
-        # if self.task_email:
-        #     with EmailSession(*self.task_login) as session:
-        #         session.email(self.task_recipients, barhtml, BAR_TITILE, self.split_barhtml)
-        #         session.email(self.task_recipients, tshtml, TS_TITLE, self.split_tshtml)
+            if data is not None:
+                barxml = self.bar_checks_xml(data, barxml, self.task_barxml)
+                tsxml = self.timeseries_checks_xml(data, tsxml, self.task_tsxml, start_date=time_start, end_date=time_end)
+
+        missing_products = self.missing_products()
+        if missing_products is not None:
+            barxml.insert(0, missing_products)
+
+        barhtml = etree_tostr(to_styled_xml(barxml, BARXSL), self.task_barhtml)
+        tshtml = etree_tostr(to_styled_xml(tsxml, TSXSL), self.task_tshtml)
+
+        if self.task_email:
+            with EmailSession(*self.task_login) as session:
+                session.email(self.task_recipients, barhtml, BAR_TITILE, self.split_barhtml)
+                session.email(self.task_recipients, tshtml, TS_TITLE, self.split_tshtml)
 
 
 if __name__ == '__main__':
