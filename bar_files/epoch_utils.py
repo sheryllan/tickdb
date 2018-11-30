@@ -5,3 +5,8 @@ def epoch_to_human_nano_time(epoch):
     s = dt.strftime('%H:%M:%S')
     s += '.' + str(int(epoch % 1000000000)).zfill(9)
     return s
+
+def epoch_to_human_datetime(epoch):
+    dt = datetime.fromtimestamp(epoch // 1000000000)
+    s = dt.strftime('%Y%m%d-%H:%M:%S')
+    return s
