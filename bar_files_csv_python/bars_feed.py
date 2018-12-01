@@ -5,9 +5,24 @@ import pandas as pd
 from collections import deque
 import epoch_utils
 
+class PretendAlphaFrameworkInst():
+
+    def __init__( self,
+            name):
+        self.name = name
+
+class PretendAlphaFrameworkDefinition():
+
+    def __init__(self, clock, width, offset):
+        self.clock = clock
+        self.width = width
+        self.offset = offset
+
 class PretendAlphaFrameworkBar():
 
     def __init__(self,
+                 inst,
+                 definition,
                  bar_time,
                  open,
                  high,
@@ -15,12 +30,20 @@ class PretendAlphaFrameworkBar():
                  close,
                  volume):
 
+        self._inst = inst
+        self._definition = definition
         self.bar_time = bar_time
         self.open = open
         self.high = high
         self.low = low
         self.close = close
         self.volume = volume
+
+    def inst(self):
+        return self._inst
+
+    def definition(self):
+        return self._definition
 
     def __repr__(self):
         self.__str__()
@@ -30,9 +53,12 @@ class PretendAlphaFrameworkBar():
 
 class BarsFeed():
 
-    def __init__(self, history_len, bar_file_path):
+    def __init__(self, inst_name, clock, width, offset, history_len, bar_file_path):
 
         print('BarFeed: len[%s] bars[%s]' % (history_len, bar_file_path))
+
+        self._inst = PretendAlphaFrameworkInst(inst_name)
+        self._definition = PretendAlphaFrameworkDefinition(clock, width, offset)
 
         # ASSUMPTION: all histories are the same length
         self._history = deque(maxlen=history_len)
@@ -48,13 +74,9 @@ class BarsFeed():
         return df_bars
 
     def _bar_row_to_bar(self, index, bar_row):
-        return PretendAlphaFrameworkBar(bar_row['bar_time'], bar_row['open'], bar_row['high'], bar_row['low'], bar_row['close'], bar_row['volume'])
+        return PretendAlphaFrameworkBar(self._inst, self._definition, bar_row['bar_time'], bar_row['open'], bar_row['high'], bar_row['low'], bar_row['close'], bar_row['volume'])
 
-    def run(self, alphaframework_python_component, verbose=False):
-
-        print('Running, initialize PythonComponent...')
-        if not alphaframework_python_component is None:
-            alphaframework_python_component.initialize(self._config)
+    def run(self, alpha_framework_python_component, verbose=False):
 
         df_bars = self._file_to_dataframe()
         print('Triggering marketsim-like run from python. Remember you have no order routing or execution simulation...')
@@ -68,8 +90,8 @@ class BarsFeed():
                 print(bar_row)
                 print(new_bar)
 
-            if not alphaframework_python_component is None:
-                alphaframework_python_component.on_bar_update_histor(new_bar, self._history)
+            if not alpha_framework_python_component is None:
+                alpha_framework_python_component.on_bar_update_with_history(new_bar, self._history)
 
     @staticmethod
     def bar_feed_factory(argv):

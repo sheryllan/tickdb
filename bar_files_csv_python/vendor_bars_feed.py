@@ -6,8 +6,8 @@ from bars_feed import BarsFeed
 
 class VendorBarsFeed(BarsFeed):
 
-    def __init__(self, history_len, bar_file_path):
-        super(VendorBarsFeed, self).__init__(history_len, bar_file_path)
+    def __init__(self, inst_name, clock, width, offset, history_len, bar_file_path):
+        super(VendorBarsFeed, self).__init__(inst_name, clock, width, offset, history_len, bar_file_path)
 
     def __parse_date_time(self, date, time):
         year = int(date[-4:])
@@ -30,7 +30,7 @@ class VendorBarsFeed(BarsFeed):
 
         return df_bars
 
-    def run(self, alphaframework_python_component, verbose=False):
+    def run(self, alpha_framework_python_component, verbose=False):
         super(VendorBarsFeed, self).run(alphaframework_python_component, verbose)
 
 if __name__ == "__main__":
