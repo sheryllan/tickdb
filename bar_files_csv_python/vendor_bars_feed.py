@@ -31,7 +31,7 @@ class VendorBarsFeed(BarsFeed):
         return df_bars
 
     def run(self, alpha_framework_python_component, verbose=False):
-        super(VendorBarsFeed, self).run(alphaframework_python_component, verbose)
+        super(VendorBarsFeed, self).run(alpha_framework_python_component, verbose)
 
 if __name__ == "__main__":
 
