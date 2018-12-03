@@ -1,4 +1,4 @@
-beautifulsoup4=4.6.3
+beautifulsoup4==4.6.3
 certifi==2018.8.24
 chardet==3.0.4
 cssselect==1.0.3
