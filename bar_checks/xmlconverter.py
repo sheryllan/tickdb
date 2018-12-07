@@ -14,7 +14,7 @@ def df_to_xmletree(df, sub_name, root=None, index_name=None):
             subelement = etree.Element(sub_name)
             if index_name is not None:
                 subelement.set(index_name, str(i))
-            rcsv_addto_etree(row.items(), subelement)
+            rcsv_addto_etree(row, subelement)
 
             yield subelement
 
@@ -28,23 +28,23 @@ def df_to_xmletree(df, sub_name, root=None, index_name=None):
     return xml
 
 
-def rcsv_addto_etree(value, root):
+def rcsv_addto_etree(value, root, **kwargs):
     if isinstance(root, str):
         root = etree.Element(root)
     elif not etree.iselement(root):
         raise TypeError('Invalid type of root: it must be either a string or etree.Element')
 
-    if isinstance(value, Mapping):
+    if isinstance(value, (Mapping, pd.Series)):
         for fk, fv in value.items():
             if nontypes_iterable(fv):
-                root.append(rcsv_addto_etree(fv, fk))
+                root.append(rcsv_addto_etree(fv, fk, **kwargs))
             else:
                 root.set(fk, str(fv))
-    elif isinstance(value, tuple) and len(value) == 2:
-        root.append(rcsv_addto_etree(value[1], value[0]))
+    elif isinstance(value, pd.DataFrame):
+        root.extend(df_to_xmletree(value, **kwargs))
     elif nontypes_iterable(value):
         for val in value:
-            rcsv_addto_etree(val, root)
+            rcsv_addto_etree(val, root, **kwargs)
     else:
         root.text = str(value)
 

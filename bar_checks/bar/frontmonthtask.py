@@ -59,7 +59,6 @@ class FrontMonthCheckTask(en.CheckTask):
         for i, row in contracts.iterrows():
             yield (row[start], row[end]), row
 
-
     def split_barhtml(self, html):
 
         def grouping(tags):
@@ -82,7 +81,6 @@ class FrontMonthCheckTask(en.CheckTask):
 
             yield split
 
-
     def split_tshtml(self, html):
         for split in split_html(html, lambda x: x.find_all(BODY), lambda x: find_all_by_depth(x, TABLE),
                                 self.ATTACHMENT_LIMIT, split_tags):
@@ -90,32 +88,33 @@ class FrontMonthCheckTask(en.CheckTask):
 
 
     def run_checks(self, **kwargs):
-        self.set_taskargs(**kwargs)
+        self.set_taskargs(parse_args=True, **kwargs)
         contracts = self.get_continuous_contracts(self.task_product, self.task_ptype, self.task_dtfrom, self.task_dtto)
         fields = [TagsC.PRODUCT, TagsC.TYPE, TagsC.EXPIRY]
 
         barxml, tsxml = self.task_bar_etree, self.task_ts_etree
         for (time_start, time_end), row in contracts:
-            data = self.get_data(en.Enriched.name(), time_start, time_end, include_to=time_end == self.task_dtto,
-                              **row[fields].to_dict())
+            data = self.get_data(en.Enriched.name(), time_start, time_end,
+                                 include_to=time_end == self.task_dtto, **row[fields].to_dict())
 
             # data.to_csv('{}.csv'.format(row[TagsC.EXPIRY]))
 
             if data is not None:
-                barxml = self.bar_checks_xml(data, barxml, self.task_barxml)
-                tsxml = self.timeseries_checks_xml(data, tsxml, self.task_tsxml, start_date=time_start, end_date=time_end)
-
-        missing_products = self.missing_products()
-        if missing_products is not None:
-            barxml.insert(0, missing_products)
-
-        barhtml = etree_tostr(to_styled_xml(barxml, BARXSL), self.task_barhtml)
-        tshtml = etree_tostr(to_styled_xml(tsxml, TSXSL), self.task_tshtml)
-
-        if self.task_email:
-            with EmailSession(*self.task_login) as session:
-                session.email(self.task_recipients, barhtml, BAR_TITILE, self.split_barhtml)
-                session.email(self.task_recipients, tshtml, TS_TITLE, self.split_tshtml)
+                self.set_taskargs(dtfrom=time_start, dtto=time_end)
+                # barxml = self.bar_checks_xml(data, barxml, self.task_barxml)
+                tsxml = self.timeseries_checks_xml(data, tsxml, self.task_tsxml)
+        #
+        # missing_products = self.missing_products()
+        # if missing_products is not None:
+        #     barxml.insert(0, missing_products)
+        #
+        # barhtml = etree_tostr(to_styled_xml(barxml, BARXSL), self.task_barhtml)
+        # tshtml = etree_tostr(to_styled_xml(tsxml, TSXSL), self.task_tshtml)
+        #
+        # if self.task_email:
+        #     with EmailSession(*self.task_login) as session:
+        #         session.email(self.task_recipients, barhtml, BAR_TITILE, self.split_barhtml)
+        #         session.email(self.task_recipients, tshtml, TS_TITLE, self.split_tshtml)
 
 
 if __name__ == '__main__':
@@ -125,5 +124,6 @@ if __name__ == '__main__':
     # products = ['ZF', 'ZN', 'TN', 'ZB', 'UB', 'ES', 'NQ', 'YM', 'EMD', 'RTY', '6A', '6B', '6C', '6E', '6J', '6M', '6N',
     #             '6S', 'BTC', 'GC', 'SI', 'HG', 'CL', 'HO', 'RB']
     # task.run_checks(schedule='CMESchedule')
-    task.run_checks(product='ES', ptype='F', dtfrom=dt.date(2018, 3, 1), dtto=dt.date(2018, 6, 1), schedule='CMESchedule')
+    task.run_checks(product='ES', ptype='F', dtfrom=dt.date(2018, 3, 1), dtto=dt.date(2018, 4, 1),
+                    schedule='CMESchedule', barxml='bar.xml', tsxml='ts.xml')
     # task.email([task.task_barhtml, task.task_tshtml], [BAR_TITILE, TS_TITLE])

@@ -39,14 +39,14 @@ class StepTimestampGenerator(object):
 
     def _ceildiv_delta_freq(self, from_ts: pd.Timestamp, to_ts: pd.Timestamp):
         delta = to_ts - from_ts
-        ceiling = ceildiv(delta, self.offset)
-        return ceiling if ceiling > dt.timedelta(0) else False
+        ceiling = ceildiv(delta, self.freq)
+        return ceiling if ceiling >= 0 else False
 
     def valid_date_range(self, start: pd.Timestamp, end: pd.Timestamp, closed=None, tz=None):
         init_ts = start.normalize() + self.INITIAL_OFFSET + self.offset
 
         ceiling = self._ceildiv_delta_freq(init_ts, start)
-        if not ceiling:
+        if ceiling is False:
             raise ValueError('Invalid argument start: must be >= initial offset for positive freq, or vice versa')
 
         start_ts = to_tz_datetime(init_ts + ceiling * self.freq, to_tz=tz)
@@ -54,16 +54,18 @@ class StepTimestampGenerator(object):
         return pd.date_range(start_ts, end_ts, freq=self.freq, closed=closed)
 
 
-
 class SeriesValidation(object):
-    ERRORTYPE = 'error_type'
-    ERRORVAL = 'error_value'
-
     # Validation type
     GAPS = 'gaps'
     REVERSIONS = 'reversions'
     INVALIDS = 'invalids'
 
+    TIMESTAMP = 'timestamp'
+    START_TS = 'start_ts'
+    END_TS = 'end_ts'
+
+    AGGR_TYPES = {GAPS}
+    FALSE_MASK_TYPES = {REVERSIONS, INVALIDS}
 
     def __init__(self, tsgenerator: StepTimestampGenerator, schedule_bound: ScheduleBound):
         self.tsgenerator = tsgenerator
@@ -74,29 +76,11 @@ class SeriesValidation(object):
                              self.REVERSIONS: self.is_time_increasing,
                              self.INVALIDS: self.is_valid}
 
-    #     self._timestamps = None
-    #     self._timestamps_orig = None
-    #
-    #
-    # @property
-    # def timestamps(self):
-    #     return self._timestamps
-    #
-    # @timestamps.setter
-    # def timestamps(self, value):
-    #     self._timestamps_orig = [] if value is None else pd.DatetimeIndex(value)
-    #     self._timestamps = self._closed_bound(to_tz_series(self._timestamps_orig, to_tz=self._tz))
-    #
-    #
-    # def _closed_bound(self, dtindex: pd.DatetimeIndex):
-    #     start, stop = self._schedule_bound.bound_indices(dtindex)
-    #     return dtindex[start: stop]
-
     @classmethod
     def is_time_increasing(cls, timestamps):
-        max_pre = pd.Timestamp.min
+        max_pre = None
         for curr in timestamps:
-            if max_pre <= curr:
+            if max_pre is None or max_pre <= curr:
                 max_pre = curr
                 yield True
             else:
@@ -108,19 +92,17 @@ class SeriesValidation(object):
     #         if schedule is not None:
     #             yield schedule, to_tz_series(ts_seq, to_tz=self._tz)
 
-    def gaps(self, timestamps: pd.DatetimeIndex):
-        grouped = SortedDict(timestamps.groupby(timestamps.map(self._schedule_bound.enclosing_schedule)))
-        first, last = grouped.keys()[0], grouped.keys()[-1]
-
-        for bound in self._schedule_bound.schedule_dict.values()[]:
-            if bound is None:
-                continue
-
-            valids = self.tsgenerator.valid_date_range(*bound, self._closed, self._tz)
-            for contains, grouper in groupby(valids, lambda x: x in ts_seq):
-                if not contains:
-                    ts_chunk = list(grouper)
-                    yield ts_chunk[0], ts_chunk[-1]
+    def gaps(self, timestamps):
+        grouped = normal_group_by(timestamps, self._schedule_bound.enclosing_schedule, True)
+        for bound in self._schedule_bound.schedule_list:
+            if bound not in grouped:
+                yield {self.START_TS: bound[0], self.END_TS: bound[1]}
+            else:
+                valids = self.tsgenerator.valid_date_range(*bound, self._closed, self._tz)
+                for contains, grouper in groupby(valids, lambda x: x in grouped[bound]):
+                    if not contains:
+                        ts_chunk = list(grouper)
+                        yield {self.START_TS: ts_chunk[0],  self.END_TS: ts_chunk[-1]}
 
             # bounded_series = self.delimit_by_schedules(timestamps)
             # valids = flatten_iter(self.tsgenerator.valid_date_range(*schedule, self._closed, self._tz)
@@ -130,7 +112,7 @@ class SeriesValidation(object):
 
     def is_valid(self, timestamps):
         for ts in timestamps:
-            return self.tsgenerator.is_valid(ts)
+            yield self.tsgenerator.is_valid(ts)
 
 
     # def invalids_reversions(self, timestamps: pd.DatetimeIndex):
@@ -138,32 +120,22 @@ class SeriesValidation(object):
     #         yield to_tz_datetime(timestamps[i], to_tz=self._tz), \
     #               (not self.tsgenerator.is_valid(timestamps[i]), not is_in_order)
 
-    def error_dict(self, errortype, errorval):
-        return {self.ERRORTYPE: errortype, self.ERRORVAL: errorval}
+    # def error_dict(self, errortype, errorval):
+    #     return {self.ERRORTYPE: errortype, self.ERRORVAL: errorval}
 
-
-    def compound_validations(self, df: pd.DataFrame, valtypes):
-        timestamps = to_tz_series(df.index, to_tz=self._tz)
-        valfuncs = {vt: self.valfunc_dict[vt](timestamps) for vt in valtypes if vt in self.valfunc_dict}
-
-        if self.GAPS in valfuncs:
-            for gap in valfuncs[self.GAPS]:
-                yield self.error_dict(self.GAPS, gap)
+    def compound_validation(self, timestamps: pd.DatetimeIndex, valtypes):
+        timestamps = to_tz_series(timestamps, to_tz=self._tz)
+        valfuncs = {vt: self.valfunc_dict[vt](timestamps) for vt in valtypes}
 
         for ts in timestamps:
-            if self.INVALIDS in valfuncs:
-                value = next(valfuncs[self.INVALIDS])
-                if not value:
-                    yield self.error_dict(self.INVALIDS, ts)
-
-            if self.REVERSIONS in valfuncs:
-                value = next(valfuncs[self.REVERSIONS])
-                if not value:
-                    yield self.error_dict(self.REVERSIONS, ts)
-
-
-
-
+            for vtype, vfunc in valfuncs.items():
+                vresult = next(vfunc, None)
+                if vresult is None:
+                    continue
+                elif vtype in self.AGGR_TYPES:
+                    yield vtype, vresult
+                elif vtype in self.FALSE_MASK_TYPES and not vresult:
+                    yield vtype, {self.TIMESTAMP: ts}
 
 
 

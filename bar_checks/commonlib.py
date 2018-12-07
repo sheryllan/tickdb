@@ -39,10 +39,14 @@ def flatten_iter(items, level=None, excl_types=(str,)):
         yield level_item
 
 
-def normal_group_by(items, key=lambda x: x):
-    d = defaultdict(list)
+def normal_group_by(items, key=lambda x: x, unique=False):
+    value_type = set if unique else list
+    d = defaultdict(value_type)
     for item in items:
-        d[key(item)].append(item)
+        if value_type == list:
+            d[key(item)].append(item)
+        elif value_type == set:
+            d[key(item)].add(item)
     return d
 
 
