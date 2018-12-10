@@ -1,5 +1,6 @@
 from enum import Enum
-
+import re
+import datetime as dt
 
 
 class StrEnum(str, Enum):
@@ -111,4 +112,24 @@ class Quantsim1(Basedb):
 
     CONTINUOUS_CONTRACT = ContinuousContract
 
+
+class Lcmquantldn1(Basedb):
+    BASEDIR = '/opt/data'
+
+    HOSTNAME = 'lcmquantldn1'
+
+    TABLE = 'table'
+    PRODUCT = 'product'
+    PTYPE = 'type'
+    EXPIRY = 'expiry'
+    CLOCK = 'clock'
+    WIDTH = 'width'
+    YEAR = 'year'
+
+    FILE_STRUCTURE = [PTYPE, PRODUCT, EXPIRY, TABLE, CLOCK, WIDTH, YEAR]
+    DATE_FMT = '%Y%m%d'
+
+    @classmethod
+    def date_from_filename(cls, fn):
+        return dt.datetime.strptime(re.search('[0-9]{8}', fn).group(), cls.DATE_FMT)
 

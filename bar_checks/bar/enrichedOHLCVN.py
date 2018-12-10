@@ -5,7 +5,7 @@ from influxdb import DataFrameClient
 from pandas.tseries import offsets
 
 from bar.checktask_config import *
-from bar.dbconfig import *
+from bar.datastore_config import *
 from dataframeutils import *
 from timeutils.timeseries import *
 from timeutils.holidayschedule import *

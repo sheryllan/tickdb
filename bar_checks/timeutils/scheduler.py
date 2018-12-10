@@ -116,12 +116,13 @@ class ScheduleBound(object):
         return include_start, include_end
 
     @classmethod
-    def isin_closed(cls, value: dt.datetime, start: dt.datetime, end: dt.datetime, closed):
+    def isin_closed(cls, value: dt.datetime, start: dt.datetime=None, end: dt.datetime=None, closed=None):
         if value.tzinfo is None:
             value = to_tz_datetime(value, to_tz=start.tzinfo)
         include_start, include_end = cls.closed_convert(closed)
-        left = value >= start if include_start else value > start
-        right = value <= end if include_end else value < end
+
+        left = True if start is None else (value >= start if include_start else value > start)
+        right = True if end is None else (value <= end if include_end else value < end)
         return left and right
 
     def enclosing_schedule(self, ts):
