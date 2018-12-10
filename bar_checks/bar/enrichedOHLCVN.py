@@ -514,12 +514,11 @@ class CheckTask(object):
     def set_taskargs(self, parse_args=False, **kwargs):
         if parse_args:
             self.task_args = self.aparser.parse_args()
+
         for kw in kwargs:
             self.task_args.__dict__[kw] = kwargs[kw]
-
         if 'schedule' in kwargs:
             self.bscheduler.set_schedule_configs(self.task_schedule)
-
         if any(x in kwargs for x in ['schedule', 'dtfrom', 'dtto']):
             schedule_times = list(self.bscheduler.get_schedules(self.task_dtfrom, self.task_dtto, *self.task_window,
                                                                 self.task_window_tz, self.task_timezone))

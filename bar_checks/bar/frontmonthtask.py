@@ -97,8 +97,6 @@ class FrontMonthCheckTask(en.CheckTask):
             data = self.get_data(en.Enriched.name(), time_start, time_end,
                                  include_to=time_end == self.task_dtto, **row[fields].to_dict())
 
-            # data.to_csv('{}.csv'.format(row[TagsC.EXPIRY]))
-
             if data is not None:
                 self.set_taskargs(dtfrom=time_start, dtto=time_end)
                 # barxml = self.bar_checks_xml(data, barxml, self.task_barxml)

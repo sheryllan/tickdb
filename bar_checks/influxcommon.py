@@ -53,8 +53,3 @@ def limit(limit=None):
 
 def order_by(order):
     return 'ORDER BY ' + order
-
-
-class InfluxdbRequest(object): # TODO: abstract the database query logic
-    def __init__(self, ):
-        pass
