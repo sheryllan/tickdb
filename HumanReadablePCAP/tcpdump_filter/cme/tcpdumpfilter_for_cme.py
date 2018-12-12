@@ -42,7 +42,7 @@ def parse_mdp3_config(config_file):
                 print("Fatal - unknown protocol type {}".format(protocol_type))
         config[int(channel.getAttribute("id"))] = channel_filter_string
         #print("filter for {} - {}".format(channel.getAttribute("id"), channel_filter_string))
-        return config
+    return config
 
 def print_usage_help():
     print('tcpdumpfilter_for_cme.py -x <MDP3ChannelConfigFile> -i <inputPath> -o <outputPath> -c <selectedChannels> -p <subprocesses>')
@@ -150,9 +150,10 @@ if __name__ == '__main__':
         sys.exit(0)
 
     #prepare output file name
+    channel_identify = "-".join(channels)
     processFileInfo = []
     for (file, fsize) in allPcapFiles:
-        output_file_name = "filtered_" + os.path.basename(file)
+        output_file_name = "filtered_" + channel_identify + "_" + os.path.basename(file)
         processFileInfo.append((file, os.path.join(output_path, output_file_name)))
 
     subprocess_num = min(subprocess_num, len(processFileInfo))
@@ -190,4 +191,3 @@ if __name__ == '__main__':
 
     end_time = time.time()
     print("all done! used {}".format(end_time - start_time))
-
