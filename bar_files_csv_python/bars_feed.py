@@ -28,7 +28,8 @@ class PretendAlphaFrameworkBar():
                  high,
                  low,
                  close,
-                 volume):
+                 volume,
+                 net_volume=0):
 
         self._inst = inst
         self._definition = definition
@@ -38,6 +39,7 @@ class PretendAlphaFrameworkBar():
         self.low = low
         self.close = close
         self.volume = volume
+        self.net_volume = net_volume
 
     def inst(self):
         return self._inst
@@ -66,7 +68,7 @@ class BarsFeed():
 
     def _file_to_dataframe(self):
         # am doing this for column ordering protection whilst the protocol is in dev, realise this is an issue for large files
-        df_bars = pd.read_csv(self._bar_file_path, header=[0])
+        df_bars = pd.read_csv(self._bar_file_path, header=[0], compression='gzip')
         df_bars.rename(columns={df_bars.columns[0]:'bar_time'}, inplace=True)
         print('Got Bars...')
         print(df_bars.describe())
