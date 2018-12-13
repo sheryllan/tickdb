@@ -102,35 +102,12 @@ class ScheduleBound(object):
             if start_date != end_date:
                 self._schedule_dict[end_date].add(s)
 
-    @classmethod
-    def closed_convert(cls, closed):
-        if isinstance(closed, tuple):
-            return closed
-
-        include_start, include_end = True, True
-        if closed == 'left':
-            include_end = False
-        elif closed == 'right':
-            include_start = False
-
-        return include_start, include_end
-
-    @classmethod
-    def isin_closed(cls, value: dt.datetime, start: dt.datetime=None, end: dt.datetime=None, closed=None):
-        if value.tzinfo is None:
-            value = to_tz_datetime(value, to_tz=start.tzinfo)
-        include_start, include_end = cls.closed_convert(closed)
-
-        left = True if start is None else (value >= start if include_start else value > start)
-        right = True if end is None else (value <= end if include_end else value < end)
-        return left and right
-
     def enclosing_schedule(self, ts):
         ts = to_tz_datetime(ts, to_tz=self.tz)
         today = ts.date()
         if today in self._schedule_dict:
             for schedule in self._schedule_dict[today]:
-                if self.isin_closed(ts, schedule[0], schedule[1], self.closed):
+                if isin_closed(ts, schedule[0], schedule[1], self.closed):
                     return schedule
 
         # if today in self.schedule_dict:
@@ -152,21 +129,5 @@ class ScheduleBound(object):
     def is_on_schedule(self, ts):
         return self.enclosing_schedule(ts) is not None
 
-    # def bound_indices(self, dtindex: pd.DatetimeIndex):
-    #     if dtindex.empty:
-    #         return None, None
-    #
-    #     i, j = 0, len(dtindex)
-    #     not_head = not self.is_on_schedule(dtindex[i])
-    #     not_tail = not self.is_on_schedule(dtindex[j - 1])
-    #     while i < j and (not_head or not_tail):
-    #         if not_head:
-    #             i += 1
-    #         if not_tail:
-    #             j -= 1
-    #         not_head = not self.is_on_schedule(dtindex[i])
-    #         not_tail = not self.is_on_schedule(dtindex[j - 1])
-    #
-    #     return i, j
 
 

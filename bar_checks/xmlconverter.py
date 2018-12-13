@@ -5,26 +5,34 @@ from lxml import etree
 from commonlib import *
 
 
-def df_to_xmletree(df, sub_name, root=None, index_name=None):
+def validate_element(element):
+    if isinstance(element, str):
+        element = etree.Element(element)
+    elif not etree.iselement(element):
+        raise TypeError('Invalid type of root: it must be either a string or etree.Element')
+    return element
+
+
+def pd_to_etree(df, root, row_ele=None, index_name=False):
     if not isinstance(df, pd.DataFrame):
         df = pd.DataFrame(df)
 
-    def subelements():
-        for i, row in df.iterrows():
-            subelement = etree.Element(sub_name)
-            if index_name is not None:
-                subelement.set(index_name, str(i))
-            rcsv_addto_etree(row, subelement)
+    # def subelements():
+    #     for i, row in df.iterrows():
+    #         subelement = etree.SubElement(xml, row_ele)
+    #         if index_name is not None:
+    #             subelement.set(index_name, str(i))
+    #         rcsv_addto_etree(row, subelement)
+    #
+    #         yield subelement
 
-            yield subelement
+    xml = validate_element(root)
+    for i, row in df.iterrows():
+        subelement = etree.SubElement(xml, i if row_ele is None else row_ele)
+        if index_name is not False:
+            subelement.set(df.index.name if index_name is None else index_name, str(i))
+        rcsv_addto_etree(row, subelement)
 
-    if root is None:
-        return subelements()
-
-    xml = root
-    if isinstance(root, str):
-        xml = etree.Element(root)
-    xml.extend(subelements())
     return xml
 
 
@@ -41,7 +49,7 @@ def rcsv_addto_etree(value, root, **kwargs):
             else:
                 root.set(fk, str(fv))
     elif isinstance(value, pd.DataFrame):
-        root.extend(df_to_xmletree(value, **kwargs))
+        pd_to_etree(value, root, **kwargs)
     elif nontypes_iterable(value):
         for val in value:
             rcsv_addto_etree(val, root, **kwargs)

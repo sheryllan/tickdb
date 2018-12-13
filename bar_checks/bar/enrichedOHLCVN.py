@@ -1,7 +1,6 @@
 import argparse
 from collections import namedtuple
 from types import MappingProxyType
-from influxdb import DataFrameClient
 from pandas.tseries import offsets
 
 from bar.checktask_config import *
@@ -19,13 +18,8 @@ def set_dbconfig(server):
     global Fields, Tags
     global Barid
 
-    if server == 'quantdb1':
-        Server = Quantdb1
-        Enriched = Server.ENRICHEDOHLCVN
-    elif server == 'quantsim1':
-        Server = Quantsim1
-        Enriched = Server.ENRICHEDOHLCVN
-
+    Server = dbbox_configs[server]
+    Enriched = Server.TABLES[Server.ENRICHEDOHLCVN]
     Fields = Enriched.Fields
     Tags = Enriched.Tags
     Barid = create_BarId()
@@ -321,11 +315,6 @@ class SeriesChecker(object):
 
     def validate_bar_series(self, barid, validation: SeriesValidation, timestamps: pd.DatetimeIndex):
         for error_type, error_value in validation.compound_validation(timestamps, self.valtypes):
-            # if error_type == SeriesValidation.GAPS:
-            #     date = error_value[0].date()
-            #     error_value = '{} - {}'.format(*error_value)
-            # else:
-            #     date = error_value.date()
             date = error_value[SeriesValidation.START_TS].date() \
                 if error_type == SeriesValidation.GAPS else error_value.date()
             yield self.record_dict(date, barid, error_type, error_value)
@@ -339,22 +328,6 @@ class SeriesChecker(object):
                 barid = Barid(*bar_key)
                 validation.tsgenerator.offset = barid.OFFSET
                 yield from self.validate_bar_series(barid, validation, barid_df.index)
-
-
-
-
-        # keys = [lambda x: (x[self.DATE], x[self.TIMEZONE]),
-        #         lambda x: x[self.ERRORTYPE],
-        #         lambda x: x[self.BAR]]
-        # sort_keys = [True, False, False]
-        # itemfunc = lambda x: to_iter(x[self.ERRORVAL])
-        #
-        # dated = hierarchical_group_by(data, keys, itemfunc, sort_keys)
-        # for d in dated:
-        #     for errortype in dated[d]:
-        #         dated[d][errortype] = [{self.BAR: [bar._asdict(), dated[d][errortype][bar]]}
-        #                                for bar in dated[d][errortype]]
-        #     yield {self.DATE: d[0], self.TIMEZONE: d[1], **dated[d]}
 
 
 class CheckTask(object):
@@ -383,8 +356,8 @@ class CheckTask(object):
                   BarChecker.VOL_ON_LV3_CHECK,
                   BarChecker.VWAP_CHECK]
 
-    def __init__(self):
-        self.client = DataFrameClient(host=Server.HOSTNAME, port=Server.PORT, database=Server.DBNAME)
+    def __init__(self, data_accessor):
+        self.data_accessor = data_accessor
         self.bscheduler = BScheduler()
         self.schecker = None
         self.schedule_bound = None
@@ -454,7 +427,7 @@ class CheckTask(object):
 
     @property
     def task_dtfrom(self):
-        dtfrom = self.task_args.dtfrom
+        dtfrom = last_n_days() if self.task_args.dtfrom is None else self.task_args.dtfrom
         try:
             dtfrom = pd.Timestamp(*dtfrom) if nontypes_iterable(dtfrom) else pd.Timestamp(dtfrom)
             return to_tz_datetime(dtfrom, to_tz=self.task_timezone)
@@ -464,7 +437,7 @@ class CheckTask(object):
 
     @property
     def task_dtto(self):
-        dtto = self.task_args.dtto
+        dtto = last_n_days(0) if self.task_args.dtto is None else self.task_args.dtto
         try:
             dtto = pd.Timestamp(*dtto) if nontypes_iterable(dtto) else pd.Timestamp(dtto)
             return to_tz_datetime(dtto, to_tz=self.task_timezone)
@@ -525,15 +498,6 @@ class CheckTask(object):
             self.schedule_bound = ScheduleBound(schedule_times, self.task_closed, self.task_timezone)
             self.schecker = SeriesChecker(self.schedule_bound)
 
-
-    def get_data(self, tbname, time_from=None, time_to=None, include_from=True, include_to=True,
-                 others=None, empty=None, **kwargs):
-        terms = [where_term(k, v) for k, v in kwargs.items()]
-        terms = terms + time_terms(time_from, time_to, include_from, include_to)
-        clauses = where_clause(terms) if others is None else [where_clause(terms)] + to_iter(others)
-        qstring = select_query(tbname, clauses=clauses)
-        return self.client.query(qstring).get(tbname, empty)
-
     def run_bar_checks(self, data):
         data = BarChecker.nullify_undefined(data)
         index_schedule = data.index.map(self.schedule_bound.enclosing_schedule)
@@ -550,12 +514,13 @@ class CheckTask(object):
 
         results = pd.concat(checks, axis=1)
 
-        return results[self.CHECK_COLS][~results.all(axis=1)]
+        return results[self.CHECK_COLS][~results.all(axis=1)] \
+            if not results.empty else pd.DataFrame(columns=self.CHECK_COLS)
 
     def missing_products(self, to_element=True):
         missing_prods = [p for p in to_iter(self.task_product)
-                         if self.get_data(Enriched.name(), self.task_dtfrom, self.task_dtto,
-                                          others=limit(1), **{Tags.PRODUCT: p}) is None]
+                         if self.data_accessor.get_data(Enriched.name(), self.task_dtfrom, self.task_dtto,
+                                                        others=limit(1), **{Tags.PRODUCT: p}) is None]
 
         if missing_prods:
             msg = {'product': missing_prods, 'dfrom': self.task_dtfrom, 'dto': self.task_dtto}
@@ -571,7 +536,7 @@ class CheckTask(object):
             bar_ele = rcsv_addto_etree(Barid(*bar).asdict(), self.BAR)
             results = self.run_bar_checks(group)
             if not results.empty:
-                xml.append(df_to_xmletree(results, self.RECORD, bar_ele, TIME_IDX))
+                xml.append(pd_to_etree(results, bar_ele, self.RECORD, TIME_IDX))
 
         if outpath is not None:
             etree_tostr(xml, outpath, BARXSL)
@@ -583,10 +548,12 @@ class CheckTask(object):
         for date_dict, dated_df in to_grouped_df(
                 self.schecker.validate(data), [SeriesChecker.DATE, SeriesChecker.TIMEZONE]):
             date_ele = rcsv_addto_etree(date_dict, self.RECORD)
-            for barid, bar_df in to_grouped_df(dated_df, Barid.fields()):
-                bar_ele = rcsv_addto_etree(barid, self.BAR)
-                for error, error_df in to_grouped_df(bar_df, SeriesChecker.ERRORTYPE):
-                    date_ele.append(rcsv_addto_etree(map(lambda x: x[1], error_df.iterrows()), bar_ele))
+            for barid_dict, barid_df in to_grouped_df(dated_df, Barid.fields()):
+                bar_ele = rcsv_addto_etree(barid_dict, self.BAR)
+                barid_df = barid_df.set_index(SeriesChecker.ERRORTYPE)
+                for error, error_df in barid_df.groupby(barid_df.index):
+                    bar_ele.append(rcsv_addto_etree(map(lambda x: x[1], error_df.iterrows()), error))
+                date_ele.append(bar_ele)
             xml.append(date_ele)
 
         if outpath is not None:

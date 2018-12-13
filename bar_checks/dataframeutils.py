@@ -108,4 +108,4 @@ def to_grouped_df(data, keys):
         return iter('')
     data_df.set_index(keys, inplace=True)
     for group_key, grouped_df in data_df.groupby(level=keys):
-        yield {key: val for key, val in zip(keys, group_key)}, grouped_df
+        yield {key: val for key, val in zip(keys, to_iter(group_key, ittype=iter))}, grouped_df

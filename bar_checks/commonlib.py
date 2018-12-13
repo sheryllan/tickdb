@@ -83,7 +83,7 @@ def na_equal(v1, v2):
     return (pd.isna(v1) & pd.isna(v2)) | (v1 == v2)
 
 
-def func_grouper(iterable, n, func=lambda x: x, chunk_type=list):
+def func_grouper(iterable, n, func=lambda x: 1, chunk_type=list):
     iteritems = iter(iterable)
     prev = next(iteritems, None)
     curr = next(iteritems, None)
@@ -115,6 +115,23 @@ def source_from(src):
     else:
         return src
 
+
+def bound_indices(items, bound_func):
+    if not hasattr(items, '__getitem__'):
+        raise ValueError("'items' object must be subscriptable")
+
+    i, j = 0, len(items)
+    not_head = not bound_func(items[i])
+    not_tail = not bound_func(items[j - 1])
+    while i < j and (not_head or not_tail):
+        if not_head:
+            i += 1
+            not_head = not bound_func(items[i])
+        if not_tail:
+            j -= 1
+            not_tail = not bound_func(items[j - 1])
+
+    return i, j
 
 # def hierarchical_group_by(items, keys, itemfunc=None):
 #     if isinstance(items, pd.DataFrame):

@@ -28,9 +28,12 @@ class StepTimestampGenerator(object):
         self.freq = self._to_timedelta(step)
 
     def _to_timedelta(self, offset):
-        if isinstance(offset, (int, float, str)):
-            offset = self.unit(float(offset))
-        return dt.timedelta(0) + offset
+        try:
+            offset_unit = self.unit(float(offset))
+        except ValueError:
+            offset_unit = offset
+
+        return dt.timedelta(0) + offset_unit
 
     def is_valid(self, ts: pd.Timestamp):
         baseline = ts.normalize() + self.INITIAL_OFFSET
@@ -104,24 +107,9 @@ class SeriesValidation(object):
                         ts_chunk = list(grouper)
                         yield {self.START_TS: ts_chunk[0],  self.END_TS: ts_chunk[-1]}
 
-            # bounded_series = self.delimit_by_schedules(timestamps)
-            # valids = flatten_iter(self.tsgenerator.valid_date_range(*schedule, self._closed, self._tz)
-            #                       for schedule, ts_seq in bounded_series)
-
-
-
     def is_valid(self, timestamps):
         for ts in timestamps:
             yield self.tsgenerator.is_valid(ts)
-
-
-    # def invalids_reversions(self, timestamps: pd.DatetimeIndex):
-    #     for i, is_in_order in enumerate(self.is_time_increasing(timestamps)):
-    #         yield to_tz_datetime(timestamps[i], to_tz=self._tz), \
-    #               (not self.tsgenerator.is_valid(timestamps[i]), not is_in_order)
-
-    # def error_dict(self, errortype, errorval):
-    #     return {self.ERRORTYPE: errortype, self.ERRORVAL: errorval}
 
     def compound_validation(self, timestamps: pd.DatetimeIndex, valtypes):
         timestamps = to_tz_series(timestamps, to_tz=self._tz)

@@ -39,7 +39,7 @@ def to_tz_datetime(dttm=None, date=None, time=None, from_tz=None, to_tz=pytz.UTC
         time = MIN_TIME if time is None else validate_time(time)
         from_dttm = dt.datetime.combine(date, time)
     else:
-        raise ValueError('Either argument datetime or date and time together should be set)')
+        return None
 
     if from_tz is not None:
         from_dttm = from_tz.localize(from_dttm.replace(tzinfo=None))
@@ -81,8 +81,27 @@ def ceildiv(a, b):
     return -(-a // b)
 
 
+def closed_convert(closed):
+    if isinstance(closed, tuple):
+        return closed
+
+    include_start, include_end = True, True
+    if closed == 'left':
+        include_end = False
+    elif closed == 'right':
+        include_start = False
+
+    return include_start, include_end
 
 
+def isin_closed(value: dt.datetime, start: dt.datetime=None, end: dt.datetime=None, closed=None):
+    if value.tzinfo is None:
+        value = to_tz_datetime(value, to_tz=start.tzinfo)
+    include_start, include_end = closed_convert(closed)
+
+    left = True if start is None else (value >= start if include_start else value > start)
+    right = True if end is None else (value <= end if include_end else value < end)
+    return left and right
 
 # def last_n_years(n=1, d=dt.date.today()):
 #     return d + relativedelta(years=-n)

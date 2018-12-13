@@ -1,6 +1,10 @@
 from enum import Enum
 import re
 import datetime as dt
+import pytz
+from os.path import basename
+from pandas import read_csv, to_datetime
+
 
 
 class StrEnum(str, Enum):
@@ -88,7 +92,10 @@ class ContinuousContract(object):
 
 class Basedb(object):
     UNDEFINED = 999999999998
-    ENRICHEDOHLCVN = EnrichedOHLCVN
+    ENRICHEDOHLCVN = EnrichedOHLCVN.name()
+
+    TABLE = 'table'
+    TABLES = {ENRICHEDOHLCVN: EnrichedOHLCVN}
 
 
 class Quantdb1(Basedb):
@@ -110,7 +117,11 @@ class Quantsim1(Basedb):
     HOSTNAME = 'lcmint-quantsim1'
     PORT = 8086
 
-    CONTINUOUS_CONTRACT = ContinuousContract
+    ENRICHEDOHLCVN = EnrichedOHLCVN.name()
+    CONTINUOUS_CONTRACT = ContinuousContract.name()
+
+    TABLES = {ENRICHEDOHLCVN: EnrichedOHLCVN,
+              CONTINUOUS_CONTRACT: ContinuousContract}
 
 
 class Lcmquantldn1(Basedb):
@@ -118,18 +129,70 @@ class Lcmquantldn1(Basedb):
 
     HOSTNAME = 'lcmquantldn1'
 
-    TABLE = 'table'
-    PRODUCT = 'product'
-    PTYPE = 'type'
-    EXPIRY = 'expiry'
-    CLOCK = 'clock'
-    WIDTH = 'width'
-    YEAR = 'year'
+    class EnrichedOHLCVN(EnrichedOHLCVN):
+        YEAR = 'year'
 
-    FILE_STRUCTURE = [PTYPE, PRODUCT, EXPIRY, TABLE, CLOCK, WIDTH, YEAR]
-    DATE_FMT = '%Y%m%d'
+        FILE_STRUCTURE = [
+            EnrichedOHLCVN.Tags.TYPE,
+            EnrichedOHLCVN.Tags.PRODUCT,
+            EnrichedOHLCVN.Tags.EXPIRY,
+            Basedb.TABLE,
+            EnrichedOHLCVN.Tags.CLOCK_TYPE,
+            EnrichedOHLCVN.Tags.WIDTH,
+            YEAR]
 
-    @classmethod
-    def date_from_filename(cls, fn):
-        return dt.datetime.strptime(re.search('[0-9]{8}', fn).group(), cls.DATE_FMT)
+        DATE_FMT = '%Y%m%d'
+        TIMEZONE = pytz.UTC
 
+        @classmethod
+        def date_from_filename(cls, fn):
+            fn = basename(fn)
+            return cls.TIMEZONE.localize(dt.datetime.strptime(re.search('[0-9]{8}', fn).group(), cls.DATE_FMT))
+
+        @classmethod
+        def read_func(cls):
+            return lambda x: read_csv(x,
+                                      parse_dates=[0],
+                                      date_parser=lambda y: cls.TIMEZONE.localize(to_datetime(int(y))),
+                                      index_col=0)
+
+
+    ENRICHEDOHLCVN = EnrichedOHLCVN.name()
+    CONTINUOUS_CONTRACT = ContinuousContract.name()
+
+    TABLES = {ENRICHEDOHLCVN: EnrichedOHLCVN,
+              CONTINUOUS_CONTRACT: ContinuousContract}
+
+    # TABLE = 'table'
+    # PRODUCT = 'product'
+    # PTYPE = 'type'
+    # EXPIRY = 'expiry'
+    # CLOCK = 'clock'
+    # WIDTH = 'width'
+    # YEAR = 'year'
+    #
+    # FILE_STRUCTURE = [
+    #     PTYPE,
+    #     PRODUCT,
+    #     EXPIRY,
+    #     TABLE,
+    #     CLOCK,
+    #     WIDTH,
+    #     YEAR]
+    #
+    # DATE_FMT = '%Y%m%d'
+    #
+    # @classmethod
+    # def date_from_filename(cls, fn):
+    #     fn = basename(fn)
+    #     return dt.datetime.strptime(re.search('[0-9]{8}', fn).group(), cls.DATE_FMT)
+    #
+    #
+    # @classmethod
+    # def read_func(cls):
+    #     return lambda x: read_csv(x, parse_dates=[0], date_parser=lambda x: to_datetime(int(x)), index_col=0)
+
+
+dbbox_configs = {'quantdb1': Quantdb1,
+                 'quantsim1': Quantsim1,
+                 'lcmquantldn1': Lcmquantldn1}
