@@ -88,3 +88,23 @@ def to_styled_xml(xml, xsl):
         doc = etree.parse(xml)
     transform = etree.XSLT(etree.parse(xsl))
     return transform(doc)
+
+
+class XPathBuilder(object):
+
+    CURRENT = '.'
+    PARENT = '..'
+    CHILD = '/'
+    DESCENDANT = '//'
+
+    @classmethod
+    def selector(cls, value):
+        return '[{}]'.format(value)
+
+    @classmethod
+    def evaluation(cls, obj, value='', is_attrib=False):
+        if not obj:
+            raise ValueError("'obj' argument must not be empty or None")
+
+        obj = '@' + obj if is_attrib else obj
+        return cls.selector("{}='{}'".format(obj, value) if value else obj)

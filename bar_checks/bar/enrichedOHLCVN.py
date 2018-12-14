@@ -304,7 +304,7 @@ class SeriesChecker(object):
     def __init__(self, schedule_bound: ScheduleBound):
         self.schedule_bound = schedule_bound
         self.tz = schedule_bound.tz
-        self.valtypes = [SeriesValidation.GAPS, SeriesValidation.INVALIDS, SeriesValidation.REVERSIONS]
+        self.valtypes = [SeriesValidation.GAP, SeriesValidation.INVALID, SeriesValidation.REVERSION]
 
     def record_dict(self, date, barid, error_type, error_val):
         return {self.DATE: str(date),
@@ -313,21 +313,18 @@ class SeriesChecker(object):
                 self.ERRORTYPE: error_type,
                 self.ERRORVAL: error_val}
 
-    def validate_bar_series(self, barid, validation: SeriesValidation, timestamps: pd.DatetimeIndex):
+    def get_validator(self, barid):
+        unit = self.OFFSET_MAPPING[barid.CLOCK_TYPE]
+        tsgenerator = StepTimestampGenerator(barid.WIDTH, unit, barid.OFFSET)
+        return SeriesValidation(tsgenerator, self.schedule_bound)
+
+    def validate_bar_series(self, barid, timestamps: pd.DatetimeIndex, validation: SeriesValidation=None):
+        if validation is None:
+            validation = self.get_validator(barid)
         for error_type, error_value in validation.compound_validation(timestamps, self.valtypes):
             date = error_value[SeriesValidation.START_TS].date() \
-                if error_type == SeriesValidation.GAPS else error_value.date()
+                if error_type == SeriesValidation.GAP else error_value.date()
             yield self.record_dict(date, barid, error_type, error_value)
-
-    def validate(self, data):
-        for (clock_type, width), bars_df in data.groupby([Tags.CLOCK_TYPE, Tags.WIDTH]):
-            step, unit = width, self.OFFSET_MAPPING[clock_type]
-            tsgenerator = StepTimestampGenerator(step, unit)
-            validation = SeriesValidation(tsgenerator, self.schedule_bound)
-            for bar_key, barid_df in bars_df.groupby(Tags.values()):
-                barid = Barid(*bar_key)
-                validation.tsgenerator.offset = barid.OFFSET
-                yield from self.validate_bar_series(barid, validation, barid_df.index)
 
 
 class CheckTask(object):
@@ -529,32 +526,38 @@ class CheckTask(object):
             if to_element:
                 return rcsv_addto_etree(map(lambda x: (self.PRODUCT, x), missing_prods), self.MISSING_PRODS)
 
-    def bar_checks_xml(self, data, root=None, outpath=None):
-        xml = self.task_bar_etree if root is None else root
+    def _barid_element(self, bar):
+        return rcsv_addto_etree(Barid(*bar).asdict(), self.BAR)
 
-        for bar, group in data.groupby(Tags.values()):
-            bar_ele = rcsv_addto_etree(Barid(*bar).asdict(), self.BAR)
+    def bar_check_xml(self, data_by_bar, root=None, outpath=None):
+        xml = self.task_bar_etree if root is None else root
+        data_by_bar = data_by_bar.items() if isinstance(data_by_bar, dict) else data_by_bar
+
+        for bar, group in data_by_bar:
             results = self.run_bar_checks(group)
             if not results.empty:
-                xml.append(pd_to_etree(results, bar_ele, self.RECORD, TIME_IDX))
+                xml.append(pd_to_etree(results, self._barid_element(bar), self.RECORD, TIME_IDX))
 
         if outpath is not None:
             etree_tostr(xml, outpath, BARXSL)
         return xml
 
-    def timeseries_checks_xml(self, data, root=None, outpath=None):
+    def timeseries_check_xml(self, data_by_bar, root=None, outpath=None):
         xml = self.task_ts_etree if root is None else root
+        data_by_bar = data_by_bar.items() if isinstance(data_by_bar, dict) else data_by_bar
+        xp = XPathBuilder
+        for bar, bar_df in data_by_bar:
+            validated = self.schecker.validate_bar_series(Barid(*bar), bar_df.index)
+            for date_dict, dated_df in to_grouped_df(validated, [SeriesChecker.DATE, SeriesChecker.TIMEZONE]):
+                xpath = xp.CURRENT + xp.CHILD + self.RECORD \
+                                + xp.evaluation(SeriesChecker.DATE, date_dict[SeriesChecker.DATE], True)
+                record_ele = xml.find(xpath)
+                if record_ele is None:
+                    record_ele = rcsv_addto_etree(date_dict, self.RECORD)
+                    xml.append(record_ele)
 
-        for date_dict, dated_df in to_grouped_df(
-                self.schecker.validate(data), [SeriesChecker.DATE, SeriesChecker.TIMEZONE]):
-            date_ele = rcsv_addto_etree(date_dict, self.RECORD)
-            for barid_dict, barid_df in to_grouped_df(dated_df, Barid.fields()):
-                bar_ele = rcsv_addto_etree(barid_dict, self.BAR)
-                barid_df = barid_df.set_index(SeriesChecker.ERRORTYPE)
-                for error, error_df in barid_df.groupby(barid_df.index):
-                    bar_ele.append(rcsv_addto_etree(map(lambda x: x[1], error_df.iterrows()), error))
-                date_ele.append(bar_ele)
-            xml.append(date_ele)
+                error_df = dated_df.set_index(SeriesChecker.ERRORTYPE)
+                record_ele.append(rcsv_addto_etree(error_df[SeriesChecker.ERRORVAL], self._barid_element(bar)))
 
         if outpath is not None:
             etree_tostr(xml, outpath, TSXSL)

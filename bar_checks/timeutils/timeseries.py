@@ -59,25 +59,25 @@ class StepTimestampGenerator(object):
 
 class SeriesValidation(object):
     # Validation type
-    GAPS = 'gaps'
-    REVERSIONS = 'reversions'
-    INVALIDS = 'invalids'
+    GAP = 'gap'
+    REVERSION = 'reversion'
+    INVALID = 'invalid'
 
     TIMESTAMP = 'timestamp'
     START_TS = 'start_ts'
     END_TS = 'end_ts'
 
-    AGGR_TYPES = {GAPS}
-    FALSE_MASK_TYPES = {REVERSIONS, INVALIDS}
+    AGGR_TYPES = {GAP}
+    FALSE_MASK_TYPES = {REVERSION, INVALID}
 
     def __init__(self, tsgenerator: StepTimestampGenerator, schedule_bound: ScheduleBound):
         self.tsgenerator = tsgenerator
         self._schedule_bound = schedule_bound
         self._tz = schedule_bound.tz
         self._closed = schedule_bound.closed
-        self.valfunc_dict = {self.GAPS: self.gaps,
-                             self.REVERSIONS: self.is_time_increasing,
-                             self.INVALIDS: self.is_valid}
+        self.valfunc_dict = {self.GAP: self.gaps,
+                             self.REVERSION: self.is_time_increasing,
+                             self.INVALID: self.is_valid}
 
     @classmethod
     def is_time_increasing(cls, timestamps):
@@ -88,12 +88,6 @@ class SeriesValidation(object):
                 yield True
             else:
                 yield False
-
-
-    # def delimit_by_schedules(self, timestamps):
-    #     for schedule, ts_seq in groupby(timestamps, self._schedule_bound.enclosing_schedule):
-    #         if schedule is not None:
-    #             yield schedule, to_tz_series(ts_seq, to_tz=self._tz)
 
     def gaps(self, timestamps):
         grouped = normal_group_by(timestamps, self._schedule_bound.enclosing_schedule, True)

@@ -75,18 +75,19 @@ class FrontMonthCheckTask(en.CheckTask):
         barxml, tsxml = self.task_bar_etree, self.task_ts_etree
         fields = [TagsC.PRODUCT, TagsC.TYPE, TagsC.EXPIRY]
 
-        barxml_suffix, tsxml_suffix = '_' + self.task_barxml, '_' + self.task_tsxml
-
         for (time_start, time_end), row in contracts:
             data_args = {en.Server.TABLE: en.Enriched.name(), **row[fields].to_dict()}
-            data = self.data_accessor.get_data(time_start, time_end, include_to=time_end == self.task_dtto, **data_args)
+            data = self.data_accessor.get_data(time_start, time_end,
+                                               include_to=time_end == self.task_dtto,
+                                               concat=False, **data_args)
 
             if data is not None:
-                self.set_taskargs(dtfrom=time_start, dtto=time_end,
-                                  barxml='-'.join(row[fields]) + barxml_suffix,
-                                  tsxml='-'.join(row[fields]) + tsxml_suffix)
-                barxml = self.bar_checks_xml(data, barxml, self.task_barxml)
-                tsxml = self.timeseries_checks_xml(data, tsxml, self.task_tsxml)
+                self.set_taskargs(dtfrom=time_start, dtto=time_end)
+                barxml = self.bar_check_xml(data, barxml)
+                tsxml = self.timeseries_check_xml(data, tsxml)
+
+        etree_tostr(barxml, self.task_barxml)
+        etree_tostr(tsxml, self.task_tsxml)
         #
         # missing_products = self.missing_products()
         # if missing_products is not None:
@@ -107,7 +108,7 @@ if __name__ == '__main__':
 
     products = ['ES', 'NQ', 'YM', 'ZN', 'ZB', 'UB', '6E', '6J', '6B', 'GC', 'CL']
     task.run_checks(product=products,
-                    ptype='F', dtfrom=dt.date(2018, 10, 1), dtto=dt.date(2018, 12, 1),
+                    ptype='F', dtfrom=dt.date(2018, 11, 22), dtto=dt.date(2018, 11, 24),
                     schedule='CMESchedule', barxml='bar.xml', tsxml='ts.xml')
 
     # task.run_checks(schedule='CMESchedule')

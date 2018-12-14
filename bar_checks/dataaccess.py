@@ -69,7 +69,7 @@ class FileAccessor(BaseAccesor):
                 transport.close()
 
     def get_data(self, time_from: dt.datetime = None, time_to: dt.datetime = None, include_from=True, include_to=True,
-                 read_func=None, empty=None, **kwargs):
+                 read_func=None, empty=None, concat=True, **kwargs):
         table = self.settings.TABLES[kwargs[self.settings.TABLE]]
         tz, file_structure = table.TIMEZONE, table.FILE_STRUCTURE
         time_from = to_tz_datetime(pd.to_datetime(time_from), to_tz=tz)
@@ -84,6 +84,12 @@ class FileAccessor(BaseAccesor):
                 with client.open(fpath) as fhandle:
                     yield read_func(fhandle)
 
+        def bound_by_timeframe(df):
+            for tag, tag_df in df.groupby(table.Tags.values()):
+                i, j = bound_indices(tag_df.index,
+                                     lambda x: isin_closed(x, time_from, time_to, (include_from, include_to)))
+                yield tag, tag_df.iloc[i:j]
+
         with self.transport_session() as transport:
             with paramiko.SFTPClient.from_transport(transport) as sftp:
                 files_found = self.find_files(file_structure, sftp, False, **kwargs)
@@ -94,13 +100,8 @@ class FileAccessor(BaseAccesor):
                 if data_df.empty:
                     return empty
 
-                results = pd.DataFrame()
-                for _, tag_df in data_df.groupby(table.Tags.values()):
-                    i, j = bound_indices(tag_df.index,
-                                         lambda x: isin_closed(x, time_from, time_to, (include_from, include_to)))
-
-                    results = results.append(tag_df.iloc[i:j])
-                return results
+                results = {k: v for k, v in bound_by_timeframe(data_df)}
+                return pd.concat(results.values()) if concat else results
 
     def get_continuous_contracts(self, time_from=None, time_to=None, **kwargs):
         from bar.datastore_config import ContinuousContract
