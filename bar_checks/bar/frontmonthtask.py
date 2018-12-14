@@ -1,16 +1,15 @@
 import logging
-import datetime as dt
-from bar.checktask_config import *
+from itertools import groupby
+
 from bar.frontmonthtask_config import *
 import bar.enrichedOHLCVN as en
 from htmlprocessor import *
-from itertools import groupby
-from influxcommon import limit, order_by
+from dataaccess import *
 from xmlconverter import *
 
 
-en.set_dbconfig('quantsim1')
-Continous = en.Server.CONTINUOUS_CONTRACT
+en.set_dbconfig('lcmquantldn1')
+Continous = en.Server.TABLES[en.Server.CONTINUOUS_CONTRACT]
 TagsC = Continous.Tags
 FieldsC = Continous.Fields
 
@@ -19,7 +18,7 @@ class FrontMonthCheckTask(en.CheckTask):
     ATTACHMENT_LIMIT = 20000000
 
     def __init__(self):
-        super().__init__()
+        super().__init__(FileAccessor(en.Server, 'slan', 'slanpass'))
 
         self.aparser.add_argument('--email', action='store_true',
                                   help='set it to send email(s) of the report(s)')
@@ -39,26 +38,6 @@ class FrontMonthCheckTask(en.CheckTask):
     @property
     def task_recipients(self):
         return self.task_args.recipients
-
-
-    def get_continuous_contracts(self, product=None, ptype=None, time_from=None, time_to=None):
-        fields = {TagsC.PRODUCT: product, TagsC.TYPE: ptype}
-        contracts = self.get_data(Continous.name(), time_from, time_to, empty=pd.DataFrame(), **fields)
-
-        if contracts.empty or contracts.index[0] > time_from:
-            others = [order_by('DESC'), limit(1)]
-            prev_contract = self.get_data(Continous.name(), time_to=time_from, others=others, empty=pd.DataFrame(), **fields)
-            prev_contract.index = pd.Index([time_from])
-            contracts = prev_contract.append(contracts)
-
-        start, end = 'start', 'end'
-        contracts[start] = contracts.index
-        sr_end = contracts[start][1:].append(pd.Series([time_to]), ignore_index=True)
-        contracts[end] = sr_end.tolist()
-
-        for i, row in contracts.iterrows():
-            yield (row[start], row[end]), row
-
 
     def split_barhtml(self, html):
 
@@ -82,28 +61,32 @@ class FrontMonthCheckTask(en.CheckTask):
 
             yield split
 
-
     def split_tshtml(self, html):
         for split in split_html(html, lambda x: x.find_all(BODY), lambda x: find_all_by_depth(x, TABLE),
                                 self.ATTACHMENT_LIMIT, split_tags):
             yield split
 
-
     def run_checks(self, **kwargs):
-        self.set_taskargs(**kwargs)
-        contracts = self.get_continuous_contracts(self.task_product, self.task_ptype, self.task_dtfrom, self.task_dtto)
-        fields = [TagsC.PRODUCT, TagsC.TYPE, TagsC.EXPIRY]
+        self.set_taskargs(parse_args=True, **kwargs)
+        contracts = self.data_accessor.get_continuous_contracts(self.task_dtfrom, self.task_dtto,
+                                                                **{TagsC.PRODUCT: self.task_product,
+                                                                   TagsC.TYPE: self.task_ptype})
 
         barxml, tsxml = self.task_bar_etree, self.task_ts_etree
+        fields = [TagsC.PRODUCT, TagsC.TYPE, TagsC.EXPIRY]
+
+        barxml_suffix, tsxml_suffix = '_' + self.task_barxml, '_' + self.task_tsxml
+
         for (time_start, time_end), row in contracts:
-            data = self.get_data(en.Enriched.name(), time_start, time_end, include_to=time_end == self.task_dtto,
-                              **row[fields].to_dict())
+            data_args = {en.Server.TABLE: en.Enriched.name(), **row[fields].to_dict()}
+            data = self.data_accessor.get_data(time_start, time_end, include_to=time_end == self.task_dtto, **data_args)
 
-            data.to_csv('{}.csv'.format(row[TagsC.EXPIRY]))
-
-        #     if data is not None:
-        #         barxml = self.bar_checks_xml(data, barxml, self.task_barxml)
-        #         tsxml = self.timeseries_checks_xml(data, tsxml, self.task_tsxml, start_date=time_start, end_date=time_end)
+            if data is not None:
+                self.set_taskargs(dtfrom=time_start, dtto=time_end,
+                                  barxml='-'.join(row[fields]) + barxml_suffix,
+                                  tsxml='-'.join(row[fields]) + tsxml_suffix)
+                barxml = self.bar_checks_xml(data, barxml, self.task_barxml)
+                tsxml = self.timeseries_checks_xml(data, tsxml, self.task_tsxml)
         #
         # missing_products = self.missing_products()
         # if missing_products is not None:
@@ -122,8 +105,10 @@ if __name__ == '__main__':
     task = FrontMonthCheckTask()
     logging.basicConfig(level=logging.INFO)
 
-    # products = ['ZF', 'ZN', 'TN', 'ZB', 'UB', 'ES', 'NQ', 'YM', 'EMD', 'RTY', '6A', '6B', '6C', '6E', '6J', '6M', '6N',
-    #             '6S', 'BTC', 'GC', 'SI', 'HG', 'CL', 'HO', 'RB']
+    products = ['ES', 'NQ', 'YM', 'ZN', 'ZB', 'UB', '6E', '6J', '6B', 'GC', 'CL']
+    task.run_checks(product=products,
+                    ptype='F', dtfrom=dt.date(2018, 10, 1), dtto=dt.date(2018, 12, 1),
+                    schedule='CMESchedule', barxml='bar.xml', tsxml='ts.xml')
+
     # task.run_checks(schedule='CMESchedule')
-    task.run_checks(product='ES', ptype='F', dtfrom=dt.date(2018, 3, 1), dtto=dt.date(2018, 6, 1), schedule='CMESchedule')
     # task.email([task.task_barhtml, task.task_tshtml], [BAR_TITILE, TS_TITLE])

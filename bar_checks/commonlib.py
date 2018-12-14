@@ -39,10 +39,14 @@ def flatten_iter(items, level=None, excl_types=(str,)):
         yield level_item
 
 
-def normal_group_by(items, key=lambda x: x):
-    d = defaultdict(list)
+def normal_group_by(items, key=lambda x: x, unique=False):
+    value_type = set if unique else list
+    d = defaultdict(value_type)
     for item in items:
-        d[key(item)].append(item)
+        if value_type == list:
+            d[key(item)].append(item)
+        elif value_type == set:
+            d[key(item)].add(item)
     return d
 
 
@@ -63,13 +67,13 @@ def hierarchical_group_by(items, keys, itemfunc=lambda x: x, sort_keys=None, sor
             key = keyfunc(item)
             parent = child
 
-        value = to_iter(itemfunc(item))
+        value = itemfunc(item)
         if parent.get(key) is None:
             parent[key] = value_type()
 
         if isinstance(parent[key], list):
             parent[key].extend(value)
-        else:
+        elif isinstance(parent[key], SortedList):
             parent[key].update(value)
 
     return results
@@ -79,7 +83,7 @@ def na_equal(v1, v2):
     return (pd.isna(v1) & pd.isna(v2)) | (v1 == v2)
 
 
-def func_grouper(iterable, n, func=lambda x: x, chunk_type=list):
+def func_grouper(iterable, n, func=lambda x: 1, chunk_type=list):
     iteritems = iter(iterable)
     prev = next(iteritems, None)
     curr = next(iteritems, None)
@@ -111,6 +115,23 @@ def source_from(src):
     else:
         return src
 
+
+def bound_indices(items, bound_func):
+    if not hasattr(items, '__getitem__'):
+        raise ValueError("'items' object must be subscriptable")
+
+    i, j = 0, len(items)
+    not_head = not bound_func(items[i])
+    not_tail = not bound_func(items[j - 1])
+    while i < j and (not_head or not_tail):
+        if not_head:
+            i += 1
+            not_head = not bound_func(items[i])
+        if not_tail:
+            j -= 1
+            not_tail = not bound_func(items[j - 1])
+
+    return i, j
 
 # def hierarchical_group_by(items, keys, itemfunc=None):
 #     if isinstance(items, pd.DataFrame):

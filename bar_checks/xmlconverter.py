@@ -5,46 +5,54 @@ from lxml import etree
 from commonlib import *
 
 
-def df_to_xmletree(df, sub_name, root=None, index_name=None):
+def validate_element(element):
+    if isinstance(element, str):
+        element = etree.Element(element)
+    elif not etree.iselement(element):
+        raise TypeError('Invalid type of root: it must be either a string or etree.Element')
+    return element
+
+
+def pd_to_etree(df, root, row_ele=None, index_name=False):
     if not isinstance(df, pd.DataFrame):
         df = pd.DataFrame(df)
 
-    def subelements():
-        for i, row in df.iterrows():
-            subelement = etree.Element(sub_name)
-            if index_name is not None:
-                subelement.set(index_name, str(i))
-            rcsv_addto_etree(row.items(), subelement)
+    # def subelements():
+    #     for i, row in df.iterrows():
+    #         subelement = etree.SubElement(xml, row_ele)
+    #         if index_name is not None:
+    #             subelement.set(index_name, str(i))
+    #         rcsv_addto_etree(row, subelement)
+    #
+    #         yield subelement
 
-            yield subelement
+    xml = validate_element(root)
+    for i, row in df.iterrows():
+        subelement = etree.SubElement(xml, i if row_ele is None else row_ele)
+        if index_name is not False:
+            subelement.set(df.index.name if index_name is None else index_name, str(i))
+        rcsv_addto_etree(row, subelement)
 
-    if root is None:
-        return subelements()
-
-    xml = root
-    if isinstance(root, str):
-        xml = etree.Element(root)
-    xml.extend(subelements())
     return xml
 
 
-def rcsv_addto_etree(value, root):
+def rcsv_addto_etree(value, root, **kwargs):
     if isinstance(root, str):
         root = etree.Element(root)
     elif not etree.iselement(root):
         raise TypeError('Invalid type of root: it must be either a string or etree.Element')
 
-    if isinstance(value, Mapping):
+    if isinstance(value, (Mapping, pd.Series)):
         for fk, fv in value.items():
             if nontypes_iterable(fv):
-                root.append(rcsv_addto_etree(fv, fk))
+                root.append(rcsv_addto_etree(fv, fk, **kwargs))
             else:
                 root.set(fk, str(fv))
-    elif isinstance(value, tuple) and len(value) == 2:
-        root.append(rcsv_addto_etree(value[1], value[0]))
+    elif isinstance(value, pd.DataFrame):
+        pd_to_etree(value, root, **kwargs)
     elif nontypes_iterable(value):
         for val in value:
-            rcsv_addto_etree(val, root)
+            rcsv_addto_etree(val, root, **kwargs)
     else:
         root.text = str(value)
 

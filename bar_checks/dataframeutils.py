@@ -93,3 +93,19 @@ def vectors_join(vectors, sep='\n', na_rep=None, filter_none=True):
     if not isinstance(df_cat, pd.DataFrame):
         df_cat = pd.concat(vectors, axis=1)
     return df_cat.apply(lambda x: join_row(x, sep, na_rep, filter_none), axis=1)
+
+
+def iter_groupby(data, by):
+    by_series = pd.Series(by, data.index) if not isinstance(by, pd.Series) else by
+    diff = by_series != by_series.shift(1)
+    return data.groupby(diff.cumsum())
+
+
+def to_grouped_df(data, keys):
+    keys = to_iter(keys)
+    data_df = pd.DataFrame(data) if not isinstance(data, pd.DataFrame) else data
+    if data_df.empty:
+        return iter('')
+    data_df.set_index(keys, inplace=True)
+    for group_key, grouped_df in data_df.groupby(level=keys):
+        yield {key: val for key, val in zip(keys, to_iter(group_key, ittype=iter))}, grouped_df

@@ -1,4 +1,5 @@
 import datetime as dt
+import pandas as pd
 import pytz
 from dateutil.relativedelta import relativedelta
 import re
@@ -38,7 +39,7 @@ def to_tz_datetime(dttm=None, date=None, time=None, from_tz=None, to_tz=pytz.UTC
         time = MIN_TIME if time is None else validate_time(time)
         from_dttm = dt.datetime.combine(date, time)
     else:
-        raise ValueError('Either argument datetime or date and time together should be set)')
+        return None
 
     if from_tz is not None:
         from_dttm = from_tz.localize(from_dttm.replace(tzinfo=None))
@@ -49,12 +50,24 @@ def to_tz_datetime(dttm=None, date=None, time=None, from_tz=None, to_tz=pytz.UTC
     return from_dttm.astimezone(to_tz) if from_dttm.tzinfo is not None else to_tz.localize(from_dttm)
 
 
-    # if from_dttm.tzinfo is None and from_tz is None:
-    #     return to_tz.localize(from_dttm)
-    # elif from_tz is not None:
-    #     return from_tz.localize(from_dttm.replace(tzinfo=None)).astimezone(to_tz)
-    # else:
-    #     return from_dttm.astimezone(to_tz)
+def to_tz_series(timeseries, from_tz=None, to_tz=pytz.UTC):
+    dtindex = pd.DatetimeIndex(timeseries)
+    if dtindex.tz == to_tz:
+        return dtindex
+
+    # if from_tz is None, do nothing
+    if from_tz is not None:
+        if dtindex.tz is None:
+            dtindex.tz_localize(from_tz)
+        elif dtindex.tz is not None:
+            dtindex.tz_convert(from_tz)
+
+    if dtindex.tz is None:
+        return dtindex.tz_localize(to_tz)
+    elif dtindex.tz != to_tz:
+        return dtindex.tz_convert(to_tz)
+    else:
+        return dtindex
 
 
 def timedelta_between(time1, time2, allow_negative=False):
@@ -66,6 +79,29 @@ def timedelta_between(time1, time2, allow_negative=False):
 
 def ceildiv(a, b):
     return -(-a // b)
+
+
+def closed_convert(closed):
+    if isinstance(closed, tuple):
+        return closed
+
+    include_start, include_end = True, True
+    if closed == 'left':
+        include_end = False
+    elif closed == 'right':
+        include_start = False
+
+    return include_start, include_end
+
+
+def isin_closed(value: dt.datetime, start: dt.datetime=None, end: dt.datetime=None, closed=None):
+    if value.tzinfo is None:
+        value = to_tz_datetime(value, to_tz=start.tzinfo)
+    include_start, include_end = closed_convert(closed)
+
+    left = True if start is None else (value >= start if include_start else value > start)
+    right = True if end is None else (value <= end if include_end else value < end)
+    return left and right
 
 # def last_n_years(n=1, d=dt.date.today()):
 #     return d + relativedelta(years=-n)
