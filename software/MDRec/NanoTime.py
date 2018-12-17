@@ -10,6 +10,7 @@ from datetime import datetime
 from datetime import timedelta
 from numpy import int64,signedinteger,unsignedinteger 
 
+
 class Nanoseconds:
     '''
     A nanosecond class with some helpful conversions
@@ -99,7 +100,12 @@ class NanoTime:
     You can subtract and compare NanoTimes as well as print them in a pretty way.
     '''
     def __init__(self,utc_nanoseconds_since_epoch=None,dt=None,tzinfo=None):
-        self.__clear()
+        self.__intialized=False
+        self.__utc_value=0
+        self.__UTC_Time=None
+        self.__nanos=None
+        self.__tzinfo=None
+        self.__timezone=pytz.utc    
         self.__epoch = datetime(1970, 1, 1, tzinfo=pytz.utc)
         if utc_nanoseconds_since_epoch is not None or dt is not None:
             self.initialize(utc_nanoseconds_since_epoch,dt,tzinfo)
@@ -141,8 +147,8 @@ class NanoTime:
                     seconds_since_epoch=microseconds_since_epoch/1000/1000
                     self.__UTC_Time=self.__epoch+timedelta(0,seconds_since_epoch)
                 elif isinstance(dt,datetime):
-                    self.__intialized=True
-                    self.__nanos=0
+                    self.__intialized = True
+                    self.__nanos = 0
                     if dt.tzinfo is None:
                         seconds=(datetime(dt.year,dt.month,dt.day,dt.hour,dt.minute,dt.second,tzinfo=pytz.utc)-self.__epoch).total_seconds()
                         self.__utc_value=int(seconds*1000*1000*1000+dt.microsecond *1000)
@@ -159,8 +165,7 @@ class NanoTime:
                 raise e
         else:
             raise ValueError("Cannot Initialize as we are already initialized")
-                
-                
+                          
     def __str__(self):
         if self.__UTC_Time is None:
             return ""
@@ -174,33 +179,33 @@ class NanoTime:
             nano_str='{:03d}'.format(self.__nanos)
             return tz_date.strftime("%Y-%m-%dT%H:%M:%S.")+micro_str+nano_str+tz_info
         
-    def __checkInit(self):
-        if self.__intialized==False:
+    def __checkinit(self):
+        if not self.__intialized:
             raise ValueError("Not Initialized")
     
     def __hash__(self):
         return self.__utc_value
     
     def __lt__(self, other):
-        self.__checkInit()
+        self.__checkinit()
         if isinstance(other,NanoTime):
-            other.__checkInit()
+            other.__checkinit()
             return self.__utc_value<other.__utc_value
         else:
             raise TypeError("Cannot handle this type: ", type(other))
     
     def __gt__(self, other):
-        self.__checkInit()
+        self.__checkinit()
         if isinstance(other,NanoTime):
-            other.__checkInit()
+            other.__checkinit()
             return self.__utc_value>other.__utc_value
         else:
             raise TypeError("Cannot handle this type: ", type(other))
     
     def __eq__(self, other):
-        self.__checkInit()
+        self.__checkinit()
         if isinstance(other,NanoTime):
-            other.__checkInit()
+            other.__checkinit()
             return self.__utc_value==other.__utc_value
         elif isinstance(other,(int,unsignedinteger,signedinteger)):
             return other==self.__utc_value
@@ -210,23 +215,23 @@ class NanoTime:
             return False
     
     def __ge__(self,other):
-        self.__checkInit()
+        self.__checkinit()
         if isinstance(other,NanoTime):
-            other.__checkInit()
+            other.__checkinit()
             return self.__utc_value>=other.__utc_value
         else:
             raise TypeError("Cannot handle this type: ", type(other))
     
     def __le__(self,other):
-        self.__checkInit()
+        self.__checkinit()
         if isinstance(other,NanoTime):
-            other.__checkInit()
+            other.__checkinit()
             return self.__utc_value<=other.__utc_value
         else:
             raise TypeError("Cannot handle this type: ", type(other))
     
     def __len__(self):
-        if self.__UTC_Time==None:
+        if self.__UTC_Time is None:
             return 0
         else:
             return 1
@@ -235,9 +240,9 @@ class NanoTime:
         '''
         Return the number of nanoseconds between the two results
         '''
-        self.__checkInit()
+        self.__checkinit()
         if isinstance(other,NanoTime):
-            other.__checkInit()
+            other.__checkinit()
             return Nanoseconds(self.__utc_value - other.__utc_value)
         elif isinstance(other,Nanoseconds):
             return NanoTime(self.__utc_value - other.nanoseconds,tzinfo=self.__tzinfo)
@@ -248,18 +253,14 @@ class NanoTime:
         '''
         Return a new NanoTime object with the amount of nanoseconds added
         '''
-        self.__checkInit()
+        self.__checkinit()
         if isinstance(nanoseconds,Nanoseconds):
             return NanoTime(self.__utc_value + nanoseconds.nanoseconds,tzinfo=self.__tzinfo)
         else:
             raise TypeError("Cannot handle this type: ", type(nanoseconds))
-        
-    
-
-
 
         
-if __name__=="__main__":
+if __name__ == "__main__":
     import unittest 
       
     class TestNanoTime(unittest.TestCase):
@@ -272,31 +273,31 @@ if __name__=="__main__":
               
         def test_initfail(self):
             prob=NanoTime()
-            #Float init
+            # Float init
             with self.assertRaises(ValueError):
                 prob.initialize(154343700.1020175280,tzinfo="Australia/Sydney")
-            #Negative init
+            # Negative init
             with self.assertRaises(ValueError):
                 prob.initialize(-1,tzinfo="Australia/Sydney")
-            #Tinezone fail
+            # Tine-zone fail
             with self.assertRaises(pytz.exceptions.UnknownTimeZoneError):
                 prob.initialize(1543437001020175280,tzinfo="Australia\Sydney")
             self.assertEqual(str(prob),'')
-            #Eventually works
+            # Eventually works
             prob.initialize(1543437001020175280,tzinfo="Australia/Sydney")
             self.assertNotEqual(str(prob),'')
             
         def test_datetime(self):
-            #No zone
+            # No zone
             date_nozone=datetime(2018,12,3,12,8,56,220310)
             z=NanoTime(dt=date_nozone)
-            #UTC
+            # UTC
             date=datetime(2018,12,3,12,8,56,220310,tzinfo=pytz.utc)
             n=NanoTime(dt=date)
-            #Australia
+            # Australia
             date_syd=pytz.timezone("Australia/Sydney").localize(datetime(2018,12,3,23,8,56,220310))
             s=NanoTime(dt=date_syd)
-            #Comparisons
+            # Comparisons
             self.assertEqual(n, s)
             self.assertEqual(z, n)
             val=NanoTime(1543968001005589775)
@@ -385,8 +386,7 @@ if __name__=="__main__":
             self.assertFalse(self.b==self.c)
             self.assertFalse(self.a==1)
             self.assertTrue(self.a==1543838936220310003)
-            
-            
+
         def test_nanos(self):
             self.assertEqual(Nanoseconds(1),Nanoseconds(1))
             self.assertNotEqual(Nanoseconds(1),Nanoseconds(10))
