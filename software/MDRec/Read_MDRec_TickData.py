@@ -6,19 +6,20 @@ Created on Fri Nov 30 16:50:38 2018
 """
 
 import pandas as pd
-import seaborn as sns
+# import seaborn as sns
 import numpy as np
 import NanoTime as nt
 import os
 import pytz
+import platform
+from pathlib import Path,PureWindowsPath
 
 np.set_printoptions(suppress=True, formatter={'float_kind':'{:0.2f}'.format})
 
 
-
 class MDRec_Query_Parameters:
     def __init__(self):
-        #WHAT DO I DO HERE?
+        # WHAT DO I DO HERE?
         self.__coloFacilities=["JPX","ALC","DGH","TKO","FR2","AUR","INX"]
         self.__exchange_timezone=None
         self.__analysis_timezone=None
@@ -68,52 +69,52 @@ class MDRec_Query_Parameters:
     def product(self):
         return self.__product.copy() 
 
-    def AddProduct(self,product):
+    def addproduct(self,product):
         if product not in self.__product:
             self.__product.append(product)
             
-    def RemoveProduct(self,product):
+    def removeproduct(self,product):
         if product in self.__product:
             self.__product.remove(product)
             
-    def ClearProduct(self):
+    def clearproduct(self):
         self.__product.clear()
         
     @property
     def series(self):
         return self.__series.copy()
 
-    def AddSeries(self,series):
+    def addseries(self,series):
         if series not in self.__series:
             self.__series.append(series)
             
-    def RemoveSeries(self,series):
+    def removeseries(self,series):
         if series in self.__series:
             self.__series.remove(series)
             
-    def ClearSeries(self):
+    def clearseries(self):
         self.__series.clear()        
 
     @property
     def product_type(self):
         return self.__product_type.copy()
 
-    def AddProductType(self,product_type):
+    def addproducttype(self,product_type):
         if product_type not in self.__product_type:
             self.__product_type.append(product_type)
             
-    def RemoveProductType(self,product_type):
+    def removeProducttype(self,product_type):
         if product_type in self.__product_type:
             self.__product_type.remove(product_type)
             
-    def ClearProductType(self):
+    def clearproducttype(self):
         self.__product.clear() 
 
     @property
     def trading_date(self):
         return self.__trading_date.copy()
 
-    def AddTradingDate(self,trading_date):
+    def addtradingdate(self,trading_date):
         if trading_date not in self.__trading_date:
             self.__trading_date.append(trading_date)
             
@@ -121,7 +122,7 @@ class MDRec_Query_Parameters:
         if trading_date in self.__trading_date:
             self.__trading_date.remove(trading_date)
             
-    def ClearTradingDate(self):
+    def cleartradingddate(self):
         self.__product.clear()                   
     
     @property    
@@ -158,11 +159,11 @@ class MDRec_Query_Parameters:
             raise(TypeError,"Cannot set to non-boolean value")
             
     @property    
-    def use_NanoTimes(self):
+    def use_nanotimes(self):
         return self.__use_NanoTimes
     
-    @use_NanoTimes.setter
-    def use_NanoTimes(self, value):
+    @use_nanotimes.setter
+    def use_nanotimes(self, value):
         if isinstance(value,bool):
             self.__use_NanoTimes = value
         else:
@@ -171,49 +172,53 @@ class MDRec_Query_Parameters:
 class MDRec_Query:
     
     def __init__(self,query):
-        self.__query=query
+        self.__query = query
         # Files which were loaded
-        self.csv_files=[]
-        self.l3_files=[]
-        #Data frames for each file loaded
-        self.load_l3_df=[]
-        self.load_df=[]
-        #Unclean dataframes of all data loaded
+        self.csv_files = []
+        self.l3_files = []
+        # Data frames for each file loaded
+        self.load_l3_df = []
+        self.load_df = []
+        # Unclean dataframes of all data loaded
         self.df=None
         self.l3=None
-        self.__data_location=r'\\LCLDN-STORE1\backups\london\quants\data\rawdata'
-        self.__available_dates=os.listdir(self.__data_location)
+        if platform.system() == "Windows":
+            self.__data_location = Path(PureWindowsPath(r'\\LCLDN-STORE1\backups\london\quants\data\rawdata'))
+        else:
+            self.__data_location = Path(r'/var/build/TANK0/london/quants/data/rawdata')
+        self.__available_dates = os.listdir(self.__data_location)
         self.__load_dataframes()
         self.__clean_data()
         
     def __load_dataframes(self):
         for date in self.__query.trading_date:
-            directory=self.__data_location + "\\" + date
-            files=os.listdir(directory )
+            directory = self.__data_location / date
+            files = os.listdir(directory)
             # Load Level 2 Files
-            self.csv_files=[list((*x.split('-'),x)) for x in files if x.endswith('.csv.xz')]
-            #Insert Blank Series
+            self.csv_files=[list((*x.split('-'), x)) for x in files if x.endswith('.csv.xz')]
+            # Insert Blank Series
             for el in self.csv_files:
                 if el[2] in ("E","I","S"):
                     el.insert(3,"")
-            #Create data frames with all the files
+            # Create data frames with all the files
             csv_files_df =pd.DataFrame(self.csv_files,columns=['location','product','product_type','series','date','stub','file'])
             # TODO NEED TO HANDLE THIS BETTER... NOW I REQUIRE ALL 3 when I could do something more complex
             for file in csv_files_df[(csv_files_df['product_type'].isin(self.__query.product_type) & csv_files_df['product'].isin(self.__query.product) & csv_files_df['series'].isin(self.__query.series))].file:
-                #TODO This may be wrong to set the dtype of bidc1 to float64.
-                self.load_df.append(pd.read_csv(directory + "\\" +file,compression='xz',dtype={"nicts":"float64"}))            
+                # TODO This may be wrong to set the dtype of bidc1 to float64.
+                print(directory / file)
+                self.load_df.append(pd.read_csv(directory / file, dtype={"nicts":"float64"}))
             self.df = pd.concat(self.load_df, axis = 0, ignore_index = True)
             
             if self.__query.load_level3:
                 # Load Level 3 files
-                self.l3_files=[list((*x.split('-'),x)) for x in files if x.endswith('.l3.xz')]
-                #Insert Blank Series
+                self.l3_files=[list((*x.split('-'), x)) for x in files if x.endswith('.l3.xz')]
+                # Insert Blank Series
                 for el in self.l3_files:
                     if el[2] in ("E","I","S"):
                         el.insert(3,"")
-                l3_files_df =pd.DataFrame(self.l3_files,columns=['location','product','product_type','series','date','stub','file'])
+                l3_files_df =pd.DataFrame(self.l3_files, columns=['location', 'product', 'product_type', 'series', 'date', 'stub', 'file'])
                 for file in l3_files_df[(l3_files_df['product_type'].isin(self.__query.product_type) & l3_files_df['product'].isin(self.__query.product) & l3_files_df['series'].isin(self.__query.series))].file:
-                    self.load_l3_df.append(pd.read_csv(directory + "\\" +file,compression='xz',dtype={"nicts":"float64"}))
+                    self.load_l3_df.append(pd.read_csv(directory / file, compression='xz', dtype={"nicts":"float64"}))
                 self.l3 = pd.concat(self.load_l3_df, axis = 0, ignore_index = True)
             
             
@@ -232,13 +237,13 @@ class MDRec_Query:
         ######################
         # Create books
         ######################
-        #Convert the Reacotor NaN of 999999999998 and 999999999999 to None
+        # Convert the Reactor NaN of 999999999998 and 999999999999 to None
         adj=self.df.replace({999999999998: None,999999999999:None})
         adj['nicts']=adj['nicts'].replace({0: np.NaN})
-        #Split trades and trade summaries from book updates
+        # Split trades and trade summaries from book updates
         self.books=adj[~adj['otype'].isin(['S','P','U'])]
         # TODO   These are removed to make load much faster.
-        if self.__query.use_NanoTimes:
+        if self.__query.use_nanotimes:
             self.books["exch_ts"]=self.books.exch[~self.books.exch.isna()].apply(lambda x: self.__nano_ts(np.int64(x),self.__query.exchange_timezone))
             self.books["recv_ts"]=self.books.recv[~self.books.recv.isna()].apply(lambda x: self.__nano_ts(np.int64(x),self.__query.analysis_timezone))
             self.books["nic_ts"]=self.books.nicts[~self.books.nicts.isna()].apply(lambda x: self.__nano_ts(np.int64(x),self.__query.analysis_timezone))
@@ -262,7 +267,7 @@ class MDRec_Query:
             cols[cols.index('bidv1')]='price_by_cpty'
             cols[cols.index('bidv2')]='seller'
             self.trades.columns=cols
-            if self.__query.use_NanoTimes:
+            if self.__query.use_nanotimes:
                 self.trades["exch_ts"]=self.trades.exch[~self.trades.exch.isna()].apply(lambda x: self.__nano_ts(np.int64(x),self.__query.exchange_timezone))
                 self.trades["nic_ts"]=self.trades.nicts[~self.trades.nicts.isna()].apply(lambda x: self.__nano_ts(np.int64(x),self.__query.analysis_timezone))
                 self.trades["recv_ts"]=self.trades.recv[~self.trades.recv.isna()].apply(lambda x: self.__nano_ts(np.int64(x),self.__query.analysis_timezone))
@@ -273,15 +278,15 @@ class MDRec_Query:
         # Create Top of Book
         ######################
         if self.__query.clean_books:
-            #Clean to remove where both sides of the book are not there or the book is inverted
+            # Clean to remove where both sides of the book are not there or the book is inverted
             clean_dropna=self.books.dropna(subset=['bid1','ask1'])
             clean=clean_dropna[clean_dropna['bid1']<clean_dropna['ask1']]
-            #Finally only look at books with TOB changes
+            # Finally only look at books with TOB changes
             self.tob_changes=clean[(clean['bid1'].diff(periods=1)!=0) | (clean['ask1'].diff(periods=1)!=0)]
         else:
             self.tob_changes=None
         
-        if self.__query.load_level3 and self.__query.use_NanoTimes:
+        if self.__query.load_level3 and self.__query.use_nanotimes:
             ######################
             # Format Level 3 Data
             ######################
@@ -296,7 +301,8 @@ class MDRec_Query:
         ######################
         # Create Plot
         ######################
-        sns.lineplot(x="recv", y="bid1",data=self.tob_changes)
+        #sns.lineplot(x="recv", y="bid1",data=self.tob_changes)
+        pass
         
     def print_market_inversions(self):
         
@@ -311,20 +317,19 @@ class MDRec_Query:
             print(n)
 
 
-
-if __name__=="__main__":
+if __name__ == "__main__":
     qp=MDRec_Query_Parameters()
     qp.exchange_timezone="Asia/Tokyo"
     qp.analysis_timezone="Australia/Sydney"
     qp.colocation_facility="JPX"
-    qp.AddProduct("MN")
-    qp.AddSeries("DEC2018")
-    qp.AddProductType("F")
-    qp.AddTradingDate("20181205")
+    qp.addproduct("MN")
+    qp.addseries("DEC2018")
+    qp.addproducttype("F")
+    qp.addtradingdate("20181205")
     qp.load_level3=True
     qp.load_trades=True
     qp.clean_books=True
-    #qp.AddTradingDate("20181130")
+    # qp.AddTradingDate("20181130")
     q=MDRec_Query(qp)
     from datetime import datetime
     start=nt.NanoTime(dt=pytz.timezone("Asia/Tokyo").localize(datetime(2018,12,5,9,0,1))).nanoseconds
@@ -332,4 +337,3 @@ if __name__=="__main__":
     print(str(datetime.now()))
     rng=q.books[((q.books['recv']>start) & (q.books['recv']<end))]
     print(str(datetime.now()))
-    
