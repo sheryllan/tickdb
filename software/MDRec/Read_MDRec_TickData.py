@@ -206,7 +206,7 @@ class MDRec_Query:
             for file in csv_files_df[(csv_files_df['product_type'].isin(self.__query.product_type) & csv_files_df['product'].isin(self.__query.product) & csv_files_df['series'].isin(self.__query.series))].file:
                 # TODO This may be wrong to set the dtype of bidc1 to float64.
                 print(directory / file)
-                self.load_df.append(pd.read_csv(directory / file, dtype={"nicts":"float64"}))
+                self.load_df.append(pd.read_csv(directory / file, compression='xz', dtype={"nicts":"float64"}))
             self.df = pd.concat(self.load_df, axis = 0, ignore_index = True)
             
             if self.__query.load_level3:
