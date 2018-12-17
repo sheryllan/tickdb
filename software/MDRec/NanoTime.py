@@ -276,8 +276,7 @@ class NanoTime:
         
 if __name__ == "__main__":
     import unittest
-    unittest.main()
-      
+
     class TestNanoTime(unittest.TestCase):
         def setUp(self):
             self.na = NanoTime()
@@ -415,3 +414,5 @@ if __name__ == "__main__":
             self.assertTrue(Nanoseconds(2) <= Nanoseconds(2))
             self.assertTrue(Nanoseconds(3) >= Nanoseconds(3))
             self.assertTrue(Nanoseconds(3) >= Nanoseconds(2))
+
+    unittest.main()
