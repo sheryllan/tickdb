@@ -514,18 +514,6 @@ class CheckTask(object):
         return results[self.CHECK_COLS][~results.all(axis=1)] \
             if not results.empty else pd.DataFrame(columns=self.CHECK_COLS)
 
-    def missing_products(self, to_element=True):
-        missing_prods = [p for p in to_iter(self.task_product)
-                         if self.data_accessor.get_data(Enriched.name(), self.task_dtfrom, self.task_dtto,
-                                                        others=limit(1), **{Tags.PRODUCT: p}) is None]
-
-        if missing_prods:
-            msg = {'product': missing_prods, 'dfrom': self.task_dtfrom, 'dto': self.task_dtto}
-            logging.info('No data selected for {}'.format({k: v for k, v in msg.items() if v}))
-
-            if to_element:
-                return rcsv_addto_etree(map(lambda x: (self.PRODUCT, x), missing_prods), self.MISSING_PRODS)
-
     def _barid_element(self, bar):
         return rcsv_addto_etree(Barid(*bar).asdict(), self.BAR)
 
@@ -545,12 +533,14 @@ class CheckTask(object):
     def timeseries_check_xml(self, data_by_bar, root=None, outpath=None):
         xml = self.task_ts_etree if root is None else root
         data_by_bar = data_by_bar.items() if isinstance(data_by_bar, dict) else data_by_bar
-        xp = XPathBuilder
         for bar, bar_df in data_by_bar:
             validated = self.schecker.validate_bar_series(Barid(*bar), bar_df.index)
             for date_dict, dated_df in to_grouped_df(validated, [SeriesChecker.DATE, SeriesChecker.TIMEZONE]):
-                xpath = xp.CURRENT + xp.CHILD + self.RECORD \
-                                + xp.evaluation(SeriesChecker.DATE, date_dict[SeriesChecker.DATE], True)
+                xpath = XPathBuilder.find(tag=self.RECORD,
+                                          selector=XPathBuilder.evaluation(
+                                              SeriesChecker.DATE,
+                                              date_dict[SeriesChecker.DATE],
+                                              True))
                 record_ele = xml.find(xpath)
                 if record_ele is None:
                     record_ele = rcsv_addto_etree(date_dict, self.RECORD)
@@ -559,6 +549,7 @@ class CheckTask(object):
                 error_df = dated_df.set_index(SeriesChecker.ERRORTYPE)
                 record_ele.append(rcsv_addto_etree(error_df[SeriesChecker.ERRORVAL], self._barid_element(bar)))
 
+        xml[:] = sorted(xml, key=lambda x: (x.tag, x.get(SeriesChecker.DATE)))
         if outpath is not None:
             etree_tostr(xml, outpath, TSXSL)
         return xml

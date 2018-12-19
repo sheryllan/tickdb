@@ -17,15 +17,6 @@ def pd_to_etree(df, root, row_ele=None, index_name=False):
     if not isinstance(df, pd.DataFrame):
         df = pd.DataFrame(df)
 
-    # def subelements():
-    #     for i, row in df.iterrows():
-    #         subelement = etree.SubElement(xml, row_ele)
-    #         if index_name is not None:
-    #             subelement.set(index_name, str(i))
-    #         rcsv_addto_etree(row, subelement)
-    #
-    #         yield subelement
-
     xml = validate_element(root)
     for i, row in df.iterrows():
         subelement = etree.SubElement(xml, i if row_ele is None else row_ele)
@@ -96,6 +87,7 @@ class XPathBuilder(object):
     PARENT = '..'
     CHILD = '/'
     DESCENDANT = '//'
+    ALL = '*'
 
     @classmethod
     def selector(cls, value):
@@ -108,3 +100,7 @@ class XPathBuilder(object):
 
         obj = '@' + obj if is_attrib else obj
         return cls.selector("{}='{}'".format(obj, value) if value else obj)
+
+    @classmethod
+    def find(cls, start_tag=CURRENT, relation=CHILD, tag=ALL, selector=None):
+        return ''.join(filter(None, [start_tag, relation, tag, selector]))

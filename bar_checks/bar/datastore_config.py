@@ -124,14 +124,18 @@ class Quantsim1(Basedb):
 
 
 class Lcmquantldn1(Basedb):
-    BASEDIR = '/opt/data/gzips'
+    BASEDIR = '/opt/data'
+    GZIPS = 'gzips'
+    REACTOR_GZIPS = 'reactor_gzips'
 
     HOSTNAME = 'lcmquantldn1'
 
     class EnrichedOHLCVN(EnrichedOHLCVN):
+        SOURCE = 'source'
         YEAR = 'year'
 
         FILE_STRUCTURE = [
+            SOURCE,
             EnrichedOHLCVN.Tags.TYPE,
             EnrichedOHLCVN.Tags.PRODUCT,
             EnrichedOHLCVN.Tags.EXPIRY,

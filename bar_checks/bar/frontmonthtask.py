@@ -1,6 +1,6 @@
 import logging
 from itertools import groupby
-
+from bar.checktask_config import *
 from bar.frontmonthtask_config import *
 import bar.enrichedOHLCVN as en
 from htmlprocessor import *
@@ -20,12 +20,18 @@ class FrontMonthCheckTask(en.CheckTask):
     def __init__(self):
         super().__init__(FileAccessor(en.Server, 'slan', 'slanpass'))
 
+        self.aparser.add_argument('--source', nargs='*', type=str,  default=SOURCE,
+                                  help='the source directory of the data')
         self.aparser.add_argument('--email', action='store_true',
                                   help='set it to send email(s) of the report(s)')
         self.aparser.add_argument('--login', nargs='*', type=str, default=LOGIN,
                                   help='the login details of the sender, including username and password')
         self.aparser.add_argument('--recipients', nargs='*', type=str, default=RECIPIENTS,
                                   help='the email address of recipients')
+
+    @property
+    def task_source(self):
+        return self.task_args.source
 
     @property
     def task_email(self):
@@ -74,9 +80,12 @@ class FrontMonthCheckTask(en.CheckTask):
 
         barxml, tsxml = self.task_bar_etree, self.task_ts_etree
         fields = [TagsC.PRODUCT, TagsC.TYPE, TagsC.EXPIRY]
-
+        products = set()
         for (time_start, time_end), row in contracts:
-            data_args = {en.Server.TABLE: en.Enriched.name(), **row[fields].to_dict()}
+            data_args = {en.Enriched.SOURCE: self.task_source,
+                         en.Server.TABLE: en.Enriched.name(),
+                         en.Enriched.YEAR: [time_start.year, time_end.year],
+                         **row[fields].to_dict()}
             data = self.data_accessor.get_data(time_start, time_end,
                                                include_to=time_end == self.task_dtto,
                                                concat=False, **data_args)
@@ -85,21 +94,25 @@ class FrontMonthCheckTask(en.CheckTask):
                 self.set_taskargs(dtfrom=time_start, dtto=time_end)
                 barxml = self.bar_check_xml(data, barxml)
                 tsxml = self.timeseries_check_xml(data, tsxml)
+                products.add(row[TagsC.PRODUCT])
 
         etree_tostr(barxml, self.task_barxml)
         etree_tostr(tsxml, self.task_tsxml)
-        #
-        # missing_products = self.missing_products()
-        # if missing_products is not None:
-        #     barxml.insert(0, missing_products)
-        #
-        # barhtml = etree_tostr(to_styled_xml(barxml, BARXSL), self.task_barhtml)
-        # tshtml = etree_tostr(to_styled_xml(tsxml, TSXSL), self.task_tshtml)
-        #
-        # if self.task_email:
-        #     with EmailSession(*self.task_login) as session:
-        #         session.email(self.task_recipients, barhtml, BAR_TITILE, self.split_barhtml)
-        #         session.email(self.task_recipients, tshtml, TS_TITLE, self.split_tshtml)
+
+        missing_products = [p for p in to_iter(self.task_product) if p not in products]
+        if missing_products is not None:
+            barxml.insert(0, missing_products)
+
+        self.set_taskargs(parse_args=True, **kwargs)
+        barxml, tsxml = self.task_barxml, self.task_tsxml
+
+        barhtml = etree_tostr(to_styled_xml(barxml, BARXSL), self.task_barhtml)
+        tshtml = etree_tostr(to_styled_xml(tsxml, TSXSL), self.task_tshtml)
+
+        if self.task_email:
+            with EmailSession(*self.task_login) as session:
+                session.email(self.task_recipients, barhtml, BAR_TITILE, self.split_barhtml)
+                session.email(self.task_recipients, tshtml, TS_TITLE, self.split_tshtml)
 
 
 if __name__ == '__main__':
@@ -107,9 +120,10 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
 
     products = ['ES', 'NQ', 'YM', 'ZN', 'ZB', 'UB', '6E', '6J', '6B', 'GC', 'CL']
-    task.run_checks(product=products,
-                    ptype='F', dtfrom=dt.date(2018, 11, 22), dtto=dt.date(2018, 11, 24),
-                    schedule='CMESchedule', barxml='bar.xml', tsxml='ts.xml')
+    # products = ['6B']
+    task.run_checks(source=en.Server.REACTOR_GZIPS, product=products,
+                    ptype='F', dtfrom=dt.date(2018, 11, 1), dtto=dt.date(2018, 12, 1),
+                    schedule='CMESchedule', barxml='bar.xml', tsxml='ts.xml', email=True)
 
     # task.run_checks(schedule='CMESchedule')
     # task.email([task.task_barhtml, task.task_tshtml], [BAR_TITILE, TS_TITLE])

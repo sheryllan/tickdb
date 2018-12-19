@@ -109,10 +109,10 @@ def source_from(src):
     if not isinstance(src, str):
         raise TypeError('Invalid source: must be type of str')
 
-    if os.path.isdir(src):
+    try:
         with open(src) as fh:
             return fh.read()
-    else:
+    except FileNotFoundError:
         return src
 
 

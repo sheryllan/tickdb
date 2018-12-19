@@ -41,14 +41,14 @@ class FileAccessor(BaseAccesor):
             yield self.join_paths(sftp.getcwd(), sftp.stat('.').filename)
             sftp.chdir('..')
             return
-        sftp.chdir(path)
+        sftp.chdir(str(path))
 
         if not dirs:
             yield from (self.join_paths(sftp.getcwd(), fn) for fn in sftp.listdir('.'))
             sftp.chdir('..')
             return
         subdirs = sftp.listdir('.') if dirs[0] is None \
-            else set(sftp.listdir('.')).intersection(to_iter(dirs[0], ittype=iter))
+            else set(sftp.listdir('.')).intersection(map(str, to_iter(dirs[0], ittype=iter)))
 
         for subdir in subdirs:
             yield from self.rcsv_listdir(sftp, subdir, dirs[1:])
@@ -79,7 +79,6 @@ class FileAccessor(BaseAccesor):
         read_func = table.read_func() if read_func is None else read_func
 
         def from_files(files, client):
-            yield pd.DataFrame()
             for fpath in files:
                 with client.open(fpath) as fhandle:
                     yield read_func(fhandle)
@@ -94,12 +93,16 @@ class FileAccessor(BaseAccesor):
             with paramiko.SFTPClient.from_transport(transport) as sftp:
                 files_found = self.find_files(file_structure, sftp, False, **kwargs)
                 dated_fpaths = pd.DataFrame((table.date_from_filename(x), x) for x in files_found)
+                if dated_fpaths.empty:
+                    return empty
                 dated_fpaths = dated_fpaths.set_index(0).sort_index().loc[date_from: date_to, 1]
 
+                if dated_fpaths.empty:
+                    return empty
                 data_df = pd.concat(from_files(dated_fpaths, sftp))
+
                 if data_df.empty:
                     return empty
-
                 results = {k: v for k, v in bound_by_timeframe(data_df)}
                 return pd.concat(results.values()) if concat else results
 

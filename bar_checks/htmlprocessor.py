@@ -1,6 +1,7 @@
 from bs4 import BeautifulSoup
 from bs4.element import Tag
 import premailer
+from pynliner import Pynliner
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -79,19 +80,17 @@ class EmailSession(AbstractContextManager):
     def login(self):
         self.smtp.login(self.user, self.password)
 
-
     def email(self, recipients, contents, subject, splitfunc, fmt='html'):
         msg_to = ', '.join(recipients)
-        for content in splitfunc(os.linesep.join(source_from(c) for c in to_iter(contents))):
-            body = MIMEText(premailer.transform(content), 'html') if fmt == 'html' else MIMEText(content)
-
+        transformed = premailer.transform(os.linesep.join(source_from(c) for c in to_iter(contents)))
+        for content in splitfunc(transformed):
+            body = MIMEText(content, 'html') if fmt == 'html' else MIMEText(content)
             msg = MIMEMultipart('alternative')
             msg['From'] = self.user
             msg['To'] = msg_to
             msg['Subject'] = subject
             msg.attach(body)
             self.smtp.sendmail(self.user, msg_to, msg.as_string())
-
 
     def __enter__(self):
         self.login()
