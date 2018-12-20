@@ -1,7 +1,6 @@
 from bs4 import BeautifulSoup
 from bs4.element import Tag
 import premailer
-from pynliner import Pynliner
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
