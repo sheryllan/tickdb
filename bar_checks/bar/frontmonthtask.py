@@ -99,12 +99,9 @@ class FrontMonthCheckTask(en.CheckTask):
         etree_tostr(barxml, self.task_barxml)
         etree_tostr(tsxml, self.task_tsxml)
 
-        missing_products = [p for p in to_iter(self.task_product) if p not in products]
+        missing_products = [{self.PRODUCT: p} for p in to_iter(self.task_product) if p not in products]
         if missing_products is not None:
-            barxml.insert(0, missing_products)
-
-        self.set_taskargs(parse_args=True, **kwargs)
-        barxml, tsxml = self.task_barxml, self.task_tsxml
+            barxml.insert(0, rcsv_addto_etree(missing_products, self.MISSING_PRODS))
 
         barhtml = etree_tostr(to_styled_xml(barxml, BARXSL), self.task_barhtml)
         tshtml = etree_tostr(to_styled_xml(tsxml, TSXSL), self.task_tshtml)
