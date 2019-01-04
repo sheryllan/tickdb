@@ -10,7 +10,6 @@ from timeutils.timeseries import *
 from timeutils.holidayschedule import *
 from influxcommon import *
 from xmlconverter import *
-import logging
 
 
 def set_dbconfig(server):

@@ -1,9 +1,6 @@
 from enum import Enum
-import re
-import datetime as dt
+
 import pytz
-from os.path import basename
-from pandas import read_csv, to_datetime
 
 
 class StrEnum(str, Enum):
@@ -13,6 +10,12 @@ class StrEnum(str, Enum):
     @classmethod
     def values(cls):
         return [v.value for _, v in cls.__members__.items()]
+
+
+class BaseTable(object):
+    @classmethod
+    def name(cls):
+        return cls.__name__
 
 
 class EnrichedOHLCVN(object):
@@ -90,81 +93,82 @@ class ContinuousContract(object):
 
 
 class Basedb(object):
-    UNDEFINED = 999999999998
-    ENRICHEDOHLCVN = EnrichedOHLCVN.name()
+    HOSTNAME = None
 
-    TABLE = 'table'
-    TABLES = {ENRICHEDOHLCVN: EnrichedOHLCVN}
+    USERNAME = 'root'
+    PASSWORD = 'root123'
+
+    UNDEFINED = 999999999998
 
 
 class Quantdb1(Basedb):
-    DBNAME = 'bar'
-
-    USERNAME = 'root'
-    PASSWORD = 'root123'
-
     HOSTNAME = 'lcldn-quantdb1'
     PORT = 8086
+    DBNAME = 'bar'
+
+    ENRICHEDOHLCVN = EnrichedOHLCVN.name()
+    TABLES = {ENRICHEDOHLCVN: EnrichedOHLCVN()}
 
 
 class Quantsim1(Basedb):
-    DBNAME = 'bar_data'
-
-    USERNAME = 'root'
-    PASSWORD = 'root123'
-
     HOSTNAME = 'lcmint-quantsim1'
     PORT = 8086
+    DBNAME = 'bar_data'
 
     ENRICHEDOHLCVN = EnrichedOHLCVN.name()
     CONTINUOUS_CONTRACT = ContinuousContract.name()
 
-    TABLES = {ENRICHEDOHLCVN: EnrichedOHLCVN,
-              CONTINUOUS_CONTRACT: ContinuousContract}
+    TABLES = {ENRICHEDOHLCVN: EnrichedOHLCVN(),
+              CONTINUOUS_CONTRACT: ContinuousContract()}
 
 
 class Lcmquantldn1(Basedb):
-    BASEDIR = '/opt/data'
-    GZIPS = 'gzips'
-    REACTOR_GZIPS = 'reactor_gzips'
-
     HOSTNAME = 'lcmquantldn1'
 
-    class EnrichedOHLCVN(EnrichedOHLCVN):
+    class FileConfig(BaseTable):
+        BASEDIR = '/opt/data'
+
         SOURCE = 'source'
+        GZIPS = 'gzips'
+        REACTOR_GZIPS = 'reactor_gzips'
+
+        TABLE = 'table'
         YEAR = 'year'
 
-        FILE_STRUCTURE = [
-            SOURCE,
-            EnrichedOHLCVN.Tags.TYPE,
-            EnrichedOHLCVN.Tags.PRODUCT,
-            EnrichedOHLCVN.Tags.EXPIRY,
-            Basedb.TABLE,
-            EnrichedOHLCVN.Tags.CLOCK_TYPE,
-            EnrichedOHLCVN.Tags.WIDTH,
-            YEAR]
-
-        DATE_FMT = '%Y%m%d'
         TIMEZONE = pytz.UTC
 
-        @classmethod
-        def date_from_filename(cls, fn):
-            fn = basename(fn)
-            return cls.TIMEZONE.localize(dt.datetime.strptime(re.search('[0-9]{8}', fn).group(), cls.DATE_FMT))
+        FILE_STRUCTURE = []
 
-        @classmethod
-        def read_func(cls):
-            return lambda x: read_csv(x,
-                                      parse_dates=[0],
-                                      date_parser=lambda y: cls.TIMEZONE.localize(to_datetime(int(y))),
-                                      index_col=0,
-                                      compression='gzip')
+    class EnrichedOHLCVN(EnrichedOHLCVN, FileConfig):
+        FILENAME_DATE_PATTERN = '[0-9]{8}'
+        FILENAME_DATE_FORMAT = '%Y%m%d'
+
+        def __init__(self):
+            self.FILE_STRUCTURE = [
+                self.SOURCE,
+                self.Tags.TYPE,
+                self.Tags.PRODUCT,
+                self.Tags.EXPIRY,
+                self.TABLE,
+                self.Tags.CLOCK_TYPE,
+                self.Tags.WIDTH,
+                self.YEAR]
+
+    class ContinuousContract(ContinuousContract, FileConfig):
+        def __init__(self):
+            self.FILE_STRUCTURE = [
+                self.SOURCE,
+                self.Tags.TYPE,
+                self.Tags.PRODUCT]
+
+            self.FILENAME_STRUCTURE = [self.Tags.PRODUCT]
+            self.FILENAME_FORMAT = '{}-' + self.name() + '.csv.gz'
 
     ENRICHEDOHLCVN = EnrichedOHLCVN.name()
     CONTINUOUS_CONTRACT = ContinuousContract.name()
 
-    TABLES = {ENRICHEDOHLCVN: EnrichedOHLCVN,
-              CONTINUOUS_CONTRACT: ContinuousContract}
+    TABLES = {ENRICHEDOHLCVN: EnrichedOHLCVN(),
+              CONTINUOUS_CONTRACT: ContinuousContract()}
 
 
 dbbox_configs = {'quantdb1': Quantdb1,
