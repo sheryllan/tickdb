@@ -6,6 +6,7 @@ import stat
 import posixpath
 from influxdb import DataFrameClient
 from os.path import basename
+from itertools import zip_longest
 
 from influxcommon import *
 from timeutils.commonfuncs import isin_closed, to_tz_datetime
@@ -63,24 +64,26 @@ class FileManager(object):
     def __init__(self, config):
         self.config = config
 
-    def rcsv_listdir(self, filesys, path, dirs):
+    @classmethod
+    def rcsv_listdir(cls, filesys, path, dirs):
         if stat.S_ISREG(filesys.stat(path).st_mode):
             yield posixpath.join(filesys.getcwd(), path)
             return
 
         filesys.chdir(str(path))
-        subdirs = filesys.listdir('.')
 
         if not dirs:
-            yield from (posixpath.join(filesys.getcwd(), fn) for fn in subdirs)
+            yield filesys.getcwd()
             filesys.chdir('..')
             return
 
+        subdirs = filesys.listdir('.')
         if dirs[0] is not None:
-            subdirs = set(map(str, to_iter(dirs[0], ittype=iter))).intersection(subdirs)
+            dir_name = dirs[0](filesys.getcwd()) if callable(dirs[0]) else dirs[0]
+            subdirs = set(map(str, to_iter(dir_name, ittype=iter))).intersection(subdirs)
 
         for subdir in subdirs:
-            yield from self.rcsv_listdir(filesys, subdir, dirs[1:])
+            yield from cls.rcsv_listdir(filesys, subdir, dirs[1:])
         filesys.chdir('..')
 
     def find_files(self, **kwargs):
@@ -89,6 +92,12 @@ class FileManager(object):
 
 class Lcmquantldn1Accessor(Accessor):
     TIME_IDX = 'time'
+
+    TIME_FROM = 'time_from'
+    TIME_TO = 'time_to'
+    INCLUDE_FROM = 'include_from'
+    INCLUDE_TO = 'include_to'
+
 
     def __init__(self):
         super().__init__(Lcmquantldn1)
@@ -103,9 +112,11 @@ class Lcmquantldn1Accessor(Accessor):
         def __init__(self):
             super().__init__(Lcmquantldn1.EnrichedOHLCVN)
 
-        def directories(self, **kwargs):
+        def directories(self, *args, **kwargs):
+            dirs = {k: v for k, v in zip_longest(self.config.FILE_STRUCTURE, args)}
             kwargs[self.config.TABLE] = self.config.name()
-            return [kwargs.get(x, None) for x in self.config.FILE_STRUCTURE]
+            dirs.update({k: v for k, v in kwargs if k in dirs})
+            return list(dirs.values())
 
         def date_from_path(self, path):
             match = re.search(self.config.FILENAME_DATE_PATTERN, basename(path))
@@ -125,15 +136,20 @@ class Lcmquantldn1Accessor(Accessor):
         def __init__(self):
             super().__init__(Lcmquantldn1.ContinuousContract)
 
-        def find_files(self, filesys, **kwargs):
-            # for name_part in self.config.FILENAME_STRUCTURE:
-            #     for value in to_iter(kwargs.get(name_part, [])):
+        def data_file(self, path):
+            dirs = path[len(self.config.BASEDIR):].strip(posixpath.sep).split(posixpath.sep)
+            dirs_dict = {k: v for k, v in zip_longest(self.config.FILE_STRUCTURE, dirs)}
+            return self.config.FILENAME_FORMAT.format((dirs_dict.get(s, '') for s in self.config.FILENAME_STRUCTURE))
 
-            products = to_iter(kwargs.get(self.config.Tags.PRODUCT, []))
-            for p in products:
-                kwargs[self.config.Tags.PRODUCT] = p
-                dirs = [kwargs.get(x, None) for x in self.config.FILE_STRUCTURE]
-                filename = p
+        def directories(self, *args, **kwargs):
+            dirs = {k: v for k, v in zip_longest(self.config.FILE_STRUCTURE, args)}
+            kwargs[self.config.TABLE] = self.config.name()
+            kwargs[self.config.DATA_FILE] = self.data_file
+            dirs.update({k: v for k, v in kwargs if k in dirs})
+            return list(dirs.values())
+
+        def find_files(self, filesys, **kwargs):
+            return pd.Series(self.rcsv_listdir(filesys, self.config.BASEDIR, self.directories(**kwargs)))
 
 
     def transport_session(self):
@@ -141,47 +157,42 @@ class Lcmquantldn1Accessor(Accessor):
         transport.connect(username=self.config.USERNAME, password=self.config.PASSWORD)
         return transport
 
-    def get_data(self, table, time_from: dt.datetime = None, time_to: dt.datetime = None, include_from=True,
-                 include_to=True, empty=None, **kwargs):
-        # tbclass = self.settings.TABLES[table]
-        # time_from = to_tz_datetime(pd.to_datetime(time_from), to_tz=tbclass.TIMEZONE)
-        # time_to = to_tz_datetime(pd.to_datetime(time_to), to_tz=tbclass.TIMEZONE)
-        #
-        # dirs = tbclass.directories(**kwargs)
-        #
-        # def from_files(files, client):
-        #     for fpath in files:
-        #         with client.open(fpath) as fhandle:
-        #             yield self.read(fhandle, tbclass)
-        #
-        # def bound_by_time(df):
-        #     for tag, tag_df in df.groupby(table.Tags.values()):
-        #         i, j = bound_indices(tag_df.index,
-        #                              lambda x: isin_closed(x, time_from, time_to, (include_from, include_to)))
-        #         yield tag, tag_df.iloc[i:j]
-        #
-        # with self.transport_session() as transport:
-        #     with paramiko.SFTPClient.from_transport(transport) as sftp:
-        #         files_found = self.find_files(dirs, sftp, False)
-        #         fpaths = files_found
-        #
-        #         if hasattr(tbclass, 'date_from_filename'):
-        #             fpaths = pd.DataFrame((tbclass.date_from_path(x), x) for x in files_found)
-        #             if fpaths.empty:
-        #                 return empty
-        #             date_from = None if time_from is None else time_from.normalize()
-        #             date_to = None if time_to is None else time_to.normalize()
-        #             fpaths = fpaths.set_index(0).sort_index().loc[date_from: date_to, 1]
-        #
-        #             if fpaths.empty:
-        #                 return empty
-        #
-        #         data_df = pd.concat(from_files(fpaths, sftp))
-        #
-        #         if data_df.empty:
-        #             return empty
-        #         results = {k: v for k, v in bound_by_time(data_df)}
-        #         return pd.concat(results.values()) if concat else results
+    def read(self, filename, tbclass):
+        return pd.read_csv(filename,
+                           parse_dates=to_iter(tbclass.PARSE_DATES),
+                           date_parser=lambda y: tbclass.TIMEZONE.localize(pd.to_datetime(int(y))),
+                           index_col=tbclass.INDEX_COL)
+
+    def get_data(self, table, empty=None, concat=True, **kwargs):
+
+        file_mgr = self.fmanager_factory(table)
+        time_from = to_tz_datetime(pd.to_datetime(kwargs.get(self.TIME_FROM, None)), to_tz=file_mgr.config.TIMEZONE)
+        time_to = to_tz_datetime(pd.to_datetime(kwargs.get(self.TIME_TO, None)), to_tz=file_mgr.config.TIMEZONE)
+        closed = kwargs.get(self.INCLUDE_FROM, None), kwargs.get(self.INCLUDE_TO, None)
+
+        def from_files(files, client):
+            for fpath in files:
+                with client.open(fpath) as fhandle:
+                    yield self.read(fhandle, file_mgr.config)
+
+        def bound_by_time(df):
+            for tag, tag_df in df.groupby(table.Tags.values()):
+                i, j = bound_indices(tag_df.index,
+                                     lambda x: isin_closed(x, time_from, time_to, closed))
+                yield tag, tag_df.iloc[i:j]
+
+        with self.transport_session() as transport:
+            with paramiko.SFTPClient.from_transport(transport) as sftp:
+                files_found = file_mgr.find_files(sftp, **kwargs)
+                if files_found.empty:
+                    return empty
+
+                data_df = pd.concat(from_files(files_found, sftp))
+
+                if data_df.empty:
+                    return empty
+                results = {k: v for k, v in bound_by_time(data_df)}
+                return pd.concat(results.values()) if concat else results
 
 
     def get_continuous_contracts(self, time_from=None, time_to=None, **kwargs):
@@ -198,20 +209,28 @@ class Lcmquantldn1Accessor(Accessor):
         #                                             tags.TYPE: kwargs[tags.TYPE],
         #                                             tags.EXPIRY: 'DEC2018'})
 
-        contracts = self.get_data(self.settings.CONTINUOUS_CONTRACT, concat=True, **kwargs)
+        contracts = self.get_data(self.config.CONTINUOUS_CONTRACT, concat=True, **kwargs)
         if contracts is not None:
             contracts = contracts.sort_index()
             filtered = contracts.loc[time_from: time_to]
-            if filtered.index[0] > time_from:
-                yield (time_from, filtered.index[0]), contracts[None: time_from].iloc[-1]
+
+            if not filtered.empty:
+                start = filtered.index[0]
+                if start > time_from:
+                    yield (time_from, start), contracts[None: time_from].iloc[-1]
+
+                end = filtered.index[1] if len(filtered) > 1 else time_to
+                contract = filtered.iloc[0]
+
+                for i, row in filtered.iloc[1:].iterrows():
+                    yield (start, end), contract
+
+                    start = end
+                    end = i
+                    contract = row
 
 
-
-    def read(self, filename, tbclass):
-        return pd.read_csv(filename,
-                           parse_dates=to_iter(tbclass.PARSE_DATES),
-                           date_parser=lambda y: tbclass.TIMEZONE.localize(pd.to_datetime(int(y))),
-                           index_col=tbclass.INDEX_COL)
+                yield (start, end), contract
 
 
 

@@ -134,6 +134,7 @@ class Lcmquantldn1(Basedb):
 
         TABLE = 'table'
         YEAR = 'year'
+        DATA_FILE = 'data_file'
 
         TIMEZONE = pytz.UTC
 
@@ -152,14 +153,18 @@ class Lcmquantldn1(Basedb):
                 self.TABLE,
                 self.Tags.CLOCK_TYPE,
                 self.Tags.WIDTH,
-                self.YEAR]
+                self.YEAR,
+                self.DATA_FILE
+            ]
 
     class ContinuousContract(ContinuousContract, FileConfig):
         def __init__(self):
             self.FILE_STRUCTURE = [
                 self.SOURCE,
                 self.Tags.TYPE,
-                self.Tags.PRODUCT]
+                self.Tags.PRODUCT,
+                self.DATA_FILE
+            ]
 
             self.FILENAME_STRUCTURE = [self.Tags.PRODUCT]
             self.FILENAME_FORMAT = '{}-' + self.name() + '.csv.gz'
