@@ -2,8 +2,9 @@ import argparse
 from collections import namedtuple
 from types import MappingProxyType
 from pandas.tseries import offsets
+import logging
 
-from bar.checktask_config import *
+from bar.frontmonthtask_config import *
 from bar.datastore_config import *
 from dataframeutils import *
 from timeutils.timeseries import *
@@ -18,7 +19,7 @@ def set_dbconfig(server):
     global Barid
 
     Server = dbbox_configs[server]
-    Enriched = Server.TABLES[Server.ENRICHEDOHLCVN]
+    Enriched = Server.TABLES[Server.EnrichedOHLCVN.name()]
     Fields = Enriched.Fields
     Tags = Enriched.Tags
     Barid = create_BarId()
@@ -26,7 +27,13 @@ def set_dbconfig(server):
 
 def create_BarId():
 
-    class BarId(namedtuple('BarId', Tags.__members__.keys())):
+    class BarId(namedtuple('BarId', Tags.values())):
+        def __new__(cls, values):
+            if isinstance(values, Mapping):
+                return super().__new__(cls, **values)
+            elif isinstance(values, Iterable):
+                return super().__new__(cls, *values)
+
         def __init__(self, *args, **kwargs):
             self.id = self.__hash__()
 
@@ -250,7 +257,7 @@ class BarChecker(object):
         fopen, fclose, fhigh, flow = Fields.OPEN, Fields.CLOSE, Fields.HIGH, Fields.LOW
         errmsgs = pd.Series(['open not rolled over', 'close not rolled over',
                              'high not rolled over', 'low not rolled over'])
-        by = df.index.map(by) if callable(by) else by
+        by = df.index.to_series().map(by) if callable(by) else by
 
         def check():
             for _, gdf in iter_groupby(df, by):
@@ -313,8 +320,8 @@ class SeriesChecker(object):
                 self.ERRORVAL: error_val}
 
     def get_validator(self, barid):
-        unit = self.OFFSET_MAPPING[barid.CLOCK_TYPE]
-        tsgenerator = StepTimestampGenerator(barid.WIDTH, unit, barid.OFFSET)
+        unit = self.OFFSET_MAPPING[barid.clock_type]
+        tsgenerator = StepTimestampGenerator(barid.width, unit, barid.offset)
         return SeriesValidation(tsgenerator, self.schedule_bound)
 
     def validate_bar_series(self, barid, timestamps: pd.DatetimeIndex, validation: SeriesValidation=None):
@@ -353,12 +360,10 @@ class CheckTask(object):
                   BarChecker.VWAP_CHECK]
 
     def __init__(self, data_accessor):
-        self.data_accessor = data_accessor
+        self.accessor = data_accessor
         self.bscheduler = BScheduler()
         self.schecker = None
         self.schedule_bound = None
-
-        # self.BarId = create_BarId()
 
         self.task_args = None
         self.aparser = argparse.ArgumentParser()
@@ -496,7 +501,7 @@ class CheckTask(object):
 
     def run_bar_checks(self, data):
         data = BarChecker.nullify_undefined(data)
-        index_schedule = data.index.map(self.schedule_bound.enclosing_schedule)
+        index_schedule = data.index.to_series().map(self.schedule_bound.enclosing_schedule)
         index_mask = index_schedule.notna()
         data_cap = data.loc[index_mask]
         checks = [
@@ -513,17 +518,20 @@ class CheckTask(object):
         return results[self.CHECK_COLS][~results.all(axis=1)] \
             if not results.empty else pd.DataFrame(columns=self.CHECK_COLS)
 
-    def _barid_element(self, bar):
-        return rcsv_addto_etree(Barid(*bar).asdict(), self.BAR)
+    def _barid_element(self, value):
+        bar = value.asdict() if isinstance(value, Barid) else Barid(value).asdict()
+        return rcsv_addto_etree(bar, self.BAR)
 
     def bar_check_xml(self, data_by_bar, root=None, outpath=None):
         xml = self.task_bar_etree if root is None else root
-        data_by_bar = data_by_bar.items() if isinstance(data_by_bar, dict) else data_by_bar
 
         for bar, group in data_by_bar:
+            barid = Barid(bar)
+            logging.info('Running bar check for {}'.format(barid))
+
             results = self.run_bar_checks(group)
             if not results.empty:
-                xml.append(pd_to_etree(results, self._barid_element(bar), self.RECORD, TIME_IDX))
+                xml.append(pd_to_etree(results, self._barid_element(barid), self.RECORD, TIME_IDX))
 
         if outpath is not None:
             etree_tostr(xml, outpath, BARXSL)
@@ -531,9 +539,12 @@ class CheckTask(object):
 
     def timeseries_check_xml(self, data_by_bar, root=None, outpath=None):
         xml = self.task_ts_etree if root is None else root
-        data_by_bar = data_by_bar.items() if isinstance(data_by_bar, dict) else data_by_bar
+
         for bar, bar_df in data_by_bar:
-            validated = self.schecker.validate_bar_series(Barid(*bar), bar_df.index)
+            barid = Barid(bar)
+            logging.info('Running time series check for {}'.format(barid))
+
+            validated = self.schecker.validate_bar_series(barid, bar_df.index)
             for date_dict, dated_df in to_grouped_df(validated, [SeriesChecker.DATE, SeriesChecker.TIMEZONE]):
                 xpath = XPathBuilder.find(tag=self.RECORD,
                                           selector=XPathBuilder.evaluation(
@@ -546,7 +557,7 @@ class CheckTask(object):
                     xml.append(record_ele)
 
                 error_df = dated_df.set_index(SeriesChecker.ERRORTYPE)
-                record_ele.append(rcsv_addto_etree(error_df[SeriesChecker.ERRORVAL], self._barid_element(bar)))
+                record_ele.append(rcsv_addto_etree(error_df[SeriesChecker.ERRORVAL], self._barid_element(barid)))
 
         xml[:] = sorted(xml, key=lambda x: (x.tag, x.get(SeriesChecker.DATE)))
         if outpath is not None:

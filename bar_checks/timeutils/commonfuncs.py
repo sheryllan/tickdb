@@ -83,7 +83,7 @@ def ceildiv(a, b):
 
 def closed_convert(closed):
     if isinstance(closed, tuple):
-        return closed
+        return tuple(x if x is not None else True for x in closed)
 
     include_start, include_end = True, True
     if closed == 'left':

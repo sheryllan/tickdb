@@ -5,7 +5,7 @@ import paramiko
 import stat
 import posixpath
 from influxdb import DataFrameClient
-from os.path import basename
+from os.path import basename, splitext
 from itertools import zip_longest
 
 from influxcommon import *
@@ -91,31 +91,27 @@ class FileManager(object):
 
 
 class Lcmquantldn1Accessor(Accessor):
-    TIME_IDX = 'time'
-
     TIME_FROM = 'time_from'
     TIME_TO = 'time_to'
     INCLUDE_FROM = 'include_from'
     INCLUDE_TO = 'include_to'
 
-
     def __init__(self):
         super().__init__(Lcmquantldn1)
 
     def fmanager_factory(self, type_name):
-        if type_name == Lcmquantldn1.ENRICHEDOHLCVN:
+        if type_name == Lcmquantldn1.EnrichedOHLCVN.name():
             return self.EnrichedManager()
-        elif type_name == Lcmquantldn1.CONTINUOUS_CONTRACT:
+        elif type_name == Lcmquantldn1.ContinuousContract.name():
             return self.ContinuousContractManager()
 
     class EnrichedManager(FileManager):
         def __init__(self):
-            super().__init__(Lcmquantldn1.EnrichedOHLCVN)
+            super().__init__(Lcmquantldn1.TABLES[Lcmquantldn1.EnrichedOHLCVN.name()])
 
         def directories(self, *args, **kwargs):
-            dirs = {k: v for k, v in zip_longest(self.config.FILE_STRUCTURE, args)}
             kwargs[self.config.TABLE] = self.config.name()
-            dirs.update({k: v for k, v in kwargs if k in dirs})
+            dirs = {k: kwargs.get(k, v) for k, v in zip_longest(self.config.FILE_STRUCTURE, args)}
             return list(dirs.values())
 
         def date_from_path(self, path):
@@ -134,52 +130,55 @@ class Lcmquantldn1Accessor(Accessor):
 
     class ContinuousContractManager(FileManager):
         def __init__(self):
-            super().__init__(Lcmquantldn1.ContinuousContract)
+            super().__init__(Lcmquantldn1.TABLES[Lcmquantldn1.ContinuousContract.name()])
+            self.tz = self.config.TIMEZONE
 
         def data_file(self, path):
             dirs = path[len(self.config.BASEDIR):].strip(posixpath.sep).split(posixpath.sep)
             dirs_dict = {k: v for k, v in zip_longest(self.config.FILE_STRUCTURE, dirs)}
-            return self.config.FILENAME_FORMAT.format((dirs_dict.get(s, '') for s in self.config.FILENAME_STRUCTURE))
+            return self.config.FILENAME_FORMAT.format(*(dirs_dict.get(s, '') for s in self.config.FILENAME_STRUCTURE))
 
         def directories(self, *args, **kwargs):
-            dirs = {k: v for k, v in zip_longest(self.config.FILE_STRUCTURE, args)}
             kwargs[self.config.TABLE] = self.config.name()
             kwargs[self.config.DATA_FILE] = self.data_file
-            dirs.update({k: v for k, v in kwargs if k in dirs})
+            dirs = {k: kwargs.get(k, v) for k, v in zip_longest(self.config.FILE_STRUCTURE, args)}
             return list(dirs.values())
 
         def find_files(self, filesys, **kwargs):
             return pd.Series(self.rcsv_listdir(filesys, self.config.BASEDIR, self.directories(**kwargs)))
-
 
     def transport_session(self):
         transport = paramiko.Transport(self.config.HOSTNAME)
         transport.connect(username=self.config.USERNAME, password=self.config.PASSWORD)
         return transport
 
-    def read(self, filename, tbclass):
-        return pd.read_csv(filename,
-                           parse_dates=to_iter(tbclass.PARSE_DATES),
-                           date_parser=lambda y: tbclass.TIMEZONE.localize(pd.to_datetime(int(y))),
-                           index_col=tbclass.INDEX_COL)
+    def read(self, filepath, filesys, tbclass):
+        extension = splitext(filepath)[1]
+        if extension == '.gz':
+            compression = 'gzip'
+        else:
+            compression = 'infer'
+
+        with filesys.open(filepath) as fhandle:
+            return pd.read_csv(fhandle,
+                               parse_dates=to_iter(tbclass.DATETIME_COLS),
+                               date_parser=lambda x: tbclass.TIMEZONE.localize(pd.to_datetime(int(x))),
+                               index_col=tbclass.TIME_IDX_COL,
+                               compression=compression)
 
     def get_data(self, table, empty=None, concat=True, **kwargs):
-
         file_mgr = self.fmanager_factory(table)
         time_from = to_tz_datetime(pd.to_datetime(kwargs.get(self.TIME_FROM, None)), to_tz=file_mgr.config.TIMEZONE)
         time_to = to_tz_datetime(pd.to_datetime(kwargs.get(self.TIME_TO, None)), to_tz=file_mgr.config.TIMEZONE)
+        kwargs.update({self.TIME_FROM: time_from, self.TIME_TO: time_to})
         closed = kwargs.get(self.INCLUDE_FROM, None), kwargs.get(self.INCLUDE_TO, None)
 
-        def from_files(files, client):
-            for fpath in files:
-                with client.open(fpath) as fhandle:
-                    yield self.read(fhandle, file_mgr.config)
-
         def bound_by_time(df):
-            for tag, tag_df in df.groupby(table.Tags.values()):
+            tags = file_mgr.config.Tags.values()
+            for tag_key, tag_df in df.groupby(file_mgr.config.Tags.values()):
                 i, j = bound_indices(tag_df.index,
                                      lambda x: isin_closed(x, time_from, time_to, closed))
-                yield tag, tag_df.iloc[i:j]
+                yield dict(zip(tags, tag_key)), tag_df.iloc[i:j]
 
         with self.transport_session() as transport:
             with paramiko.SFTPClient.from_transport(transport) as sftp:
@@ -187,58 +186,54 @@ class Lcmquantldn1Accessor(Accessor):
                 if files_found.empty:
                     return empty
 
-                data_df = pd.concat(from_files(files_found, sftp))
-
+                data_df = pd.concat(self.read(f, sftp, file_mgr.config) for f in files_found)
                 if data_df.empty:
                     return empty
-                results = {k: v for k, v in bound_by_time(data_df)}
-                return pd.concat(results.values()) if concat else results
-
+                results = list(bound_by_time(data_df))
+                return pd.concat(y for x, y in results) if concat else results
 
     def get_continuous_contracts(self, time_from=None, time_to=None, **kwargs):
-        # from bar.datastore_config import ContinuousContract
-        # import pytz
-        # fields, tags = ContinuousContract.Fields, ContinuousContract.Tags
-        #
-        # tz = pytz.timezone('America/Chicago')
-        # time_from = to_tz_datetime(time_from, to_tz=tz)
-        # time_to = to_tz_datetime(time_to, to_tz=tz)
-        # for product in to_iter(kwargs[tags.PRODUCT]):
-        #     yield (time_from, time_to), pd.Series({fields.TIME_ZONE: 'America/Chicago',
-        #                                             tags.PRODUCT: product,
-        #                                             tags.TYPE: kwargs[tags.TYPE],
-        #                                             tags.EXPIRY: 'DEC2018'})
+        table_config = self.config.TABLES[self.config.ContinuousContract.name()]
+        time_from = to_tz_datetime(pd.to_datetime(time_from), to_tz=table_config.TIMEZONE)
+        time_to = to_tz_datetime(pd.to_datetime(time_to), to_tz=table_config.TIMEZONE)
 
-        contracts = self.get_data(self.config.CONTINUOUS_CONTRACT, concat=True, **kwargs)
-        if contracts is not None:
+        for _, contracts in self.get_data(table_config.name(), empty=[], concat=False, **kwargs):
             contracts = contracts.sort_index()
             filtered = contracts.loc[time_from: time_to]
 
             if not filtered.empty:
-                start = filtered.index[0]
-                if start > time_from:
-                    yield (time_from, start), contracts[None: time_from].iloc[-1]
+                start, end = filtered.index[0], None
+                if time_from is not None and start > time_from:
+                    yield (time_from, start), contracts.loc[:time_from].iloc[-1]
 
-                end = filtered.index[1] if len(filtered) > 1 else time_to
                 contract = filtered.iloc[0]
-
                 for i, row in filtered.iloc[1:].iterrows():
-                    yield (start, end), contract
-
-                    start = end
                     end = i
+                    yield (start, end), contract
+                    start = end
                     contract = row
 
+                if end != time_to:
+                    yield (start, time_to), contract
 
-                yield (start, end), contract
 
-
-
-# from bar.datastore_config import Lcmquantldn1
-#
-# fa = FileAccessor(Lcmquantldn1, 'slan', 'slanpass')
+# fa = Lcmquantldn1Accessor()
 # # r = fa.find_files(product='ES', type='F', expiry='SEP2018', table='EnrichedOHLCVN', clock='M')
-# r = fa.get_data(dt.datetime(2018, 11, 1), product=['ES', 'ZN'], type='F', expiry='DEC2018', table='EnrichedOHLCVN',
-#                 clock_type='M')
+# # r = fa.get_data('EnrichedOHLCVN',
+# #                 time_from=dt.datetime(2018, 11, 1),
+# #                 include_from=False,
+# #                 product=['ES', 'ZN'],
+# #                 type='F',
+# #                 expiry='DEC2018',
+# #                 clock_type='M')
+# cc = fa.get_continuous_contracts(dt.datetime(2018, 1, 1), dt.datetime(2018, 12, 31),
+#                                  include_from=False,
+#                                  source='reactor_gzips',
+#                                  product=['ES'],
+#                                  type='F',
+#                                  clock_type='M'
+#                                  )
 #
-# print(r)
+# for c in cc:
+#     print(c[0])
+#     print(c[1])

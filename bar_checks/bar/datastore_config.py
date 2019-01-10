@@ -106,8 +106,7 @@ class Quantdb1(Basedb):
     PORT = 8086
     DBNAME = 'bar'
 
-    ENRICHEDOHLCVN = EnrichedOHLCVN.name()
-    TABLES = {ENRICHEDOHLCVN: EnrichedOHLCVN()}
+    TABLES = {EnrichedOHLCVN.name(): EnrichedOHLCVN()}
 
 
 class Quantsim1(Basedb):
@@ -115,11 +114,8 @@ class Quantsim1(Basedb):
     PORT = 8086
     DBNAME = 'bar_data'
 
-    ENRICHEDOHLCVN = EnrichedOHLCVN.name()
-    CONTINUOUS_CONTRACT = ContinuousContract.name()
-
-    TABLES = {ENRICHEDOHLCVN: EnrichedOHLCVN(),
-              CONTINUOUS_CONTRACT: ContinuousContract()}
+    TABLES = {EnrichedOHLCVN.name(): EnrichedOHLCVN(),
+              ContinuousContract.name(): ContinuousContract()}
 
 
 class Lcmquantldn1(Basedb):
@@ -137,6 +133,8 @@ class Lcmquantldn1(Basedb):
         DATA_FILE = 'data_file'
 
         TIMEZONE = pytz.UTC
+        DATETIME_COLS = [0]
+        TIME_IDX_COL = 0
 
         FILE_STRUCTURE = []
 
@@ -169,11 +167,18 @@ class Lcmquantldn1(Basedb):
             self.FILENAME_STRUCTURE = [self.Tags.PRODUCT]
             self.FILENAME_FORMAT = '{}-' + self.name() + '.csv.gz'
 
-    ENRICHEDOHLCVN = EnrichedOHLCVN.name()
-    CONTINUOUS_CONTRACT = ContinuousContract.name()
+        class Fields(StrEnum):
+            SHORT_CODE = 'short_code'
+            TIME_ZONE = 'time_zone'
+            EXPIRY = 'expiry'
 
-    TABLES = {ENRICHEDOHLCVN: EnrichedOHLCVN(),
-              CONTINUOUS_CONTRACT: ContinuousContract()}
+        class Tags(StrEnum):
+            PRODUCT = 'product'
+            ROLL_STRATEGY = 'roll_strategy'
+            TYPE = 'type'
+
+    TABLES = {EnrichedOHLCVN.name(): EnrichedOHLCVN(),
+              ContinuousContract.name(): ContinuousContract()}
 
 
 dbbox_configs = {'quantdb1': Quantdb1,

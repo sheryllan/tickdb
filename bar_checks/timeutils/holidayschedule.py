@@ -61,7 +61,6 @@ class BaseSchedule(object):
     tzinfo = pytz.UTC
     weekmask = 'Mon Tue Wed Thu Fri'
 
-
     def __init__(self):
         self.cbd = CustomBusinessDay(calendar=self.calendar, weekmask=self.weekmask)
         self.delta = timedelta_between(self.close_time, self.open_time)

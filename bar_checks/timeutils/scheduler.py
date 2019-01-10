@@ -110,22 +110,6 @@ class ScheduleBound(object):
                 if isin_closed(ts, schedule[0], schedule[1], self.closed):
                     return schedule
 
-        # if today in self.schedule_dict:
-        #     for schedule in self.schedule_dict[today]:
-        #         if schedule and self.isin_closed(ts, schedule[0], schedule[1], self.closed):
-        #             return schedule
-        # elif today in self.schedule_dict:
-        #     i_today = self.schedule_dict.index(today)
-        #     if i_today == 0:
-        #         return None
-        #
-        #     i_last = i_today - 1
-        #     last_sday = self.schedule_dict.keys[i_last]
-        #     if today in self.schedule_dict[last_sday]:
-        #         for schedule in self.schedule_dict[last_sday][today]:
-        #             if schedule and self.isin_closed(ts, schedule[0], schedule[1], self.closed):
-        #                 return schedule
-
     def is_on_schedule(self, ts):
         return self.enclosing_schedule(ts) is not None
 

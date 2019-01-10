@@ -1,6 +1,5 @@
 import logging
 from itertools import groupby
-from bar.checktask_config import *
 from bar.frontmonthtask_config import *
 import bar.enrichedOHLCVN as en
 from htmlprocessor import *
@@ -8,8 +7,8 @@ from dataaccess import *
 from xmlconverter import *
 
 
-en.set_dbconfig('lcmquantldn1')
-Continous = en.Server.TABLES[en.Server.CONTINUOUS_CONTRACT]
+en.set_dbconfig(Lcmquantldn1.HOSTNAME)
+Continous = en.Server.TABLES[en.Server.ContinuousContract.name()]
 TagsC = Continous.Tags
 FieldsC = Continous.Fields
 
@@ -18,7 +17,7 @@ class FrontMonthCheckTask(en.CheckTask):
     ATTACHMENT_LIMIT = 20000000
 
     def __init__(self):
-        super().__init__(FileAccessor(en.Server, 'slan', 'slanpass'))
+        super().__init__(Lcmquantldn1Accessor())
 
         self.aparser.add_argument('--source', nargs='*', type=str,  default=SOURCE,
                                   help='the source directory of the data')
@@ -74,21 +73,24 @@ class FrontMonthCheckTask(en.CheckTask):
 
     def run_checks(self, **kwargs):
         self.set_taskargs(parse_args=True, **kwargs)
-        contracts = self.data_accessor.get_continuous_contracts(self.task_dtfrom, self.task_dtto,
-                                                                **{TagsC.PRODUCT: self.task_product,
-                                                                   TagsC.TYPE: self.task_ptype})
+        cc_kwargs = {TagsC.PRODUCT: self.task_product, TagsC.TYPE: self.task_ptype, Continous.SOURCE: self.task_source}
+        contracts = self.accessor.get_continuous_contracts(self.task_dtfrom, self.task_dtto, **cc_kwargs)
 
         barxml, tsxml = self.task_bar_etree, self.task_ts_etree
-        fields = [TagsC.PRODUCT, TagsC.TYPE, TagsC.EXPIRY]
+        fields = [TagsC.PRODUCT, TagsC.TYPE, FieldsC.EXPIRY]
         products = set()
         for (time_start, time_end), row in contracts:
-            data_args = {en.Enriched.SOURCE: self.task_source,
-                         en.Server.TABLE: en.Enriched.name(),
-                         en.Enriched.YEAR: [time_start.year, time_end.year],
-                         **row[fields].to_dict()}
-            data = self.data_accessor.get_data(time_start, time_end,
-                                               include_to=time_end == self.task_dtto,
-                                               concat=False, **data_args)
+            contract_info = ','.join('{}: {}'.format(k, v) for k, v in row[fields].items())
+            logging.info('Start: {}, End: {}, {}'.format(time_start, time_end, contract_info))
+
+            data_args = {
+                self.accessor.TIME_FROM: time_start,
+                self.accessor.TIME_TO: time_end,
+                self.accessor.INCLUDE_TO: time_end == self.task_dtto,
+                en.Enriched.SOURCE: self.task_source,
+                en.Enriched.YEAR: [time_start.year, time_end.year],
+                **row[fields].to_dict()}
+            data = self.accessor.get_data(en.Enriched.name(), concat=False, **data_args)
 
             if data is not None:
                 self.set_taskargs(dtfrom=time_start, dtto=time_end)
@@ -116,11 +118,11 @@ if __name__ == '__main__':
     task = FrontMonthCheckTask()
     logging.basicConfig(level=logging.INFO)
 
-    products = ['ES', 'NQ', 'YM', 'ZN', 'ZB', 'UB', '6E', '6J', '6B', 'GC', 'CL']
-    # products = ['6B']
-    task.run_checks(source=en.Server.REACTOR_GZIPS, product=products,
-                    ptype='F', dtfrom=dt.date(2018, 11, 1), dtto=dt.date(2018, 12, 1),
-                    schedule='CMESchedule', barxml='bar.xml', tsxml='ts.xml', email=True)
+    # products = ['ES', 'NQ', 'YM', 'ZN', 'ZB', 'UB', '6E', '6J', '6B', 'GC', 'CL']
+    products = ['ES']
+    task.run_checks(source=en.Server.FileConfig.REACTOR_GZIPS, product=products,
+                    ptype='F', dtfrom=dt.date(2018, 12, 1), dtto=dt.date(2018, 12, 31),
+                    schedule='CMESchedule', email=True)
 
     # task.run_checks(schedule='CMESchedule')
     # task.email([task.task_barhtml, task.task_tshtml], [BAR_TITILE, TS_TITLE])
