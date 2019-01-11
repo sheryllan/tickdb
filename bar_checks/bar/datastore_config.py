@@ -104,18 +104,20 @@ class Basedb(object):
 class Quantdb1(Basedb):
     HOSTNAME = 'lcldn-quantdb1'
     PORT = 8086
-    DBNAME = 'bar'
 
-    TABLES = {EnrichedOHLCVN.name(): EnrichedOHLCVN()}
+    class BarDatabase(object):
+        DBNAME = 'bar'
+        TABLES = {EnrichedOHLCVN.name(): EnrichedOHLCVN()}
 
 
 class Quantsim1(Basedb):
     HOSTNAME = 'lcmint-quantsim1'
     PORT = 8086
-    DBNAME = 'bar_data'
 
-    TABLES = {EnrichedOHLCVN.name(): EnrichedOHLCVN(),
-              ContinuousContract.name(): ContinuousContract()}
+    class BarDatabase(object):
+        DBNAME = 'bar_data'
+        TABLES = {EnrichedOHLCVN.name(): EnrichedOHLCVN(),
+                  ContinuousContract.name(): ContinuousContract()}
 
 
 class Lcmquantldn1(Basedb):

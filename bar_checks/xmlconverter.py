@@ -73,7 +73,9 @@ def etree_tostr(element, outpath=None, xsl=None, header=None, encoding='utf-8'):
     return text
 
 
-def to_styled_xml(xml, xsl):
+def to_styled_xml(xml, xsl=None):
+    if xsl is None:
+        return xml
     doc = xml
     if not etree.iselement(doc):
         doc = etree.parse(xml)

@@ -17,8 +17,7 @@
 					th.lv2 { color: #000000; background-color: #d9d9d9; text-align:left; }
 					
 					th.lv1 { background-color: #888888; padding:3px 7px; }
-					th.lv2 { background-color: #d9d9d9; padding:2px 5px; }
-					
+					th.lv2 { background-color: #d9d9d9; padding:2px 5px; }				
 					
 					td.good { color: #00AA00; font-weight: bold; font-size: small; }
 					td.bad { color: #AA0000; font-weight: bold; font-size: small; }

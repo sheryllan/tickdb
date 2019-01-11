@@ -73,7 +73,21 @@ class BaseSchedule(object):
 
 
 class CMESchedule(BaseSchedule):
-    calendar = GeneralCalendar()
+    Dec22nd = Holiday('Dec 22nd', month=12, day=22)
+    Dec23rd = Holiday('Dec 23rd', month=12, day=23)
+    Dec24th = Holiday('Dec 24th', month=12, day=24)
+    Dec26th = Holiday('Dec 26th', month=12, day=26)
+    Dec27th = Holiday('Dec 27th', month=12, day=27)
+    Dec28th = Holiday('Dec 28th', month=12, day=28)
+    Dec29th = Holiday('Dec 29th', month=12, day=29)
+    Dec30th = Holiday('Dec 30th', month=12, day=30)
+    Dec31st = Holiday('Dec 31st', month=12, day=31)
+
+    calendar = GeneralCalendar(
+        'CMECalendar',
+        [Dec22nd, Dec23rd, Dec24th, Xmas, Dec26th, Dec27th,
+         Dec28th, Dec29th, Dec29th, Dec30th, Dec31st, NewYear])
+
     open_time = dt.time(17)
     close_time = dt.time(16)
     tzinfo = pytz.timezone('America/Chicago')

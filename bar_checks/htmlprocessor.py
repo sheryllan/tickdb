@@ -69,6 +69,7 @@ def split_html(html, parent_func, desc_func, buffer_size, split_func, prettify=F
 
 
 class EmailSession(AbstractContextManager):
+    ATTACHMENT_LIMIT = 20000000
 
     def __init__(self, user, password, server='smtp.gmail.com'):
         self.user = user
@@ -81,8 +82,8 @@ class EmailSession(AbstractContextManager):
 
     def email(self, recipients, contents, subject, splitfunc, fmt='html'):
         msg_to = ', '.join(recipients)
-        transformed = premailer.transform(os.linesep.join(source_from(c) for c in to_iter(contents)))
-        for content in splitfunc(transformed):
+        transformed = os.linesep.join(premailer.transform(source_from(c)) for c in to_iter(contents))
+        for content in splitfunc(transformed, self.ATTACHMENT_LIMIT):
             body = MIMEText(content, 'html') if fmt == 'html' else MIMEText(content)
             msg = MIMEMultipart('alternative')
             msg['From'] = self.user

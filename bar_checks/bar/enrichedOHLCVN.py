@@ -4,7 +4,7 @@ from types import MappingProxyType
 from pandas.tseries import offsets
 import logging
 
-from bar.frontmonthtask_config import *
+from bar.csvcheck_config import *
 from bar.datastore_config import *
 from dataframeutils import *
 from timeutils.timeseries import *
@@ -565,22 +565,7 @@ class CheckTask(object):
         return xml
 
 
-    # def check(self, data):
-    #     barxml = self.bar_checks_xml(data, self.task_barxml)
-    #     tsxml = self.timeseries_checks_xml(data, self.task_tsxml)
-    #
-    #     barhtml = etree_tostr(to_styled_xml(barxml, self.task_barxsl), self.task_barhtml)
-    #     tshtml = etree_tostr(to_styled_xml(tsxml, self.task_tsxsl), self.task_tshtml)
-    #
-    #     return barhtml, tshtml
-    #
-    #
-    # def run_checks(self, **kwargs):
-    #     self.set_taskargs(**kwargs)
-    #     fields = {Tags.PRODUCT: self.task_product, Tags.TYPE: self.task_ptype, Tags.EXPIRY: self.task_expiry}
-    #     data = self.get_data(Enriched.name(), self.task_dtfrom, self.task_dtto,
-    #                          empty=pd.DataFrame(columns=Fields.values() + Tags.values()), **fields)
-    #     return self.check(data)
+class
 
 
 

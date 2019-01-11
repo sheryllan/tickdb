@@ -1,8 +1,7 @@
 from collections import Iterable, defaultdict
-from sortedcontainers import SortedDict, SortedList
-import pandas as pd
-import os
 
+import pandas as pd
+from sortedcontainers import SortedDict, SortedList
 
 
 def rreplace(s, old, new, occurrence=1):
