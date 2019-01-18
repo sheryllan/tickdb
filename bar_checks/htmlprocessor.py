@@ -1,5 +1,6 @@
 from bs4 import BeautifulSoup
 from bs4.element import Tag
+import os
 import premailer
 import smtplib
 from email.mime.multipart import MIMEMultipart
@@ -16,12 +17,6 @@ TR = 'tr'
 TH = 'th'
 
 COLSPAN = 'colspan'
-
-
-# def extract_all(nodes):
-#     for node in nodes:
-#         node = node.extract()
-#         yield node
 
 
 def extend_multiple(parent, children):
@@ -80,11 +75,11 @@ class EmailSession(AbstractContextManager):
     def login(self):
         self.smtp.login(self.user, self.password)
 
-    def email(self, recipients, contents, subject, splitfunc, fmt='html'):
+    def email_html(self, recipients, contents, subject, splitfunc=lambda x, y: x):
         msg_to = ', '.join(recipients)
-        transformed = os.linesep.join(premailer.transform(source_from(c)) for c in to_iter(contents))
-        for content in splitfunc(transformed, self.ATTACHMENT_LIMIT):
-            body = MIMEText(content, 'html') if fmt == 'html' else MIMEText(content)
+        transformed = (splitfunc(premailer.transform(source_from(c)), self.ATTACHMENT_LIMIT) for c in to_iter(contents))
+        for content in func_grouper(flatten_iter(transformed), self.ATTACHMENT_LIMIT, lambda x: len(x), iter):
+            body = MIMEText(os.linesep.join(content), 'html')
             msg = MIMEMultipart('alternative')
             msg['From'] = self.user
             msg['To'] = msg_to

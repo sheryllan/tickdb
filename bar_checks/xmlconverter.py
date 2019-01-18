@@ -1,8 +1,15 @@
 from collections.abc import Mapping
-from os import linesep
 from lxml import etree
 
 from commonlib import *
+
+
+XSL_PI_TEXT_FMT = 'type="text/xsl" href="{}"'
+XSL_PI_TARGET = 'xml-stylesheet'
+
+
+def xsl_pi(xsl):
+    return etree.ProcessingInstruction(XSL_PI_TARGET, XSL_PI_TEXT_FMT.format(xsl))
 
 
 def validate_element(element):
@@ -13,7 +20,7 @@ def validate_element(element):
     return element
 
 
-def pd_to_etree(df, root, row_ele=None, index_name=False):
+def df_to_etree(df, root, row_ele=None, index_name=False):
     if not isinstance(df, pd.DataFrame):
         df = pd.DataFrame(df)
 
@@ -40,7 +47,7 @@ def rcsv_addto_etree(value, root, **kwargs):
             else:
                 root.set(fk, str(fv))
     elif isinstance(value, pd.DataFrame):
-        pd_to_etree(value, root, **kwargs)
+        df_to_etree(value, root, **kwargs)
     elif nontypes_iterable(value):
         for val in value:
             rcsv_addto_etree(val, root, **kwargs)
@@ -50,35 +57,36 @@ def rcsv_addto_etree(value, root, **kwargs):
     return root
 
 
-def etree_tostr(element, outpath=None, xsl=None, header=None, encoding='utf-8'):
-    strings = []
+def etree_tostr(element, outpath=None, pis=None, method='xml', encoding='utf-8'):
+    if etree.iselement(element):
+        root = etree.ElementTree(element)
+    elif isinstance(element, str):
+        root = etree.parse(element)
+    else:
+        root = element
 
-    xml_header = '<?xml version="1.0" encoding="{}"?>'.format(encoding)
-    if header == 'xml':
-        strings.append(xml_header)
-        if xsl is not None:
-            xsl_pi = '<?xml-stylesheet type="text/xsl" href="{}"?>'.format(xsl)
-            strings.append(xsl_pi)
+    element = root.getroot()
+    if pis is not None:
+        pis = [pis] if etree.iselement(pis) else pis
+        for pi in pis:
+            element.addprevious(pi)
 
-    content = etree.tostring(element, pretty_print=True)
-    if content is not None:
-        content = content.decode(encoding)
-        strings.append(content)
-
-    text = linesep.join(strings)
-    if outpath is not None:
-        with open(outpath, 'w+', encoding=encoding) as stream:
+    text = etree.tostring(root, method=method, encoding=encoding, pretty_print=True)
+    if text is not None and outpath is not None:
+        with open(outpath, 'wb+') as stream:
             stream.write(text)
 
     return text
 
 
 def to_styled_xml(xml, xsl=None):
-    if xsl is None:
-        return xml
     doc = xml
     if not etree.iselement(doc):
         doc = etree.parse(xml)
+
+    if xsl is None:
+        pi = find_first_n(doc.xpath(XPathBuilder.PI), lambda x: x.target == XSL_PI_TARGET)
+        xsl = pi.get('href')
     transform = etree.XSLT(etree.parse(xsl))
     return transform(doc)
 
@@ -90,6 +98,8 @@ class XPathBuilder(object):
     CHILD = '/'
     DESCENDANT = '//'
     ALL = '*'
+
+    PI = '//processing-instruction()'
 
     @classmethod
     def selector(cls, value):

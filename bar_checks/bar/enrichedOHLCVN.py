@@ -1,15 +1,14 @@
 import argparse
+import logging
 from collections import namedtuple
 from types import MappingProxyType
-from pandas.tseries import offsets
-import logging
 
-from bar.csvcheck_config import *
+from pandas.tseries import offsets
+
 from bar.datastore_config import *
 from dataframeutils import *
+from htmlprocessor import *
 from timeutils.timeseries import *
-from timeutils.holidayschedule import *
-from influxcommon import *
 from xmlconverter import *
 
 
@@ -26,7 +25,6 @@ def set_dbconfig(server):
 
 
 def create_BarId():
-
     class BarId(namedtuple('BarId', Tags.values())):
         def __new__(cls, values):
             if isinstance(values, Mapping):
@@ -94,13 +92,14 @@ class BarChecker(object):
     VOL_ON_LV3_CHECK = 'vol_on_lv3_check'
     PRICES_ROLLOVER_CHECK = 'prices_rollover_check'
     VWAP_CHECK = 'vwap_check'
+
     # endregion
 
     @classmethod
     def to_na_msg(cls, df_na, na_msg_suffix='undefined', notna_msg=''):
         return df_na.astype(str).apply(lambda col: col.map(
             lambda x: ' '.join([col.name, na_msg_suffix]) if x == 'True' else notna_msg),
-            result_type='broadcast')
+                                       result_type='broadcast')
 
     @classmethod
     def map_check_state(cls, details, caveats=None, pass_msg='', name=None):
@@ -135,7 +134,6 @@ class BarChecker(object):
 
         caveats = vectors_join(cls.to_na_msg(df_isna)) if validate_na else None
         return cls.map_check_state(details, caveats, name=name)
-
 
     @classmethod
     def nullify_undefined(cls, df):
@@ -324,13 +322,112 @@ class SeriesChecker(object):
         tsgenerator = StepTimestampGenerator(barid.width, unit, barid.offset)
         return SeriesValidation(tsgenerator, self.schedule_bound)
 
-    def validate_bar_series(self, barid, timestamps: pd.DatetimeIndex, validation: SeriesValidation=None):
+    def validate_bar_series(self, barid, timestamps: pd.DatetimeIndex, validation: SeriesValidation = None):
         if validation is None:
             validation = self.get_validator(barid)
         for error_type, error_value in validation.compound_validation(timestamps, self.valtypes):
             date = error_value[SeriesValidation.START_TS].date() \
                 if error_type == SeriesValidation.GAP else error_value.date()
             yield self.record_dict(date, barid, error_type, error_value)
+
+
+class TaskArguments(argparse.ArgumentParser):
+    PRODUCT = 'product'
+    TYPE = 'ptype'
+    EXPIRY = 'expiry'
+    SCHEDULE = 'schedule'
+    WINDOW = 'window'
+    WINDOW_TZ = 'window_tz'
+    CLOSED = 'closed'
+    DTFROM = 'dtfrom'
+    DTTO = 'dtto'
+    TIMEZONE = 'timezone'
+
+    def __init__(self, *args, **kwargs):
+        self._arg_dict = {}
+        super().__init__(*args, **kwargs)
+
+        self.add_argument('--' + self.PRODUCT, nargs='*', type=str,
+                          help='the product(s) for checking, all if not set')
+        self.add_argument('--' + self.TYPE, nargs='*', type=str,
+                          help='the product type(s) for checking, all if not set')
+        self.add_argument('--' + self.EXPIRY, nargs='*', type=str,
+                          help='the expiry(ies) for checking, all if not set')
+
+        self.add_argument('--' + self.SCHEDULE, nargs='*', type=str, default='BaseSchedule',
+                          help='the schedule name(or and the refdata file) for the time series check')
+        self.add_argument('--' + self.WINDOW, nargs='*', type=str, default=(MIN_TIME, MAX_TIME),
+                          help='the check timeslot window, please define start/end time in mm:ss')
+        self.add_argument('--' + self.WINDOW_TZ, nargs='?', type=str, default=pytz.UTC,
+                          help='the timezone name for the window')
+        self.add_argument('--' + self.CLOSED, nargs='?', type=str,
+                          help="""defines how the window will be closed: "left" or "right", 
+                                          defaults to None(both sides)""")
+        self.add_argument('--' + self.DTFROM, nargs='*', type=int, default=(last_n_days().timetuple()[0:3]),
+                          help='the check start date as 3 ints(yyyy, M, D), defaults to yesterday')
+        self.add_argument('--' + self.DTTO, nargs='*', type=int, default=(last_n_days(0).timetuple()[0:3]),
+                          help='the check end date as 3 ints(yyyy, M, D), defaults to today')
+        self.add_argument('--' + self.TIMEZONE, nargs='*', type=str, default=pytz.UTC,
+                          help='the timezone for the check to run')
+
+    def add_argument(self, *args, **kwargs):
+        action = super().add_argument(*args, **kwargs)
+        self._arg_dict.update({action.dest: action.default})
+        if not hasattr(self.__class__, action.dest):
+            setattr(self.__class__, action.dest, property(lambda x: x._arg_dict.get(action.dest)))
+
+    def parse_args(self, args=None, namespace=None):
+        parsed = super().parse_args(args, namespace)
+        self._arg_dict = parsed.__dict__
+        return argparse.Namespace(**self.arg_dict)
+
+    def update_args(self, **kwargs):
+        self._arg_dict.update(kwargs)
+
+    @property
+    def arg_dict(self):
+        return {k: getattr(self, k, v) for k, v in self._arg_dict.items() if hasattr(self, k)}
+
+    @property
+    def window(self):
+        window = to_iter(self._arg_dict.get(self.WINDOW), ittype=tuple)
+        return validate_time(window[0]), validate_time(window[1])
+
+    @property
+    def window_tz(self):
+        window_tz = self._arg_dict.get(self.WINDOW_TZ)
+        return pytz.timezone(window_tz) if isinstance(window_tz, str) else window_tz
+
+    @property
+    def closed(self):
+        if self._arg_dict.get(self.CLOSED) not in ['left', 'right', None]:
+            raise ValueError('The value for argument "closed" must be "left"/"right", or if not set, None by default')
+        return self._arg_dict.get(self.CLOSED)
+
+    @property
+    def dtfrom(self):
+        dtfrom = self._arg_dict.get(self.DTFROM)
+        try:
+            dtfrom = pd.Timestamp(*dtfrom) if nontypes_iterable(dtfrom) else pd.Timestamp(dtfrom)
+            return to_tz_datetime(dtfrom, to_tz=self.timezone)
+        except Exception as ex:
+            raise TypeError('Invalid dfrom: must be 3 ints(yyyy, M, D) '
+                            'or a datetime.date/datetime/pandas.Timestamp object') from ex
+
+    @property
+    def dtto(self):
+        dtto = self._arg_dict.get(self.DTTO)
+        try:
+            dtto = pd.Timestamp(*dtto) if nontypes_iterable(dtto) else pd.Timestamp(dtto)
+            return to_tz_datetime(dtto, to_tz=self.timezone)
+        except Exception as ex:
+            raise TypeError('Invalid dfrom: must be 3 ints(yyyy, M, D) '
+                            'or a datetime.date/datetime/pandas.Timestamp object') from ex
+
+    @property
+    def timezone(self):
+        timezone = self._arg_dict.get(self.TIMEZONE)
+        return pytz.timezone(timezone) if isinstance(timezone, str) else timezone
 
 
 class CheckTask(object):
@@ -347,7 +444,6 @@ class CheckTask(object):
     RECORD = 'record'  # tag
     BAR = 'bar'  # tag
     DETAIL = 'detail'
-    # WINDOW_FMT = '%H:%M'
 
     CHECK_COLS = [BarChecker.PRICES_ROLLOVER_CHECK,
                   BarChecker.HIGH_LOW_CHECK,
@@ -359,145 +455,55 @@ class CheckTask(object):
                   BarChecker.VOL_ON_LV3_CHECK,
                   BarChecker.VWAP_CHECK]
 
-    def __init__(self, data_accessor):
+    BARXSL = 'bar_check.xsl'
+    TSXSL = 'timeseries_check.xsl'
+
+    def __init__(self, data_accessor, task_args=TaskArguments()):
         self.accessor = data_accessor
         self.bscheduler = BScheduler()
         self.schecker = None
         self.schedule_bound = None
 
-        self.task_args = None
-        self.aparser = argparse.ArgumentParser()
-        self.aparser.add_argument('--product', nargs='*', type=str,
-                                  help='the product(s) for checking, all if not set')
-        self.aparser.add_argument('--ptype', nargs='*', type=str,
-                                  help='the product type(s) for checking, all if not set')
-        self.aparser.add_argument('--expiry', nargs='*', type=str,
-                                  help='the expiry(ies) for checking, all if not set')
+        self.args = task_args
+        self.to_enriched_mapping = {self.args.PRODUCT: Tags.PRODUCT,
+                                    self.args.TYPE: Tags.TYPE,
+                                    self.args.EXPIRY: Tags.EXPIRY}
 
-        self.aparser.add_argument('--schedule', nargs='*', type=str, default=(SCHEDULE,),
-                                  help='the schedule name(or and the refdata file) for the time series check')
-        self.aparser.add_argument('--window', nargs='*', type=str, default=WINDOW,
-                                  help='the check timeslot window, please define start/end time in mm:ss')
-        self.aparser.add_argument('--window_tz', nargs='?', type=str, default=WINDOW_TZ,
-                                  help='the timezone name for the window')
-        self.aparser.add_argument('--closed', nargs='?', type=str,
-                                  help="""defines how the window will be closed: "left" or "right", 
-                                  defaults to None(both sides)""")
-        self.aparser.add_argument('--dtfrom', nargs='*', type=int, default=(last_n_days().timetuple()[0:3]),
-                                  help='the check start date as 3 ints(yyyy, M, D), defaults to yesterday')
-        self.aparser.add_argument('--dtto', nargs='*', type=int, default=(last_n_days(0).timetuple()[0:3]),
-                                  help='the check end date as 3 ints(yyyy, M, D), defaults to today')
-        self.aparser.add_argument('--timezone', nargs='*', type=str, default=TIMEZONE,
-                                  help='the timezone for the check to run')
-
-        self.aparser.add_argument('--barxml', nargs='?', type=str,
-                                  help='the xml output path of bar check')
-        self.aparser.add_argument('--tsxml', nargs='?', type=str,
-                                  help='the xml output path of timeseries check')
-        self.aparser.add_argument('--barhtml', nargs='?', type=str, default=BARHTML,
-                                  help='the html output path of bar check after xsl transformation')
-        self.aparser.add_argument('--tshtml', nargs='?', type=str, default=TSHTML,
-                                  help='the html output path of time series check after xsl transformation')
-
-    @property
-    def task_product(self):
-        return self.task_args.product
-
-    @property
-    def task_ptype(self):
-        return self.task_args.ptype
-
-    @property
-    def task_expiry(self):
-        return self.task_args.expiry
-
-    @property
-    def task_window(self):
-        window = self.task_args.window
-        return validate_time(window[0]), validate_time(window[1])
-
-    @property
-    def task_window_tz(self):
-        return pytz.UTC if self.task_args.window_tz is None else pytz.timezone(self.task_args.window_tz)
-
-    @property
-    def task_closed(self):
-        if self.task_args.closed not in ['left', 'right', None]:
-            raise ValueError('The value for argument "closed" must be "left"/"right", or if not set, None by default')
-        return self.task_args.closed
-
-    @property
-    def task_dtfrom(self):
-        dtfrom = last_n_days() if self.task_args.dtfrom is None else self.task_args.dtfrom
-        try:
-            dtfrom = pd.Timestamp(*dtfrom) if nontypes_iterable(dtfrom) else pd.Timestamp(dtfrom)
-            return to_tz_datetime(dtfrom, to_tz=self.task_timezone)
-        except Exception as ex:
-            raise TypeError('Invalid dfrom: must be 3 ints(yyyy, M, D) '
-                            'or a datetime.date/datetime/pandas.Timestamp object') from ex
-
-    @property
-    def task_dtto(self):
-        dtto = last_n_days(0) if self.task_args.dtto is None else self.task_args.dtto
-        try:
-            dtto = pd.Timestamp(*dtto) if nontypes_iterable(dtto) else pd.Timestamp(dtto)
-            return to_tz_datetime(dtto, to_tz=self.task_timezone)
-        except Exception as ex:
-            raise TypeError('Invalid dfrom: must be 3 ints(yyyy, M, D) '
-                            'or a datetime.date/datetime/pandas.Timestamp object') from ex
-
-    @property
-    def task_timezone(self):
-        return pytz.UTC if self.task_args.timezone is None else pytz.timezone(self.task_args.timezone)
 
     @property
     def task_bar_etree(self):
-        return rcsv_addto_etree({self.START_DT: self.task_dtfrom,
-                                 self.END_DT: self.task_dtto},
+        return rcsv_addto_etree({self.PRODUCT: '[{}]'.format(', '.join(to_iter(self.args.product))),
+                                 self.START_DT: self.args.dtfrom,
+                                 self.END_DT: self.args.dtto},
                                 self.REPORT)
 
     @property
     def task_ts_etree(self):
-        et = self.task_bar_etree
-        window = self.task_window
-        et.set(self.START_TIME, str(window[0]))
-        et.set(self.END_TIME, str(window[1]))
-        return et
-
-    @property
-    def task_barxml(self):
-        return self.task_args.barxml
-
-    @property
-    def task_tsxml(self):
-        return self.task_args.tsxml
-
-    @property
-    def task_barhtml(self):
-        return self.task_args.barhtml
-
-    @property
-    def task_tshtml(self):
-        return self.task_args.tshtml
-
-    @property
-    def task_schedule(self):
-        return [get_schedule(schedule) if isinstance(schedule, str) else get_schedule(*schedule)
-                for schedule in to_iter(self.task_args.schedule, ittype=iter)]
+        element = self.task_bar_etree
+        window = self.args.window
+        element.set(self.START_TIME, str(window[0]))
+        element.set(self.END_TIME, str(window[1]))
+        return element
 
     def set_taskargs(self, parse_args=False, **kwargs):
         if parse_args:
-            self.task_args = self.aparser.parse_args()
+            self.args.parse_args()
 
-        for kw in kwargs:
-            self.task_args.__dict__[kw] = kwargs[kw]
+        self.args.update_args(**kwargs)
         if 'schedule' in kwargs:
-            self.bscheduler.set_schedule_configs(self.task_schedule)
+            self.bscheduler.schedule_configs(self.args.schedule)
         if any(x in kwargs for x in ['schedule', 'dtfrom', 'dtto']):
-            schedule_times = list(self.bscheduler.get_schedules(self.task_dtfrom, self.task_dtto, *self.task_window,
-                                                                self.task_window_tz, self.task_timezone))
-            self.schedule_bound = ScheduleBound(schedule_times, self.task_closed, self.task_timezone)
+            schedule_times = list(self.bscheduler.get_schedules(self.args.dtfrom, self.args.dtto, *self.args.window,
+                                                                self.args.window_tz, self.args.timezone))
+            self.schedule_bound = ScheduleBound(schedule_times, self.args.closed, self.args.timezone)
             self.schecker = SeriesChecker(self.schedule_bound)
+
+    def get_bar_data(self, **kwargs):
+        self.set_taskargs(**kwargs)
+        new_kwargs = {self.to_enriched_mapping.get(k, k): v for k, v in self.args.arg_dict.items()}
+        new_kwargs.update({self.to_enriched_mapping.get(k, k): v for k, v in kwargs.items()
+                           if self.to_enriched_mapping.get(k, k) not in new_kwargs})
+        return self.accessor.get_data(Enriched.name(), **new_kwargs)
 
     def run_bar_checks(self, data):
         data = BarChecker.nullify_undefined(data)
@@ -522,50 +528,85 @@ class CheckTask(object):
         bar = value.asdict() if isinstance(value, Barid) else Barid(value).asdict()
         return rcsv_addto_etree(bar, self.BAR)
 
-    def bar_check_xml(self, data_by_bar, root=None, outpath=None):
+    def single_bar_check_xml(self, data, bar, root=None):
         xml = self.task_bar_etree if root is None else root
+        barid = Barid(bar)
 
-        for bar, group in data_by_bar:
-            barid = Barid(bar)
-            logging.info('Running bar check for {}'.format(barid))
+        logging.info('Running bar check for {}'.format(barid))
+        results = self.run_bar_checks(data)
+        if not results.empty:
+            xml.append(df_to_etree(results, self._barid_element(barid), self.RECORD))
 
-            results = self.run_bar_checks(group)
-            if not results.empty:
-                xml.append(pd_to_etree(results, self._barid_element(barid), self.RECORD, TIME_IDX))
-
-        if outpath is not None:
-            etree_tostr(xml, outpath, BARXSL)
         return xml
 
-    def timeseries_check_xml(self, data_by_bar, root=None, outpath=None):
+    def single_timeseries_check_xml(self, data, bar, root=None):
         xml = self.task_ts_etree if root is None else root
+        barid = Barid(bar)
 
-        for bar, bar_df in data_by_bar:
-            barid = Barid(bar)
-            logging.info('Running time series check for {}'.format(barid))
+        logging.info('Running time series check for {}'.format(barid))
+        validated = self.schecker.validate_bar_series(barid, data.index)
 
-            validated = self.schecker.validate_bar_series(barid, bar_df.index)
-            for date_dict, dated_df in to_grouped_df(validated, [SeriesChecker.DATE, SeriesChecker.TIMEZONE]):
-                xpath = XPathBuilder.find(tag=self.RECORD,
-                                          selector=XPathBuilder.evaluation(
-                                              SeriesChecker.DATE,
-                                              date_dict[SeriesChecker.DATE],
-                                              True))
-                record_ele = xml.find(xpath)
-                if record_ele is None:
-                    record_ele = rcsv_addto_etree(date_dict, self.RECORD)
-                    xml.append(record_ele)
+        curr_pos = 0
+        for date_dict, dated_df in to_grouped_df(validated, [SeriesChecker.DATE, SeriesChecker.TIMEZONE]):
+            error_df = dated_df.set_index(SeriesChecker.ERRORTYPE)
+            new_subele = rcsv_addto_etree(error_df[SeriesChecker.ERRORVAL], self._barid_element(barid))
 
-                error_df = dated_df.set_index(SeriesChecker.ERRORTYPE)
-                record_ele.append(rcsv_addto_etree(error_df[SeriesChecker.ERRORVAL], self._barid_element(barid)))
+            if curr_pos >= len(xml) or date_dict[SeriesChecker.DATE] < xml[curr_pos].get(SeriesChecker.DATE):
+                new_ele = rcsv_addto_etree(date_dict, self.RECORD)
+                new_ele.append(new_subele)
+                xml.insert(curr_pos, new_ele)
+            elif date_dict[SeriesChecker.DATE] == xml[curr_pos].get(SeriesChecker.DATE):
+                xml[curr_pos].append(new_subele)
 
-        xml[:] = sorted(xml, key=lambda x: (x.tag, x.get(SeriesChecker.DATE)))
-        if outpath is not None:
-            etree_tostr(xml, outpath, TSXSL)
+            curr_pos += 1
+
         return xml
 
+    def get_check_xmls(self, data, barxml=None, tsxml=None, out_bar=None, out_ts=None):
+        grouped = data.groupby(Tags.values()) if isinstance(data, pd.DataFrame) else data
 
-class
+        for bar, bar_df in grouped:
+            barxml = self.single_bar_check_xml(bar_df, bar, barxml)
+            tsxml = self.single_timeseries_check_xml(bar_df, bar, tsxml)
 
+        etree_tostr(barxml, out_bar, xsl_pi(self.BARXSL), 'xml')
+        etree_tostr(tsxml, out_ts, xsl_pi(self.TSXSL), 'xml')
+        return barxml, tsxml
 
+    def split_barhtml(self, html, size_limit):
+        def grouping(tr_tags):
+            def is_bar_tr(tr):
+                th = tr.find(TH, recursive=False)
+                return th is not None and int(th[COLSPAN]) > 1
 
+            bar = []
+            for is_bar, tr_group in groupby(tr_tags, is_bar_tr):
+                if is_bar:
+                    bar = list(tr_group)
+                else:
+                    bar.extend(tr_group)
+                    yield bar
+
+        yield from split_html(
+            html,
+            lambda x: x.find_all(TBODY),
+            lambda x: find_all_by_depth(x, TR),
+            size_limit,
+            lambda x, y: split_tags(x, y, grouping)
+        )
+
+    def split_tshtml(self, html, size_limit):
+        yield from split_html(
+                html,
+                lambda x: x.find_all(BODY),
+                lambda x: find_all_by_depth(x, TABLE),
+                size_limit,
+                split_tags
+        )
+
+    def email_reports(self, login, recipients, barhtml=None, tshtml=None, bar_title='', ts_title=''):
+        with EmailSession(*login) as session:
+            if barhtml is not None:
+                session.email_html(recipients, barhtml, bar_title, self.split_barhtml)
+            if tshtml is not None:
+                session.email_html(recipients, tshtml, ts_title, self.split_tshtml)

@@ -33,6 +33,9 @@ def register(cls):
 
 
 def get_schedule(name, filename=None):
+    if isinstance(name, BaseSchedule):
+        return name
+
     if name not in rschedules:
         build_schedule(name, filename)
     return rschedules[name]()

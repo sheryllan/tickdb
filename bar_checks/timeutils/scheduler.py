@@ -1,15 +1,17 @@
 from pandas.core.tools.datetimes import to_datetime
 from timeutils.commonfuncs import *
+from timeutils.holidayschedule import get_schedule
 from commonlib import *
 
 
 class BScheduler(object):
     def __init__(self, schedules=None):
-        self._schedules = None
-        self.set_schedule_configs(schedules)
+        self._schedules = self.schedule_configs(schedules)
 
-    def set_schedule_configs(self, value):
-        self._schedules = [] if not value else to_iter(value, ittype=tuple)
+    def schedule_configs(self, value):
+        if not value:
+            return []
+        return [get_schedule(*v) if nontypes_iterable(v) else get_schedule(v) for v in to_iter(value, ittype=iter)]
 
     def validate_schedule_times(self, start_time=None, end_time=None):
         start_time = MIN_TIME if start_time is None else start_time

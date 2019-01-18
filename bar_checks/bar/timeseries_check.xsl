@@ -27,6 +27,7 @@
 			</head>
 			
 			<body>
+				<h3>Time Series Integrity Check <xsl:value-of select="@product" /></h3>
 				<xsl:apply-templates select="record" mode="record" />
 			</body>			
 		</html>

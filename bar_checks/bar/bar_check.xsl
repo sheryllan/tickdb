@@ -28,6 +28,7 @@
 			</head>
 			
 			<body>
+				<h3>Bar Integrity Check <xsl:value-of select="@product" /></h3>
 				<xsl:apply-templates select="missing_products" />
 				<table> 
 					<caption>

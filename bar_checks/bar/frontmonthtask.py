@@ -1,10 +1,9 @@
 import logging
-from itertools import groupby
+from bar.enrichedOHLCVN import TaskArguments
 
 import bar.enrichedOHLCVN as en
-from bar.bardataaccess import accessor_factory
+from bar.bardataaccess import BarAccessor
 
-from htmlprocessor import *
 from xmlconverter import *
 
 
@@ -17,44 +16,27 @@ def set_dbconfig(server):
 
 
 class FrontMonthCheckTask(en.CheckTask):
-    def __init__(self):
-        super().__init__(accessor_factory(en.Server.HOSTNAME))
 
-    def split_barhtml(self, html, size_limit):
-        def grouping(tr_tags):
-            def is_bar_tr(tr):
-                th = tr.find(TH, recursive=False)
-                return th is not None and int(th[COLSPAN]) > 1
+    def __init__(self, task_args=TaskArguments()):
+        super().__init__(BarAccessor.factory(en.Server.HOSTNAME), task_args)
+        self.to_continuous_mapping = {self.args.PRODUCT: TagsC.PRODUCT,
+                                      self.args.TYPE: TagsC.TYPE,
+                                      self.args.EXPIRY: FieldsC.EXPIRY,
+                                      self.args.DTFROM: self.accessor.TIME_FROM,
+                                      self.args.DTTO: self.accessor.TIME_TO}
 
-            bar = []
-            for is_bar, tr_group in groupby(tr_tags, is_bar_tr):
-                if is_bar:
-                    bar = list(tr_group)
-                else:
-                    bar.extend(tr_group)
-                    yield bar
+        self.to_enriched_mapping.update({self.to_continuous_mapping[k]: self.to_enriched_mapping[k]
+                                         for k in self.to_continuous_mapping if k in self.to_enriched_mapping})
 
-        yield from split_html(
-            html,
-            lambda x: x.find_all(TBODY),
-            lambda x: find_all_by_depth(x, TR),
-            size_limit,
-            lambda x, y: split_tags(x, y, grouping)
-        )
+    def get_continuous_contracts(self, **kwargs):
+        self.set_taskargs(**kwargs)
+        new_kwargs = {self.to_continuous_mapping.get(k, k): v for k, v in self.args.arg_dict.items()}
+        new_kwargs.update({self.to_continuous_mapping.get(k, k): v for k, v in kwargs.items()
+                           if self.to_continuous_mapping.get(k, k) not in new_kwargs})
+        return self.accessor.get_continuous_contracts(**new_kwargs)
 
-    def split_tshtml(self, html, size_limit):
-        yield from split_html(
-                html,
-                lambda x: x.find_all(BODY),
-                lambda x: find_all_by_depth(x, TABLE),
-                size_limit,
-                split_tags
-        )
-
-    def run_checks(self, **kwargs):
-        self.set_taskargs(parse_args=True, **kwargs)
-        cc_kwargs = {TagsC.PRODUCT: self.task_product, TagsC.TYPE: self.task_ptype, Continous.SOURCE: self.task_source}
-        contracts = self.accessor.get_continuous_contracts(self.task_dtfrom, self.task_dtto, **cc_kwargs)
+    def run_check_task(self, **kwargs):
+        contracts = self.get_continuous_contracts(**kwargs)
 
         barxml, tsxml = self.task_bar_etree, self.task_ts_etree
         fields = [TagsC.PRODUCT, TagsC.TYPE, FieldsC.EXPIRY]
@@ -62,32 +44,18 @@ class FrontMonthCheckTask(en.CheckTask):
         for (time_start, time_end), row in contracts:
             contract_info = ','.join('{}: {}'.format(k, v) for k, v in row[fields].items())
             logging.info('Start: {}, End: {}, {}'.format(time_start, time_end, contract_info))
-
-            data_args = {
-                self.accessor.TIME_FROM: time_start,
-                self.accessor.TIME_TO: time_end,
-                self.accessor.INCLUDE_TO: time_end == self.task_dtto,
-                en.Enriched.SOURCE: self.task_source,
-                en.Enriched.YEAR: [time_start.year, time_end.year],
-                **row[fields].to_dict()}
-            data = self.accessor.get_data(en.Enriched.name(), concat=False, **data_args)
+            time_args = {self.accessor.TIME_FROM: time_start,
+                         self.accessor.TIME_TO: time_end,
+                         self.accessor.INCLUDE_TO: time_end == self.args.dtto}
+            data = self.get_bar_data(**row[fields].to_dict(), **time_args)
 
             if data is not None:
                 self.set_taskargs(dtfrom=time_start, dtto=time_end)
-                barxml = self.bar_check_xml(data, barxml)
-                tsxml = self.timeseries_check_xml(data, tsxml)
+                self.get_check_xmls(data, barxml, tsxml)
                 checked_products.add(row[TagsC.PRODUCT])
 
-        missing_products = [{self.PRODUCT: p} for p in to_iter(self.task_product) if p not in checked_products]
+        missing_products = [{self.PRODUCT: p} for p in to_iter(self.args.product) if p not in checked_products]
         if missing_products:
             barxml.insert(0, rcsv_addto_etree(missing_products, self.MISSING_PRODS))
 
-        etree_tostr(barxml, self.task_barxml, header='xml')
-        etree_tostr(tsxml, self.task_tsxml, header='xml')
         return barxml, tsxml
-
-
-    def
-
-
-
