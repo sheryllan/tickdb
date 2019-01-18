@@ -11,7 +11,7 @@
 					
 					table { border-collapse:collapse; text-align:center; font-family:"Lucida Grande","Lucida Sans Unicode","Bitstream Vera Sans","Trebuchet MS",Verdana,sans-serif}
 					table th, td { padding:3px 7px 2px; font-size: small; border: 2px solid #f2f2f2; }
-					table caption { text-align: left; }
+					table caption { text-align: left; white-space: nowrap; overflow: hidden; }
 					
 					th.lv1 { color: #000000; background-color: #888888; text-align:center; }
 					th.lv2 { color: #000000; background-color: #d9d9d9; text-align:left; }

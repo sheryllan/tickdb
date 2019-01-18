@@ -12,7 +12,7 @@
 					font-family:"Lucida Grande","Lucida Sans Unicode","Bitstream Vera Sans","Trebuchet MS",Verdana,sans-serif; }
 					
 					table th, td { color: #000000; font-size: small; text-align:center; padding: 0; border: 2px solid #f2f2f2;}
-					table caption { text-align: left; }   
+					table caption { text-align: left; white-space: nowrap; overflow: hidden; }   
 					
 					th.lv1 { background-color: #888888; padding:3px 7px; }
 					th.lv2 { background-color: #d9d9d9; padding:3px 5px; }
@@ -28,6 +28,9 @@
 			
 			<body>
 				<h3>Time Series Integrity Check <xsl:value-of select="@product" /></h3>
+				<caption>
+					Time: <xsl:value-of select="@start" /> to <xsl:value-of select="@end"/>
+				</caption>
 				<xsl:apply-templates select="record" mode="record" />
 			</body>			
 		</html>
