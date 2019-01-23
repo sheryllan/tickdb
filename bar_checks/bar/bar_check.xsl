@@ -29,11 +29,8 @@
 			
 			<body>
 				<h3>Bar Integrity Check <xsl:value-of select="@product" /></h3>
-				<xsl:apply-templates select="missing_products" />
+				<pre>Time: <xsl:value-of select="@start" /> - <xsl:value-of select="@end"/>	Window(<xsl:value-of select="@window_tz"/>): <xsl:value-of select="@window_start" /> - <xsl:value-of select="@window_end"/></pre>
 				<table> 
-					<caption>
-						Time: <xsl:value-of select="@start" /> to <xsl:value-of select="@end"/>
-					</caption>
 					<thead>
 						<tr>
 							<xsl:apply-templates select="bar[1]/record[1]" mode="header" />
@@ -48,21 +45,7 @@
 			</body>
 			
 		</html>
-	</xsl:template>
-	
-	
-	
-	<xsl:template match="missing_products">
-		<dl>
-			<dt>Missing Products</dt>
-			<xsl:for-each select="product">
-				<dd>
-					<xsl:value-of select="text()" />
-				</dd>
-			</xsl:for-each>
-		</dl>
-	</xsl:template>
-	
+	</xsl:template>	
 	
 	<xsl:template match="record" mode="record">
 		<td>

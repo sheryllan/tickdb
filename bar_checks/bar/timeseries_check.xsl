@@ -28,9 +28,7 @@
 			
 			<body>
 				<h3>Time Series Integrity Check <xsl:value-of select="@product" /></h3>
-				<caption>
-					Time: <xsl:value-of select="@start" /> to <xsl:value-of select="@end"/>
-				</caption>
+				<pre>Time: <xsl:value-of select="@start" /> - <xsl:value-of select="@end"/>	Window(<xsl:value-of select="@window_tz"/>): <xsl:value-of select="@window_start" /> - <xsl:value-of select="@window_end"/></pre>
 				<xsl:apply-templates select="record" mode="record" />
 			</body>			
 		</html>

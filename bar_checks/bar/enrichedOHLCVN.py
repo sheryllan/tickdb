@@ -26,11 +26,14 @@ def set_dbconfig(server):
 
 def create_BarId():
     class BarId(namedtuple('BarId', Tags.values())):
-        def __new__(cls, values):
+        def __new__(cls, values, fill_value=None):
             if isinstance(values, Mapping):
-                return super().__new__(cls, **values)
-            elif isinstance(values, Iterable):
-                return super().__new__(cls, *values)
+                values = dict(values)
+                to_fill = {field: fill_value for field in cls._fields if values.get(field) is None}
+                return super().__new__(cls, **values, **to_fill)
+            elif nontypes_iterable(values):
+                values = list(values)
+                return super().__new__(cls, *values, *[fill_value]*(len(cls._fields) - len(values)))
 
         def __init__(self, *args, **kwargs):
             self.id = self.__hash__()
@@ -318,8 +321,11 @@ class SeriesChecker(object):
                 self.ERRORVAL: error_val}
 
     def get_validator(self, barid):
-        unit = self.OFFSET_MAPPING[barid.clock_type]
-        tsgenerator = StepTimestampGenerator(barid.width, unit, barid.offset)
+        clock_type = 'M' if barid.clock_type is None else barid.clock_type
+        width = 60 if barid.width is None else barid.width
+        offset = 0 if barid.offset is None else barid.offset
+        unit = self.OFFSET_MAPPING[clock_type]
+        tsgenerator = StepTimestampGenerator(width, unit, offset)
         return SeriesValidation(tsgenerator, self.schedule_bound)
 
     def validate_bar_series(self, barid, timestamps: pd.DatetimeIndex, validation: SeriesValidation = None):
@@ -357,16 +363,16 @@ class TaskArguments(argparse.ArgumentParser):
         self.add_argument('--' + self.SCHEDULE, nargs='*', type=str, default='BaseSchedule',
                           help='the schedule name(or and the refdata file) for the time series check')
         self.add_argument('--' + self.WINDOW, nargs='*', type=str, default=(MIN_TIME, MAX_TIME),
-                          help='the check timeslot window, please define start/end time in mm:ss')
+                          help='the bounded check window, please define start/end time in mm:ss')
         self.add_argument('--' + self.WINDOW_TZ, nargs='?', type=str, default=pytz.UTC,
                           help='the timezone name for the window')
         self.add_argument('--' + self.CLOSED, nargs='?', type=str,
                           help="""defines how the window will be closed: "left" or "right", 
                                           defaults to None(both sides)""")
-        self.add_argument('--' + self.DTFROM, nargs='*', type=int, default=(last_n_days().timetuple()[0:3]),
-                          help='the check start date as 3 ints(yyyy, M, D), defaults to yesterday')
-        self.add_argument('--' + self.DTTO, nargs='*', type=int, default=(last_n_days(0).timetuple()[0:3]),
-                          help='the check end date as 3 ints(yyyy, M, D), defaults to today')
+        self.add_argument('--' + self.DTFROM, nargs='*', type=int, default=last_n_days(),
+                          help='the start time in integers(yyyy, M, D, [optional HH, mm, ss]), yesterday by default')
+        self.add_argument('--' + self.DTTO, nargs='*', type=int, default=last_n_days(0),
+                          help='the end time in integers(yyyy, M, D, [optional HH, mm, ss]), today by default')
         self.add_argument('--' + self.TIMEZONE, nargs='*', type=str, default=pytz.UTC,
                           help='the timezone for the check to run')
 
@@ -417,9 +423,10 @@ class TaskArguments(argparse.ArgumentParser):
     @property
     def dtto(self):
         dtto = self._arg_dict.get(self.DTTO)
+        max_dtto = self.timezone.localize(pd.Timestamp(last_n_days(0)))
         try:
             dtto = pd.Timestamp(*dtto) if nontypes_iterable(dtto) else pd.Timestamp(dtto)
-            return to_tz_datetime(dtto, to_tz=self.timezone)
+            return min(to_tz_datetime(dtto, to_tz=self.timezone), max_dtto)
         except Exception as ex:
             raise TypeError('Invalid dfrom: must be 3 ints(yyyy, M, D) '
                             'or a datetime.date/datetime/pandas.Timestamp object') from ex
@@ -438,8 +445,9 @@ class CheckTask(object):
     MISSING_PRODS = 'missing_products'  # tag
     PRODUCT = 'product'  # tag
 
-    START_TIME = 'start_time'  # attribute
-    END_TIME = 'end_time'  # attribute
+    WINDOW_START = 'window_start'  # attribute
+    WINDOW_END = 'window_end'  # attribute
+    WINDOW_TZ = 'window_tz'  # attribute
 
     RECORD = 'record'  # tag
     BAR = 'bar'  # tag
@@ -467,80 +475,103 @@ class CheckTask(object):
         self.args = task_args
         self.to_enriched_mapping = {self.args.PRODUCT: Tags.PRODUCT,
                                     self.args.TYPE: Tags.TYPE,
-                                    self.args.EXPIRY: Tags.EXPIRY}
-
+                                    self.args.EXPIRY: Tags.EXPIRY,
+                                    self.args.DTFROM: self.accessor.TIME_FROM,
+                                    self.args.DTTO: self.accessor.TIME_TO}
 
     @property
     def task_bar_etree(self):
-        return rcsv_addto_etree({self.PRODUCT: '[{}]'.format(', '.join(to_iter(self.args.product))),
+        window = self.args.window
+        root = rcsv_addto_etree({self.PRODUCT: '[{}]'.format(', '.join(to_iter(self.args.product))),
                                  self.START_DT: self.args.dtfrom,
-                                 self.END_DT: self.args.dtto},
+                                 self.END_DT: self.args.dtto,
+                                 self.WINDOW_START: str(window[0]),
+                                 self.WINDOW_END: str(window[1]),
+                                 self.WINDOW_TZ: str(self.args.window_tz)},
                                 self.REPORT)
+        return to_elementtree(root, xsl_pi(self.BARXSL))
 
     @property
     def task_ts_etree(self):
-        element = self.task_bar_etree
         window = self.args.window
-        element.set(self.START_TIME, str(window[0]))
-        element.set(self.END_TIME, str(window[1]))
-        return element
+        root = rcsv_addto_etree({self.PRODUCT: '[{}]'.format(', '.join(to_iter(self.args.product))),
+                                 self.START_DT: self.args.dtfrom,
+                                 self.END_DT: self.args.dtto,
+                                 self.WINDOW_START: str(window[0]),
+                                 self.WINDOW_END: str(window[1]),
+                                 self.WINDOW_TZ: str(self.args.window_tz)},
+                                self.REPORT)
+        return to_elementtree(root, xsl_pi(self.TSXSL))
+
+    def set_schecker(self):
+        self.bscheduler.schedules = self.args.schedule
+        schedule_times = list(self.bscheduler.get_schedules(
+            self.args.dtfrom, self.args.dtto, *self.args.window,
+            self.args.window_tz, self.args.timezone))
+
+        self.schedule_bound = ScheduleBound(schedule_times, self.args.closed, self.args.timezone)
+        self.schecker = SeriesChecker(self.schedule_bound)
 
     def set_taskargs(self, parse_args=False, **kwargs):
+        old_taskargs = self.args.arg_dict
+
         if parse_args:
             self.args.parse_args()
-
         self.args.update_args(**kwargs)
-        if 'schedule' in kwargs:
-            self.bscheduler.schedule_configs(self.args.schedule)
-        if any(x in kwargs for x in ['schedule', 'dtfrom', 'dtto']):
-            schedule_times = list(self.bscheduler.get_schedules(self.args.dtfrom, self.args.dtto, *self.args.window,
-                                                                self.args.window_tz, self.args.timezone))
-            self.schedule_bound = ScheduleBound(schedule_times, self.args.closed, self.args.timezone)
-            self.schecker = SeriesChecker(self.schedule_bound)
+
+        args_effective = [self.args.SCHEDULE, self.args.DTFROM, self.args.DTTO, self.args.WINDOW,
+                          self.args.WINDOW_TZ, self.args.TIMEZONE, self.args.CLOSED]
+        if any(old_taskargs[x] != self.args.arg_dict[x] for x in args_effective):
+            self.set_schecker()
 
     def get_bar_data(self, **kwargs):
-        self.set_taskargs(**kwargs)
-        new_kwargs = {self.to_enriched_mapping.get(k, k): v for k, v in self.args.arg_dict.items()}
-        new_kwargs.update({self.to_enriched_mapping.get(k, k): v for k, v in kwargs.items()
-                           if self.to_enriched_mapping.get(k, k) not in new_kwargs})
+        new_kwargs = {self.to_enriched_mapping.get(k, k): v for k, v in kwargs.items()}
+        taskargs = {k: new_kwargs[self.to_enriched_mapping.get(k, k)] for k, v in self.args.arg_dict.items()
+                    if self.to_enriched_mapping.get(k, k) in new_kwargs}
+        self.set_taskargs(**taskargs)
+        new_kwargs.update({self.to_enriched_mapping.get(k, k): v for k, v in self.args.arg_dict.items()})
         return self.accessor.get_data(Enriched.name(), **new_kwargs)
 
     def run_bar_checks(self, data):
-        data = BarChecker.nullify_undefined(data)
         index_schedule = data.index.to_series().map(self.schedule_bound.enclosing_schedule)
         index_mask = index_schedule.notna()
         data_cap = data.loc[index_mask]
-        checks = [
-            BarChecker.check_prices_rollover(data_cap, index_schedule[index_mask]),
-            BarChecker.check_high_low(data_cap),
-            BarChecker.check_pclv_order(data_cap),
-            BarChecker.check_bid_ask(data_cap),
-            BarChecker.check_volume(data_cap),
-            BarChecker.check_vol_on_lv(data_cap),
-            BarChecker.check_vwap(data_cap)]
-
-        results = pd.concat(checks, axis=1)
+        if data_cap.empty:
+            results = data_cap
+        else:
+            data_cap = BarChecker.nullify_undefined(data_cap)
+            checks = [
+                BarChecker.check_prices_rollover(data_cap, index_schedule[index_mask]),
+                BarChecker.check_high_low(data_cap),
+                BarChecker.check_pclv_order(data_cap),
+                BarChecker.check_bid_ask(data_cap),
+                BarChecker.check_volume(data_cap),
+                BarChecker.check_vol_on_lv(data_cap),
+                BarChecker.check_vwap(data_cap)]
+            results = pd.concat(checks, axis=1)
 
         return results[self.CHECK_COLS][~results.all(axis=1)] \
             if not results.empty else pd.DataFrame(columns=self.CHECK_COLS)
 
-    def _barid_element(self, value):
-        bar = value.asdict() if isinstance(value, Barid) else Barid(value).asdict()
+    def barid_element(self, value, fill_value='*'):
+        bar = Barid(value, fill_value).asdict()
         return rcsv_addto_etree(bar, self.BAR)
 
     def single_bar_check_xml(self, data, bar, root=None):
-        xml = self.task_bar_etree if root is None else root
+        xml = to_elementtree(self.task_bar_etree if root is None else root)
+        root = xml.getroot()
         barid = Barid(bar)
 
         logging.info('Running bar check for {}'.format(barid))
         results = self.run_bar_checks(data)
         if not results.empty:
-            xml.append(df_to_etree(results, self._barid_element(barid), self.RECORD))
+            root.append(df_to_etree(results, self.barid_element(barid), self.RECORD, None))
 
         return xml
 
     def single_timeseries_check_xml(self, data, bar, root=None):
-        xml = self.task_ts_etree if root is None else root
+        xml = to_elementtree(self.task_ts_etree if root is None else root)
+        root = xml.getroot()
         barid = Barid(bar)
 
         logging.info('Running time series check for {}'.format(barid))
@@ -549,28 +580,25 @@ class CheckTask(object):
         curr_pos = 0
         for date_dict, dated_df in to_grouped_df(validated, [SeriesChecker.DATE, SeriesChecker.TIMEZONE]):
             error_df = dated_df.set_index(SeriesChecker.ERRORTYPE)
-            new_subele = rcsv_addto_etree(error_df[SeriesChecker.ERRORVAL], self._barid_element(barid))
+            new_subele = rcsv_addto_etree(error_df[SeriesChecker.ERRORVAL], self.barid_element(barid))
 
-            if curr_pos >= len(xml) or date_dict[SeriesChecker.DATE] < xml[curr_pos].get(SeriesChecker.DATE):
+            if curr_pos >= len(root) or date_dict[SeriesChecker.DATE] < root[curr_pos].get(SeriesChecker.DATE):
                 new_ele = rcsv_addto_etree(date_dict, self.RECORD)
                 new_ele.append(new_subele)
-                xml.insert(curr_pos, new_ele)
-            elif date_dict[SeriesChecker.DATE] == xml[curr_pos].get(SeriesChecker.DATE):
-                xml[curr_pos].append(new_subele)
+                root.insert(curr_pos, new_ele)
+            elif date_dict[SeriesChecker.DATE] == root[curr_pos].get(SeriesChecker.DATE):
+                root[curr_pos].append(new_subele)
 
             curr_pos += 1
 
         return xml
 
-    def get_check_xmls(self, data, barxml=None, tsxml=None, out_bar=None, out_ts=None):
+    def check_integrated(self, data, barxml=None, tsxml=None):
         grouped = data.groupby(Tags.values()) if isinstance(data, pd.DataFrame) else data
 
         for bar, bar_df in grouped:
             barxml = self.single_bar_check_xml(bar_df, bar, barxml)
             tsxml = self.single_timeseries_check_xml(bar_df, bar, tsxml)
-
-        etree_tostr(barxml, out_bar, xsl_pi(self.BARXSL), 'xml')
-        etree_tostr(tsxml, out_ts, xsl_pi(self.TSXSL), 'xml')
         return barxml, tsxml
 
     def split_barhtml(self, html, size_limit):

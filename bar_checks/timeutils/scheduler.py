@@ -6,12 +6,16 @@ from commonlib import *
 
 class BScheduler(object):
     def __init__(self, schedules=None):
-        self._schedules = self.schedule_configs(schedules)
+        self.schedules = schedules
 
-    def schedule_configs(self, value):
-        if not value:
-            return []
-        return [get_schedule(*v) if nontypes_iterable(v) else get_schedule(v) for v in to_iter(value, ittype=iter)]
+    @property
+    def schedules(self):
+        return self._schedules
+
+    @schedules.setter
+    def schedules(self, value):
+        self._schedules = set(get_schedule(*to_iter(v, ittype=tuple)) for v in to_iter(value, ittype=iter)) \
+            if value else []
 
     def validate_schedule_times(self, start_time=None, end_time=None):
         start_time = MIN_TIME if start_time is None else start_time
@@ -82,7 +86,7 @@ class ScheduleBound(object):
         self.closed = closed
         self.tz = tz
         self._schedule_list, self._schedule_dict = None, None
-        self._keyfuncs = [lambda x: x[0].date(), lambda x: x[1].date()]
+        # self._keyfuncs = [lambda x: x[0].date(), lambda x: x[1].date()]
         self.schedule_list = schedules
 
     @property

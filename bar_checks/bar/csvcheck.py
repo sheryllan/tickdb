@@ -56,17 +56,22 @@ class CsvTaskArguments(TaskArguments):
             return report_config
 
         if report_config[0] == 'annual':
-            year = dt.datetime.now(pytz.timezone(self.TIMEZONE)).year - 1 if len(report_config) < 2 else report_config[
-                1]
-            time_config = {self.DTFROM: (year, 1, 1), self.DTTO: (year, 12, 31)}
-
+            year = dt.datetime.now(pytz.timezone(self.TIMEZONE)).year - 1 \
+                if len(report_config) < 2 else int(report_config[1])
+            report_type = report_config[0]
+            time_config = {self.DTFROM: dt.date(year, 1, 1), self.DTTO: dt.date(year, 12, 31)}
         elif report_config[0] == 'daily':
-            dtfrom = last_n_days(1 if len(report_config) < 2 else report_config[1])
+            dtfrom = last_n_days(1 if len(report_config) < 2 else int(report_config[1]))
             dtto = last_n_days(-1, dtfrom)
+            report_type = report_config[0]
             time_config = {self.DTFROM: dtfrom, self.DTTO: dtto}
-        else:
+        elif report_config[0] is None:
+            report_type = report_config
             time_config = {self.DTFROM: self.dtfrom, self.DTTO: self.dtto}
-        return report_config[0], time_config
+        else:
+            raise ValueError('Invalid report configuration: if set must include report type and time setting')
+
+        return report_type, time_config
 
 
 class CsvCheckTask(fmtask.FrontMonthCheckTask):
@@ -75,19 +80,18 @@ class CsvCheckTask(fmtask.FrontMonthCheckTask):
 
     def run_report_task(self, **kwargs):
         barxml, tsxml = self.run_check_task(**kwargs)
-        etree_tostr(barxml, self.args.barxml)
-        etree_tostr(tsxml, self.args.tsxml)
-        return etree_tostr(to_styled_xml(barxml), self.args.barhtml, method='html'), \
-               etree_tostr(to_styled_xml(tsxml), self.args.tshtml, method='html')
+        write_etree(barxml, self.args.barxml)
+        write_etree(tsxml, self.args.tsxml)
+        return write_etree(to_styled_xml(barxml), self.args.barhtml, method='html'), \
+               write_etree(to_styled_xml(tsxml), self.args.tshtml, method='html')
 
     def run(self, **kwargs):
         self.set_taskargs(True)
         bar_reports, ts_reports = [], []
-
         report_type, report_time = self.args.report_config
         kwargs.update(**report_time)
         if report_type == 'annual':
-            year = report_time.values[0].year
+            year = kwargs[self.args.DTFROM].year
             for prod in self.args.product:
                 bar_report = ANNUAL_REPORT_FMT.format(year, prod, BARHTML)
                 ts_report = ANNUAL_REPORT_FMT.format(year, prod, TSHTML)
@@ -122,7 +126,6 @@ if __name__ == '__main__':
     task.run()
     # products = ['ES', 'NQ', 'YM', 'ZN', 'ZB', 'UB', '6E', '6J', '6B', 'GC', 'CL']
     # task.set_taskargs(True)
-    # task.email_reports(task.task_login, task.task_recipients,
-    #                    ['2018-ES-bar_check.html', '2018-ZN-bar_check.html'],
-    #                    ['2018-ES-timeseries_check.html', '2018-ZN-timeseries_check.html'],
+    # task.email_reports(task.args.login, task.args.recipients,
+    #                    None, 'timeseries_check.html',
     #                    BAR_TITLE, TS_TITLE)

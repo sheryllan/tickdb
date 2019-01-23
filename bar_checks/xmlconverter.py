@@ -57,35 +57,45 @@ def rcsv_addto_etree(value, root, **kwargs):
     return root
 
 
-def etree_tostr(element, outpath=None, pis=None, method='xml', encoding='utf-8'):
-    if etree.iselement(element):
-        root = etree.ElementTree(element)
-    elif isinstance(element, str):
-        root = etree.parse(element)
+def to_elementtree(root, pis=None):
+    if etree.iselement(root):
+        tree = etree.ElementTree(root)
+    elif isinstance(root, str):
+        tree = etree.parse(root)
     else:
-        root = element
+        tree = root
 
-    element = root.getroot()
     if pis is not None:
         pis = [pis] if etree.iselement(pis) else pis
+        element = tree.getroot()
         for pi in pis:
             element.addprevious(pi)
+    return tree
 
-    text = etree.tostring(root, method=method, encoding=encoding, pretty_print=True)
-    if text is not None and outpath is not None:
-        with open(outpath, 'wb+') as stream:
+
+def write_etree(element, outpath=None, pis=None, method='xml', encoding='utf-8', append=False):
+    if outpath is None:
+        return None
+    tree = to_elementtree(element, pis)
+    text = etree.tostring(tree, method=method, encoding=encoding, pretty_print=True)
+    if text is not None:
+        mode = 'ab+' if append else 'wb+'
+        with open(outpath, mode) as stream:
             stream.write(text)
-
     return text
 
 
 def to_styled_xml(xml, xsl=None):
     doc = xml
-    if not etree.iselement(doc):
+    if isinstance(xml, str):
         doc = etree.parse(xml)
+    elif etree.iselement(xml):
+        doc = etree.ElementTree(xml)
 
     if xsl is None:
         pi = find_first_n(doc.xpath(XPathBuilder.PI), lambda x: x.target == XSL_PI_TARGET)
+        if not etree.iselement(pi):
+            raise ValueError('xsl files not specified')
         xsl = pi.get('href')
     transform = etree.XSLT(etree.parse(xsl))
     return transform(doc)

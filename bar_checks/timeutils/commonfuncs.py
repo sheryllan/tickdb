@@ -10,7 +10,7 @@ MAX_TIME = dt.time(23, 59, 59, 999999)
 
 
 def last_n_days(n=1, d=dt.date.today()):
-    return d + relativedelta(days=-n)
+    return d + relativedelta(days=-int(n))
 
 
 def fmt_date(year, month=None, day=1, fmt='%Y%m'):

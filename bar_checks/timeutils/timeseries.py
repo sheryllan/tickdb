@@ -110,14 +110,18 @@ class SeriesValidation(object):
         valfuncs = {vt: self.valfunc_dict[vt](timestamps) for vt in valtypes}
 
         for ts in timestamps:
-            for vtype, vfunc in valfuncs.items():
-                vresult = next(vfunc, None)
-                if vresult is None:
+            for vtype in valfuncs:
+                if vtype not in self.FALSE_MASK_TYPES:
                     continue
-                elif vtype in self.AGGR_TYPES:
-                    yield vtype, vresult
-                elif vtype in self.FALSE_MASK_TYPES and not vresult:
+                vresult = next(valfuncs[vtype])
+                if not vresult:
                     yield vtype, {self.TIMESTAMP: ts}
+
+        for vtype in valfuncs:
+            if vtype in self.AGGR_TYPES:
+                vfunc = valfuncs[vtype]
+                for vresult in vfunc:
+                    yield vtype, vresult
 
 
 
