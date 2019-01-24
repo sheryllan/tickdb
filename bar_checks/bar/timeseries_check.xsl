@@ -2,12 +2,15 @@
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 	<xsl:output method="html" indent="yes"/>
 	<xsl:key use="concat(generate-id(parent::bar), '|', local-name(.))" match="bar/child::*" name ="error_type"/>
+	<xsl:variable name="vLower" select="'abcdefghijklmnopqrstuvwxyz'"/>
+	<xsl:variable name="vUpper" select="'ABCDEFGHIJKLMNOPQRSTUVWXYZ'"/>
+	
 	<xsl:template match="report">
 		<html>
 			<head>
 				<style media="screen" type="text/css">
 					table { 
-					text-align:center; border-collapse: collapse; margin-bottom: 25px;
+					text-align:center; border-collapse: collapse; margin: 25px 0;
 					border-left-style: hidden; border-right-style: hidden;
 					font-family:"Lucida Grande","Lucida Sans Unicode","Bitstream Vera Sans","Trebuchet MS",Verdana,sans-serif; }
 					
@@ -27,8 +30,10 @@
 			</head>
 			
 			<body>
-				<h3>Time Series Integrity Check <xsl:value-of select="@product" /></h3>
-				<pre>Time: <xsl:value-of select="@start" /> - <xsl:value-of select="@end"/>	Window(<xsl:value-of select="@window_tz"/>): <xsl:value-of select="@window_start" /> - <xsl:value-of select="@window_end"/></pre>
+				<h3>Time Series Integrity Check</h3>
+				<xsl:for-each select="@*">
+					<div><xsl:value-of select="concat(translate(substring(local-name(.), 1, 1), $vLower, $vUpper), substring(local-name(.), 2))" />: <xsl:value-of select="." /></div>
+				</xsl:for-each>
 				<xsl:apply-templates select="record" mode="record" />
 			</body>			
 		</html>

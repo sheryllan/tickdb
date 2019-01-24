@@ -1,4 +1,5 @@
 import os
+from enum import Enum
 
 DIR = os.path.dirname(os.path.realpath(__file__))
 
@@ -18,11 +19,12 @@ TS_TITLE = 'Timeseries Integrity Check Report'
 LOGIN = ('slan@liquidcapital.com', 'atnahqxjoemdtpqa')
 RECIPIENTS = ['slan@liquidcapital.com']
 
-
 REPORT_DIR = os.path.join(DIR, 'reports')
 os.makedirs('reports', exist_ok=True)
 
-REPORT_CONFIG = None
-ANNUAL_REPORT_FMT = '{}-{}-{}'
-DAILY_BAR_REPORT = os.path.join(REPORT_DIR, BARHTML)
-DAILY_TS_REPORT = os.path.join(REPORT_DIR, TSHTML)
+
+class Report(Enum):
+    ANNUAL = 'annual'
+    DAILY = 'daily'
+    DATES = 'dates'
+

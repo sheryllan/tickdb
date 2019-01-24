@@ -6,7 +6,7 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from contextlib import AbstractContextManager
-from commonlib import *
+from xmlconverter import *
 
 
 BODY = 'body'
@@ -77,7 +77,8 @@ class EmailSession(AbstractContextManager):
 
     def email_html(self, recipients, contents, subject, splitfunc=lambda x, y: x):
         msg_to = ', '.join(recipients)
-        transformed = (splitfunc(premailer.transform(source_from(c)), self.ATTACHMENT_LIMIT) for c in to_iter(contents))
+        transformed = (splitfunc(premailer.transform(to_elementtree(c).getroot()), self.ATTACHMENT_LIMIT)
+                       for c in to_iter(contents, (str, etree._Element)))
         for content in func_grouper(flatten_iter(transformed), self.ATTACHMENT_LIMIT, lambda x: len(x), iter):
             body = MIMEText(os.linesep.join(content), 'html')
             msg = MIMEMultipart('alternative')

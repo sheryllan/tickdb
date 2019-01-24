@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 	<xsl:output method="html" indent="yes"/>
+	<xsl:variable name="vLower" select="'abcdefghijklmnopqrstuvwxyz'"/>
+	<xsl:variable name="vUpper" select="'ABCDEFGHIJKLMNOPQRSTUVWXYZ'"/>
+	
 	<xsl:template match="report">
 		<html>
 			<head>
@@ -9,7 +12,8 @@
 					dl dd { display:inline-block; }
 					dl dd:before { content: '\00a0\2022\00a0\00a0'; color:#999;	color:rgba(0,0,0,0.5); font-size:11px; }
 					
-					table { border-collapse:collapse; text-align:center; font-family:"Lucida Grande","Lucida Sans Unicode","Bitstream Vera Sans","Trebuchet MS",Verdana,sans-serif}
+					table { border-collapse:collapse; margin: 25px 0; text-align:center; 
+					font-family:"Lucida Grande","Lucida Sans Unicode","Bitstream Vera Sans","Trebuchet MS",Verdana,sans-serif}
 					table th, td { padding:3px 7px 2px; font-size: small; border: 2px solid #f2f2f2; }
 					table caption { text-align: left; white-space: nowrap; overflow: hidden; }
 					
@@ -28,8 +32,10 @@
 			</head>
 			
 			<body>
-				<h3>Bar Integrity Check <xsl:value-of select="@product" /></h3>
-				<pre>Time: <xsl:value-of select="@start" /> - <xsl:value-of select="@end"/>	Window(<xsl:value-of select="@window_tz"/>): <xsl:value-of select="@window_start" /> - <xsl:value-of select="@window_end"/></pre>
+				<h3>Bar Integrity Check</h3>
+				<xsl:for-each select="@*">
+					<div><xsl:value-of select="concat(translate(substring(local-name(.), 1, 1), $vLower, $vUpper), substring(local-name(.), 2))" />: <xsl:value-of select="." /></div>
+				</xsl:for-each>
 				<table> 
 					<thead>
 						<tr>

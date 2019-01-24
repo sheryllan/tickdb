@@ -35,10 +35,8 @@ class FrontMonthCheckTask(en.CheckTask):
         new_kwargs.update({self.to_continuous_mapping.get(k, k): v for k, v in self.args.arg_dict.items()})
         return self.accessor.get_continuous_contracts(**new_kwargs)
 
-    def run_check_task(self, **kwargs):
+    def run_check_task(self, barxml=None, tsxml=None, **kwargs):
         contracts = self.get_continuous_contracts(**kwargs)
-
-        barxml, tsxml = self.task_bar_etree, self.task_ts_etree
         fields = [TagsC.PRODUCT, TagsC.TYPE, FieldsC.EXPIRY]
         for (time_start, time_end), row in contracts:
             field_dict = row[fields].to_dict()
@@ -51,5 +49,5 @@ class FrontMonthCheckTask(en.CheckTask):
                                         self.args.DTTO: time_end,
                                         self.accessor.INCLUDE_TO: time_end == self.args.dtto},
                                      empty=empty_data)
-            self.check_integrated(data, barxml, tsxml)
+            barxml, tsxml = self.check_integrated(data, barxml, tsxml)
         return barxml, tsxml

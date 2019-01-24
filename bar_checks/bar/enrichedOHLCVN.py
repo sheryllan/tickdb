@@ -2,6 +2,7 @@ import argparse
 import logging
 from collections import namedtuple
 from types import MappingProxyType
+from itertools import zip_longest
 
 from pandas.tseries import offsets
 
@@ -29,11 +30,11 @@ def create_BarId():
         def __new__(cls, values, fill_value=None):
             if isinstance(values, Mapping):
                 values = dict(values)
-                to_fill = {field: fill_value for field in cls._fields if values.get(field) is None}
-                return super().__new__(cls, **values, **to_fill)
+                filled_values = {field: values.get(field, fill_value) for field in cls._fields}
+                return super().__new__(cls, **filled_values)
             elif nontypes_iterable(values):
-                values = list(values)
-                return super().__new__(cls, *values, *[fill_value]*(len(cls._fields) - len(values)))
+                filled_values = [fill_value if x is None else x for _, x in zip_longest(cls._fields, values)]
+                return super().__new__(cls, *filled_values)
 
         def __init__(self, *args, **kwargs):
             self.id = self.__hash__()
@@ -384,70 +385,59 @@ class TaskArguments(argparse.ArgumentParser):
 
     def parse_args(self, args=None, namespace=None):
         parsed = super().parse_args(args, namespace)
-        self._arg_dict = parsed.__dict__
-        return argparse.Namespace(**self.arg_dict)
+        self.update_args(**parsed.__dict__)
+        parsed.__dict__ = self._arg_dict
+        return parsed
 
     def update_args(self, **kwargs):
-        self._arg_dict.update(kwargs)
+        for k, v in kwargs.items():
+            if hasattr(self, k):
+                self._arg_dict[k] = getattr(self, '_' + k, lambda x: x)(v)
 
     @property
     def arg_dict(self):
-        return {k: getattr(self, k, v) for k, v in self._arg_dict.items() if hasattr(self, k)}
+        return self._arg_dict
 
-    @property
-    def window(self):
-        window = to_iter(self._arg_dict.get(self.WINDOW), ittype=tuple)
+    def _window(self, value):
+        window = to_iter(value, ittype=tuple)
         return validate_time(window[0]), validate_time(window[1])
 
-    @property
-    def window_tz(self):
-        window_tz = self._arg_dict.get(self.WINDOW_TZ)
-        return pytz.timezone(window_tz) if isinstance(window_tz, str) else window_tz
+    def _window_tz(self, value):
+        return pytz.timezone(value) if isinstance(value, str) else value
 
-    @property
-    def closed(self):
-        if self._arg_dict.get(self.CLOSED) not in ['left', 'right', None]:
+    def _closed(self, value):
+        if value not in ['left', 'right', None]:
             raise ValueError('The value for argument "closed" must be "left"/"right", or if not set, None by default')
-        return self._arg_dict.get(self.CLOSED)
+        return value
 
-    @property
-    def dtfrom(self):
-        dtfrom = self._arg_dict.get(self.DTFROM)
+    def _dtfrom(self, value):
         try:
-            dtfrom = pd.Timestamp(*dtfrom) if nontypes_iterable(dtfrom) else pd.Timestamp(dtfrom)
+            dtfrom = pd.Timestamp(*value) if nontypes_iterable(value) else pd.Timestamp(value)
             return to_tz_datetime(dtfrom, to_tz=self.timezone)
         except Exception as ex:
             raise TypeError('Invalid dfrom: must be 3 ints(yyyy, M, D) '
                             'or a datetime.date/datetime/pandas.Timestamp object') from ex
 
-    @property
-    def dtto(self):
-        dtto = self._arg_dict.get(self.DTTO)
+    def _dtto(self, value):
         max_dtto = self.timezone.localize(pd.Timestamp(last_n_days(0)))
         try:
-            dtto = pd.Timestamp(*dtto) if nontypes_iterable(dtto) else pd.Timestamp(dtto)
+            dtto = pd.Timestamp(*value) if nontypes_iterable(value) else pd.Timestamp(value)
             return min(to_tz_datetime(dtto, to_tz=self.timezone), max_dtto)
         except Exception as ex:
             raise TypeError('Invalid dfrom: must be 3 ints(yyyy, M, D) '
                             'or a datetime.date/datetime/pandas.Timestamp object') from ex
 
-    @property
-    def timezone(self):
-        timezone = self._arg_dict.get(self.TIMEZONE)
-        return pytz.timezone(timezone) if isinstance(timezone, str) else timezone
+    def _timezone(self, value):
+        return pytz.timezone(value) if isinstance(value, str) else value
 
 
 class CheckTask(object):
     REPORT = 'report'  # tag
-    START_DT = 'start'  # attribute
-    END_DT = 'end'  # attribute
+    TIME = 'time'
+    WINDOW = 'window'  # attribute
 
     MISSING_PRODS = 'missing_products'  # tag
     PRODUCT = 'product'  # tag
-
-    WINDOW_START = 'window_start'  # attribute
-    WINDOW_END = 'window_end'  # attribute
-    WINDOW_TZ = 'window_tz'  # attribute
 
     RECORD = 'record'  # tag
     BAR = 'bar'  # tag
@@ -463,8 +453,8 @@ class CheckTask(object):
                   BarChecker.VOL_ON_LV3_CHECK,
                   BarChecker.VWAP_CHECK]
 
-    BARXSL = 'bar_check.xsl'
-    TSXSL = 'timeseries_check.xsl'
+    BARXSL = os.path.join(os.path.dirname(__file__), 'bar_check.xsl')
+    TSXSL = os.path.join(os.path.dirname(__file__), 'timeseries_check.xsl')
 
     def __init__(self, data_accessor, task_args=TaskArguments()):
         self.accessor = data_accessor
@@ -481,25 +471,17 @@ class CheckTask(object):
 
     @property
     def task_bar_etree(self):
-        window = self.args.window
-        root = rcsv_addto_etree({self.PRODUCT: '[{}]'.format(', '.join(to_iter(self.args.product))),
-                                 self.START_DT: self.args.dtfrom,
-                                 self.END_DT: self.args.dtto,
-                                 self.WINDOW_START: str(window[0]),
-                                 self.WINDOW_END: str(window[1]),
-                                 self.WINDOW_TZ: str(self.args.window_tz)},
+        root = rcsv_addto_etree({self.PRODUCT: ', '.join(to_iter(self.args.product)),
+                                 self.TIME: f'{self.args.dtfrom} - {self.args.dtto}',
+                                 self.WINDOW: '{} - {} ({})'.format(*self.args.window, str(self.args.window_tz))},
                                 self.REPORT)
         return to_elementtree(root, xsl_pi(self.BARXSL))
 
     @property
     def task_ts_etree(self):
-        window = self.args.window
-        root = rcsv_addto_etree({self.PRODUCT: '[{}]'.format(', '.join(to_iter(self.args.product))),
-                                 self.START_DT: self.args.dtfrom,
-                                 self.END_DT: self.args.dtto,
-                                 self.WINDOW_START: str(window[0]),
-                                 self.WINDOW_END: str(window[1]),
-                                 self.WINDOW_TZ: str(self.args.window_tz)},
+        root = rcsv_addto_etree({self.PRODUCT: ', '.join(to_iter(self.args.product)),
+                                 self.TIME: f'{self.args.dtfrom} - {self.args.dtto}',
+                                 self.WINDOW: '{} - {} ({})'.format(*self.args.window, str(self.args.window_tz))},
                                 self.REPORT)
         return to_elementtree(root, xsl_pi(self.TSXSL))
 
@@ -513,14 +495,14 @@ class CheckTask(object):
         self.schecker = SeriesChecker(self.schedule_bound)
 
     def set_taskargs(self, parse_args=False, **kwargs):
-        old_taskargs = self.args.arg_dict
+        args_effective = [self.args.SCHEDULE, self.args.DTFROM, self.args.DTTO, self.args.WINDOW,
+                          self.args.WINDOW_TZ, self.args.TIMEZONE, self.args.CLOSED]
+        old_taskargs = {x: self.args.arg_dict[x] for x in args_effective}
 
         if parse_args:
             self.args.parse_args()
         self.args.update_args(**kwargs)
 
-        args_effective = [self.args.SCHEDULE, self.args.DTFROM, self.args.DTTO, self.args.WINDOW,
-                          self.args.WINDOW_TZ, self.args.TIMEZONE, self.args.CLOSED]
         if any(old_taskargs[x] != self.args.arg_dict[x] for x in args_effective):
             self.set_schecker()
 

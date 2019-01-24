@@ -105,7 +105,7 @@ def func_grouper(iterable, n, func=lambda x: 1, chunk_type=list):
 
 
 def source_from(src):
-    if not isinstance(src, str):
+    if not isinstance(src, (str, bytes, bytearray)):
         raise TypeError('Invalid source: must be type of str')
 
     try:

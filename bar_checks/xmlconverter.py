@@ -61,7 +61,7 @@ def to_elementtree(root, pis=None):
     if etree.iselement(root):
         tree = etree.ElementTree(root)
     elif isinstance(root, str):
-        tree = etree.parse(root)
+        tree = etree.fromstring(source_from(root)).getroottree()
     else:
         tree = root
 
@@ -73,16 +73,17 @@ def to_elementtree(root, pis=None):
     return tree
 
 
-def write_etree(element, outpath=None, pis=None, method='xml', encoding='utf-8', append=False):
+def write_etree(element, outpath=None, pis=None, xml_declaration=True, method='xml', encoding='utf-8',
+                append=False, decode=False):
     if outpath is None:
         return None
     tree = to_elementtree(element, pis)
-    text = etree.tostring(tree, method=method, encoding=encoding, pretty_print=True)
+    text = etree.tostring(tree, xml_declaration=xml_declaration, method=method, encoding=encoding, pretty_print=True)
     if text is not None:
         mode = 'ab+' if append else 'wb+'
         with open(outpath, mode) as stream:
             stream.write(text)
-    return text
+    return text.decode(encoding) if decode else text
 
 
 def to_styled_xml(xml, xsl=None):

@@ -2,26 +2,23 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-VENV_PATH=venv
-echo "Setting up virtual environment in directory ${DIR}/${VENV_PATH}"
+VENV_NAME=bar_checks
+echo "Setting up virtual environment ${VENV_NAME}"
 
-if ! [ -d ${VENV_PATH} ]; then
+if ! conda info --envs | grep -q ${VENV_NAME}; then
     echo "Creating virtual environment"
-    mkdir ${VENV_PATH}
-
-    python virtualenv ${VENV_PATH}
+    conda create -n ${VENV_NAME} python
     echo "Virtual environment created"
 fi
 
-VENV_BIN=${VENV_PATH}/bin
-source ${VENV_BIN}/activate
+source activate ${VENV_NAME}
 echo "Virtual environment activated"
 
-REQUIREMNTS=requirements.txt
-echo "Installing packages from ${DIR}/${REQUIREMNTS}"
+REQUIREMNTS=${DIR}/requirements.txt
+echo "Installing packages from ${REQUIREMNTS}"
 pip install -r ${REQUIREMNTS}
 
 echo "Packages installed:"
-pip freeze
+pip list
 
-deactive
+source deactive

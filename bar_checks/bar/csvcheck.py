@@ -10,6 +10,8 @@ from timeutils.commonfuncs import last_n_days
 
 
 class CsvTaskArguments(TaskArguments):
+    SOURCE = 'source'
+
     BARXML = 'barxml'
     TSXML = 'tsxml'
     BARHTML = 'barhtml'
@@ -20,6 +22,12 @@ class CsvTaskArguments(TaskArguments):
     RECIPIENTS = 'recipients'
     REPORT_CONFIG = 'report_config'
 
+    REPORT_FMT = os.path.join(REPORT_DIR, '{}.{}')
+    REPORT_TIME_FMT = {
+        Report.ANNUAL.value: lambda *args: f'{args[0].year}.{args[-1]}',
+        Report.DAILY.value: lambda *args: args[0].strftime('%Y%m%d'),
+        Report.DATES.value: lambda *args: f'{args[0].strftime("%Y%m%d")}-{args[1].strftime("%Y%m%d")}'}
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.set_defaults(**{self.WINDOW: WINDOW,
@@ -27,17 +35,13 @@ class CsvTaskArguments(TaskArguments):
                              self.SCHEDULE: SCHEDULE,
                              self.TIMEZONE: TIMEZONE})
 
-        self.add_argument('--source', nargs='*', type=str,
+        self.add_argument('--' + self.SOURCE, nargs='*', type=str,
                           help='the source directory of the data')
 
         self.add_argument('--' + self.BARXML, nargs='?', type=str,
                           help='the xml output path of bar check')
         self.add_argument('--' + self.TSXML, nargs='?', type=str,
                           help='the xml output path of timeseries check')
-        self.add_argument('--' + self.BARHTML, nargs='?', type=str, default=BARHTML,
-                          help='the html output path of bar check after xsl transformation')
-        self.add_argument('--' + self.TSHTML, nargs='?', type=str, default=TSHTML,
-                          help='the html output path of time series check after xsl transformation')
 
         self.add_argument('--' + self.EMAIL, action='store_true',
                           help='set it to send email(s) of the report(s)')
@@ -46,76 +50,112 @@ class CsvTaskArguments(TaskArguments):
         self.add_argument('--' + self.RECIPIENTS, nargs='*', type=str, default=RECIPIENTS,
                           help='the email address of recipients')
 
-        self.add_argument('--' + self.REPORT_CONFIG, nargs='*', type=str, default=REPORT_CONFIG,
+        self.add_argument('--' + self.REPORT_CONFIG, nargs='*', type=str, default=Report.DATES.value,
                           help='the configuration of report to run, including the type and time setting')
 
+    def report_path(self, extension):
+        rtype, rtime = self.report_config
+        return self.REPORT_FMT.format(self.REPORT_TIME_FMT[rtype](*rtime, str(self.product)), extension)
+
     @property
-    def report_config(self):
-        report_config = to_iter(self._arg_dict.get(self.REPORT_CONFIG))
-        if len(report_config) == 2 and isinstance(report_config[1], dict):
-            return report_config
+    def barhtml(self):
+        return self.report_path(BARHTML)
 
-        if report_config[0] == 'annual':
-            year = dt.datetime.now(pytz.timezone(self.TIMEZONE)).year - 1 \
-                if len(report_config) < 2 else int(report_config[1])
-            report_type = report_config[0]
-            time_config = {self.DTFROM: dt.date(year, 1, 1), self.DTTO: dt.date(year, 12, 31)}
-        elif report_config[0] == 'daily':
-            dtfrom = last_n_days(1 if len(report_config) < 2 else int(report_config[1]))
+    @property
+    def tshtml(self):
+        return self.report_path(TSHTML)
+
+    def _report_config(self, value):
+        report_config = to_iter(value, ittype=tuple)
+        rtype, rtime = (str(report_config[0]), None) if len(report_config) == 1 \
+            else (str(report_config[0]), report_config[1:])
+
+        if rtype == Report.ANNUAL.value:
+            if rtime is None:
+                year = dt.datetime.now(pytz.timezone(self.TIMEZONE)).year - 1
+            elif isinstance(rtime[0], dt.datetime):
+                year = rtime[0].year
+            elif str(rtime[0]).isdigit():
+                year = int(rtime[0])
+            else:
+                raise ValueError('Invalid time setting for report_config: must be a datetime or positive integer')
+            time_config = (dt.date(year, 1, 1), dt.date(year, 12, 31))
+
+        elif rtype == Report.DAILY.value:
+            if rtime is None:
+                dtfrom = last_n_days(2)
+            elif isinstance(rtime[0], dt.datetime):
+                dtfrom = rtime[0]
+            elif str(rtime[0]).isdigit():
+                dtfrom = last_n_days(int(rtime[0]))
+            else:
+                raise ValueError('Invalid time setting for report_config: must be a datetime or positive integer')
             dtto = last_n_days(-1, dtfrom)
-            report_type = report_config[0]
-            time_config = {self.DTFROM: dtfrom, self.DTTO: dtto}
-        elif report_config[0] is None:
-            report_type = report_config
-            time_config = {self.DTFROM: self.dtfrom, self.DTTO: self.dtto}
-        else:
-            raise ValueError('Invalid report configuration: if set must include report type and time setting')
+            time_config = (dtfrom, dtto)
 
-        return report_type, time_config
+        elif rtype == Report.DATES.value:
+            time_config = (self.dtfrom, self.dtto)
+
+        else:
+            raise ValueError('Invalid report type to set')
+
+        return rtype, time_config
 
 
 class CsvCheckTask(fmtask.FrontMonthCheckTask):
+    SOURCE = 'source'
+
     def __init__(self):
         super().__init__(CsvTaskArguments())
 
-    def run_report_task(self, **kwargs):
-        barxml, tsxml = self.run_check_task(**kwargs)
-        write_etree(barxml, self.args.barxml)
-        write_etree(tsxml, self.args.tsxml)
-        return write_etree(to_styled_xml(barxml), self.args.barhtml, method='html'), \
-               write_etree(to_styled_xml(tsxml), self.args.tshtml, method='html')
+    @property
+    def task_bar_etree(self):
+        tree = super().task_bar_etree
+        root = tree.getroot()
+        root.set(self.SOURCE, ', '.join(to_iter(self.args.source)))
+        return tree
+
+    @property
+    def task_ts_etree(self):
+        tree = super().task_ts_etree
+        root = tree.getroot()
+        root.set(self.SOURCE, ', '.join(to_iter(self.args.source)))
+        return tree
+
+    def run_report_task(self, barxml=None, tsxml=None, write_xml=True, **kwargs):
+        barxml, tsxml = self.run_check_task(barxml, tsxml, **kwargs)
+        if write_xml:
+            write_etree(barxml, self.args.barxml)
+            write_etree(tsxml, self.args.tsxml)
+        barhtml, tshtml = to_styled_xml(barxml), to_styled_xml(tsxml)
+        write_etree(barhtml, self.args.barhtml, method='html')
+        write_etree(tshtml, self.args.tshtml, method='html')
+        return barhtml, tshtml
 
     def run(self, **kwargs):
-        self.set_taskargs(True)
+        self.set_taskargs(True, **kwargs)
         bar_reports, ts_reports = [], []
-        report_type, report_time = self.args.report_config
-        kwargs.update(**report_time)
-        if report_type == 'annual':
-            year = kwargs[self.args.DTFROM].year
+        rtype, rtime = self.args.report_config
+        self.set_taskargs(**{self.args.DTFROM: rtime[0], self.args.DTTO: rtime[1]})
+        if rtype == Report.ANNUAL.value:
+            barxml, tsxml = self.task_bar_etree, self.task_ts_etree
             for prod in self.args.product:
-                bar_report = ANNUAL_REPORT_FMT.format(year, prod, BARHTML)
-                ts_report = ANNUAL_REPORT_FMT.format(year, prod, TSHTML)
-                kwargs.update({self.args.PRODUCT: prod,
-                               self.args.BARHTML: bar_report,
-                               self.args.TSHTML: ts_report})
-                self.run_report_task(**kwargs)
-                bar_reports.append(bar_report)
-                ts_reports.append(ts_report)
-
-        elif self.args.report_config[0] == 'daily':
-            kwargs.update({self.args.BARHTML: DAILY_BAR_REPORT,
-                           self.args.TSHTML: DAILY_TS_REPORT})
-            self.run_report_task(**kwargs)
-            bar_reports.append(self.args.barhtml)
-            ts_reports.append(self.args.tshtml)
-
+                self.set_taskargs(**{self.args.PRODUCT: prod})
+                barhtml, tshtml = self.run_report_task(barxml.getroot(), tsxml.getroot(), False)
+                bar_reports.append(barhtml)
+                ts_reports.append(tshtml)
+            write_etree(barxml, self.args.barxml)
+            write_etree(tsxml, self.args.tsxml)
         else:
-            self.run_report_task(**kwargs)
-            bar_reports.append(self.args.barhtml)
-            ts_reports.append(self.args.tshtml)
+            barhtml, tshtml = self.run_report_task()
+            bar_reports.append(barhtml)
+            ts_reports.append(tshtml)
 
         if self.args.email:
-            self.email_reports(self.args.login, self.args.recipients, bar_reports, ts_reports, BAR_TITLE, TS_TITLE)
+            title_time = self.args.REPORT_TIME_FMT[rtype](*rtime, '').split('.')[0]
+            bar_title = ' '.join([BAR_TITLE, title_time, f'({self.args.source})'])
+            ts_title = ' '.join([TS_TITLE, title_time, f'({self.args.source})'])
+            self.email_reports(self.args.login, self.args.recipients, bar_reports, ts_reports, bar_title, ts_title)
 
 
 if __name__ == '__main__':
