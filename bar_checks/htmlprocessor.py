@@ -63,6 +63,10 @@ def split_html(html, parent_func, desc_func, buffer_size, split_func, prettify=F
             node_new.decompose()
 
 
+def split_elements(html, tag, buffer_size, prettify=False, **attribs):
+    pass
+
+
 class EmailSession(AbstractContextManager):
     ATTACHMENT_LIMIT = 20000000
 
@@ -75,10 +79,11 @@ class EmailSession(AbstractContextManager):
     def login(self):
         self.smtp.login(self.user, self.password)
 
+    # contents must be an iterable of str or etree._ElementTree
     def email_html(self, recipients, contents, subject, splitfunc=lambda x, y: x):
         msg_to = ', '.join(recipients)
         transformed = (splitfunc(premailer.transform(to_elementtree(c).getroot()), self.ATTACHMENT_LIMIT)
-                       for c in to_iter(contents, (str, etree._Element)))
+                       for c in to_iter(contents))
         for content in func_grouper(flatten_iter(transformed), self.ATTACHMENT_LIMIT, lambda x: len(x), iter):
             body = MIMEText(os.linesep.join(content), 'html')
             msg = MIMEMultipart('alternative')

@@ -117,13 +117,10 @@ class XPathBuilder(object):
         return '[{}]'.format(value)
 
     @classmethod
-    def evaluation(cls, obj, value='', is_attrib=False):
-        if not obj:
-            raise ValueError("'obj' argument must not be empty or None")
-
-        obj = '@' + obj if is_attrib else obj
-        return cls.selector("{}='{}'".format(obj, value) if value else obj)
+    def expression(cls, is_attrib=False, **kwargs):
+        evaluation = "{}='{}'"
+        return''.join(cls.selector(evaluation.format('@' + k if is_attrib else k, v)) for k, v in kwargs.items())
 
     @classmethod
-    def find(cls, start_tag=CURRENT, relation=CHILD, tag=ALL, selector=None):
+    def find_expr(cls, start_tag=CURRENT, relation=CHILD, tag=ALL, selector=None):
         return ''.join(filter(None, [start_tag, relation, tag, selector]))
