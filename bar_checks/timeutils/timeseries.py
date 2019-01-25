@@ -92,10 +92,13 @@ class SeriesValidation(object):
     def gaps(self, timestamps):
         grouped = normal_group_by(timestamps, self._schedule_bound.enclosing_schedule, True)
         for bound in self._schedule_bound.schedule_list:
+            valids = self.tsgenerator.valid_date_range(*bound, self._closed, self._tz)
+            if valids.empty:
+                continue
+
             if bound not in grouped:
                 yield {self.START_TS: bound[0], self.END_TS: bound[1]}
             else:
-                valids = self.tsgenerator.valid_date_range(*bound, self._closed, self._tz)
                 for contains, grouper in groupby(valids, lambda x: x in grouped[bound]):
                     if not contains:
                         ts_chunk = list(grouper)

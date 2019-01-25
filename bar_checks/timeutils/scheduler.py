@@ -14,7 +14,7 @@ class BScheduler(object):
 
     @schedules.setter
     def schedules(self, value):
-        self._schedules = set(get_schedule(*to_iter(v, ittype=tuple)) for v in to_iter(value, ittype=iter)) \
+        self._schedules = [get_schedule(*to_iter(v, ittype=tuple)) for v in to_iter(value, ittype=iter)] \
             if value else []
 
     def validate_schedule_times(self, start_time=None, end_time=None):
@@ -31,7 +31,7 @@ class BScheduler(object):
                 start, end = schedule_times
                 return to_tz_datetime(start, to_tz=tz), to_tz_datetime(end, to_tz=tz)
 
-    def get_raw_schedules(self, start_date, end_date, tz=None):
+    def get_raw_schedules(self, start_date: dt.date, end_date: dt.date, tz=None):
         last_schedule = None
         for ts in pd.date_range(start_date, end_date):
             schedule = self.primary_schedule(ts.date(), tz)
@@ -42,13 +42,13 @@ class BScheduler(object):
 
             last_schedule = schedule
 
-    def captime_by_window(self, schedule_open, schedule_close, start_time, end_time, window_tz=None, to_tz=pytz.UTC):
+    def captime_by_window(self, schedule_open, schedule_close, window_start, window_end, window_tz=None, to_tz=pytz.UTC):
         schedule_open = pd.Timestamp(to_tz_datetime(schedule_open, to_tz=to_tz))
         schedule_close = pd.Timestamp(to_tz_datetime(schedule_close, to_tz=to_tz))
 
-        window = timedelta_between(end_time, start_time)
+        window = timedelta_between(window_end, window_start)
         start_set = pd.Timestamp(
-            to_tz_datetime(date=schedule_open.date(), time=start_time, from_tz=window_tz, to_tz=to_tz))
+            to_tz_datetime(date=schedule_open.date(), time=window_start, from_tz=window_tz, to_tz=to_tz))
         if window < schedule_open - start_set:
             start_set += dt.timedelta(days=1)
         end_set = start_set + window
@@ -66,19 +66,23 @@ class BScheduler(object):
         if start <= schedule_close:
             yield start, schedule_close
 
-    def get_schedules(self, start_date, end_date, start_time=None, end_time=None, window_tz=None, tz=pytz.UTC):
-        start_date, end_date = to_datetime(start_date).date(), to_datetime(end_date).date()
-        start_time, end_time = self.validate_schedule_times(start_time, end_time)
+    def get_schedules(self, start_dt, end_dt, window_start=None, window_end=None, window_tz=None, tz=pytz.UTC):
+        start_dt, end_dt = to_datetime(start_dt), to_datetime(end_dt)
+        start_dt, end_dt = to_tz_datetime(start_dt, to_tz=tz), to_tz_datetime(end_dt, to_tz=tz)
+        start_date, end_date = last_n_days(1, start_dt.date()), last_n_days(-1, end_dt.date())
+        window_start, window_end = self.validate_schedule_times(window_start, window_end)
 
-        lbound = to_tz_datetime(date=start_date, time=start_time, from_tz=window_tz, to_tz=tz)
-        ubound = to_tz_datetime(date=end_date, time=end_time, from_tz=window_tz, to_tz=tz)
+        lbound = to_tz_datetime(date=start_date, time=window_start, from_tz=window_tz, to_tz=tz)
+        ubound = to_tz_datetime(date=end_date, time=window_end, from_tz=window_tz, to_tz=tz)
+        lbound, ubound = max(lbound, start_dt), min(ubound, end_dt)
 
-        for schedule_open, schedule_close in self.get_raw_schedules(last_n_days(1, start_date),
-                                                                    last_n_days(-1, end_date)):
-            for start, end in self.captime_by_window(schedule_open, schedule_close, start_time, end_time, window_tz,
+        for raw_open, raw_close in self.get_raw_schedules(start_date, end_date):
+            for start, end in self.captime_by_window(raw_open, raw_close, window_start, window_end, window_tz,
                                                      tz):
-                if start >= lbound and end <= ubound:
-                    yield (start, end)
+                if end < lbound or start > ubound:
+                    continue
+
+                yield max(start, lbound), min(end, ubound)
 
 
 class ScheduleBound(object):

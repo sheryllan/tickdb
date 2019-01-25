@@ -30,7 +30,8 @@ def create_BarId():
         def __new__(cls, values, fill_value=None):
             if isinstance(values, Mapping):
                 values = dict(values)
-                filled_values = {field: values.get(field, fill_value) for field in cls._fields}
+                filled_values = {field: fill_value if values.get(field) is None else values[field]
+                                 for field in cls._fields}
                 return super().__new__(cls, **filled_values)
             elif nontypes_iterable(values):
                 filled_values = [fill_value if x is None else x for _, x in zip_longest(cls._fields, values)]
@@ -394,6 +395,9 @@ class TaskArguments(argparse.ArgumentParser):
             if hasattr(self, k):
                 self._arg_dict[k] = getattr(self, '_' + k, lambda x: x)(v)
 
+    def max_dtto(self):
+        return to_tz_datetime(date=last_n_days(), time=MAX_TIME, to_tz=self.timezone)
+
     @property
     def arg_dict(self):
         return self._arg_dict
@@ -419,10 +423,9 @@ class TaskArguments(argparse.ArgumentParser):
                             'or a datetime.date/datetime/pandas.Timestamp object') from ex
 
     def _dtto(self, value):
-        max_dtto = self.timezone.localize(pd.Timestamp(last_n_days(0)))
         try:
             dtto = pd.Timestamp(*value) if nontypes_iterable(value) else pd.Timestamp(value)
-            return min(to_tz_datetime(dtto, to_tz=self.timezone), max_dtto)
+            return min(to_tz_datetime(dtto, to_tz=self.timezone), self.max_dtto())
         except Exception as ex:
             raise TypeError('Invalid dfrom: must be 3 ints(yyyy, M, D) '
                             'or a datetime.date/datetime/pandas.Timestamp object') from ex
@@ -472,7 +475,7 @@ class CheckTask(object):
     @property
     def task_bar_etree(self):
         root = rcsv_addto_etree({self.PRODUCT: ', '.join(to_iter(self.args.product)),
-                                 self.TIME: f'{self.args.dtfrom} - {self.args.dtto}',
+                                 self.TIME: f'{self.args.dtfrom.round("s")} - {self.args.dtto.round("s")}',
                                  self.WINDOW: '{} - {} ({})'.format(*self.args.window, str(self.args.window_tz))},
                                 self.REPORT)
         return to_elementtree(root, xsl_pi(self.BARXSL))
@@ -480,7 +483,7 @@ class CheckTask(object):
     @property
     def task_ts_etree(self):
         root = rcsv_addto_etree({self.PRODUCT: ', '.join(to_iter(self.args.product)),
-                                 self.TIME: f'{self.args.dtfrom} - {self.args.dtto}',
+                                 self.TIME: f'{self.args.dtfrom.round("s")} - {self.args.dtto.round("s")}',
                                  self.WINDOW: '{} - {} ({})'.format(*self.args.window, str(self.args.window_tz))},
                                 self.REPORT)
         return to_elementtree(root, xsl_pi(self.TSXSL))

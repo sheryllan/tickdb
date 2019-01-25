@@ -1,16 +1,22 @@
-import logging
-import pytz
 import datetime as dt
+import logging
 
-from bar.enrichedOHLCVN import TaskArguments
+import pytz
+
 import bar.frontmonthtask as fmtask
 from bar.csvcheck_config import *
-from xmlconverter import *
+from bar.enrichedOHLCVN import TaskArguments
 from timeutils.commonfuncs import last_n_days
+from xmlconverter import *
 
 
 class CsvTaskArguments(TaskArguments):
     SOURCE = 'source'
+
+    OUTDIR = 'outdir'
+    XML = 'xml'
+    HTML = 'html'
+    CONSOLIDATE = 'consolidate'
 
     BARXML = 'barxml'
     TSXML = 'tsxml'
@@ -22,9 +28,9 @@ class CsvTaskArguments(TaskArguments):
     RECIPIENTS = 'recipients'
     REPORT_CONFIG = 'report_config'
 
-    REPORT_FMT = os.path.join(REPORT_DIR, '{}.{}')
+    REPORT_NAME_SEP = '.'
     REPORT_TIME_FMT = {
-        Report.ANNUAL.value: lambda *args: f'{args[0].year}.{args[-1]}',
+        Report.ANNUAL.value: lambda *args: f'{args[0].year}',
         Report.DAILY.value: lambda *args: args[0].strftime('%Y%m%d'),
         Report.DATES.value: lambda *args: f'{args[0].strftime("%Y%m%d")}-{args[1].strftime("%Y%m%d")}'}
 
@@ -38,10 +44,14 @@ class CsvTaskArguments(TaskArguments):
         self.add_argument('--' + self.SOURCE, nargs='*', type=str,
                           help='the source directory of the data')
 
-        self.add_argument('--' + self.BARXML, nargs='?', type=str,
-                          help='the xml output path of bar check')
-        self.add_argument('--' + self.TSXML, nargs='?', type=str,
-                          help='the xml output path of timeseries check')
+        self.add_argument('--' + self.OUTDIR, nargs='?', type=str, default=DIR,
+                          help='the output directory of the checks')
+        self.add_argument('--' + self.XML, action='store_true',
+                          help='set it to save the xml output to files')
+        self.add_argument('--' + self.HTML, action='store_true',
+                          help='set it to save the html output to files')
+        self.add_argument('--' + self.CONSOLIDATE, action='store_true',
+                          help='set it to consolidate the output to a single file')
 
         self.add_argument('--' + self.EMAIL, action='store_true',
                           help='set it to send email(s) of the report(s)')
@@ -53,17 +63,33 @@ class CsvTaskArguments(TaskArguments):
         self.add_argument('--' + self.REPORT_CONFIG, nargs='*', type=str, default=Report.DATES.value,
                           help='the configuration of report to run, including the type and time setting')
 
-    def report_path(self, extension):
+    def report_path(self, name, extension):
+        path = os.path.join(self.outdir, REPORTS, extension)
+        os.makedirs(path, exist_ok=True)
+
         rtype, rtime = self.report_config
-        return self.REPORT_FMT.format(self.REPORT_TIME_FMT[rtype](*rtime, str(self.product)), extension)
+        names = [self.REPORT_TIME_FMT[rtype](*rtime)] + \
+                ([str(self.product)] if not self.consolidate else []) +\
+                [name, extension]
+
+        filename = self.REPORT_NAME_SEP.join(names)
+        return os.path.join(path, filename)
 
     @property
     def barhtml(self):
-        return self.report_path(BARHTML)
+        return self.report_path(BAR_REPORT_NAME, self.HTML)
 
     @property
     def tshtml(self):
-        return self.report_path(TSHTML)
+        return self.report_path(TS_REPORT_NAME, self.HTML)
+
+    @property
+    def barxml(self):
+        return self.report_path(BAR_REPORT_NAME, self.XML)
+
+    @property
+    def tsxml(self):
+        return self.report_path(TS_REPORT_NAME, self.XML)
 
     def _report_config(self, value):
         report_config = to_iter(value, ittype=tuple)
@@ -79,7 +105,7 @@ class CsvTaskArguments(TaskArguments):
                 year = int(rtime[0])
             else:
                 raise ValueError('Invalid time setting for report_config: must be a datetime or positive integer')
-            time_config = (dt.date(year, 1, 1), dt.date(year, 12, 31))
+            time_config = self._dtfrom((year, 1, 1)), self._dtto((year, 12, 31))
 
         elif rtype == Report.DAILY.value:
             if rtime is None:
@@ -91,10 +117,10 @@ class CsvTaskArguments(TaskArguments):
             else:
                 raise ValueError('Invalid time setting for report_config: must be a datetime or positive integer')
             dtto = last_n_days(-1, dtfrom)
-            time_config = (dtfrom, dtto)
+            time_config = self._dtfrom(dtfrom), self._dtto(dtto)
 
         elif rtype == Report.DATES.value:
-            time_config = (self.dtfrom, self.dtto)
+            time_config = self.dtfrom, self.dtto
 
         else:
             raise ValueError('Invalid report type to set')
@@ -122,14 +148,16 @@ class CsvCheckTask(fmtask.FrontMonthCheckTask):
         root.set(self.SOURCE, ', '.join(to_iter(self.args.source)))
         return tree
 
-    def run_report_task(self, barxml=None, tsxml=None, write_xml=True, **kwargs):
-        barxml, tsxml = self.run_check_task(barxml, tsxml, **kwargs)
-        if write_xml:
+    def run_report_task(self, **kwargs):
+        barxml, tsxml = self.task_bar_etree, self.task_ts_etree
+        self.run_check_task(barxml, tsxml, **kwargs)
+        if self.args.xml:
             write_etree(barxml, self.args.barxml)
             write_etree(tsxml, self.args.tsxml)
         barhtml, tshtml = to_styled_xml(barxml), to_styled_xml(tsxml)
-        write_etree(barhtml, self.args.barhtml, method='html')
-        write_etree(tshtml, self.args.tshtml, method='html')
+        if self.args.html:
+            write_etree(barhtml, self.args.barhtml, method='html')
+            write_etree(tshtml, self.args.tshtml, method='html')
         return barhtml, tshtml
 
     def run(self, **kwargs):
@@ -137,15 +165,12 @@ class CsvCheckTask(fmtask.FrontMonthCheckTask):
         bar_reports, ts_reports = [], []
         rtype, rtime = self.args.report_config
         self.set_taskargs(**{self.args.DTFROM: rtime[0], self.args.DTTO: rtime[1]})
-        if rtype == Report.ANNUAL.value:
-            barxml, tsxml = self.task_bar_etree, self.task_ts_etree
+        if not self.args.consolidate:
             for prod in self.args.product:
                 self.set_taskargs(**{self.args.PRODUCT: prod})
-                barhtml, tshtml = self.run_report_task(barxml.getroot(), tsxml.getroot(), False)
+                barhtml, tshtml = self.run_report_task()
                 bar_reports.append(barhtml)
                 ts_reports.append(tshtml)
-            write_etree(barxml, self.args.barxml)
-            write_etree(tsxml, self.args.tsxml)
         else:
             barhtml, tshtml = self.run_report_task()
             bar_reports.append(barhtml)
