@@ -84,10 +84,9 @@ class Lcmquantldn1Accessor(Accessor, BarAccessor):
             self.arg_time_from = arg_time_from
             self.arg_time_to = arg_time_to
 
-        def directories(self, *args, **kwargs):
+        def directories(self, **kwargs):
             kwargs[self.config.TABLE] = self.config.name()
-            dirs = {k: kwargs.get(k, v) for k, v in zip_longest(self.config.FILE_STRUCTURE, args)}
-            return list(dirs.values())
+            return [kwargs.get(x) for x in self.config.FILE_STRUCTURE]
 
         def date_from_path(self, path):
             match = re.search(self.config.FILENAME_DATE_PATTERN, basename(path))
@@ -117,11 +116,10 @@ class Lcmquantldn1Accessor(Accessor, BarAccessor):
             dirs_dict = {k: v for k, v in zip_longest(self.config.FILE_STRUCTURE, dirs)}
             return self.config.FILENAME_FORMAT.format(*(dirs_dict.get(s, '') for s in self.config.FILENAME_STRUCTURE))
 
-        def directories(self, *args, **kwargs):
+        def directories(self, **kwargs):
             kwargs[self.config.TABLE] = self.config.name()
             kwargs[self.config.DATA_FILE] = self.data_file
-            dirs = {k: kwargs.get(k, v) for k, v in zip_longest(self.config.FILE_STRUCTURE, args)}
-            return list(dirs.values())
+            return [kwargs.get(x) for x in self.config.FILE_STRUCTURE]
 
         def find_files(self, filesys, **kwargs):
             return pd.Series(self.rcsv_listdir(filesys, self.config.BASEDIR, self.directories(**kwargs)))

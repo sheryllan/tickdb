@@ -33,6 +33,7 @@ class CsvTaskArguments(TaskArguments):
         Report.ANNUAL.value: lambda *args: f'{args[0].year}',
         Report.DAILY.value: lambda *args: args[0].strftime('%Y%m%d'),
         Report.DATES.value: lambda *args: f'{args[0].strftime("%Y%m%d")}-{args[1].strftime("%Y%m%d")}'}
+    REPORT_SOURCE_MAP = {'gzips': 'QTG', 'reactor_gzips': 'Reactor'}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -68,7 +69,7 @@ class CsvTaskArguments(TaskArguments):
         os.makedirs(path, exist_ok=True)
 
         rtype, rtime = self.report_config
-        names = [self.REPORT_TIME_FMT[rtype](*rtime)] + \
+        names = [self.REPORT_SOURCE_MAP.get(self.source, ''), self.REPORT_TIME_FMT[rtype](*rtime)] + \
                 ([str(self.product)] if not self.consolidate else []) +\
                 [name, extension]
 
@@ -90,6 +91,10 @@ class CsvTaskArguments(TaskArguments):
     @property
     def tsxml(self):
         return self.report_path(TS_REPORT_NAME, self.XML)
+
+    def _source(self, value):
+        source = to_iter(value)
+        return source[0] if len(source) == 1 else source
 
     def _report_config(self, value):
         report_config = to_iter(value, ittype=tuple)
@@ -162,25 +167,28 @@ class CsvCheckTask(fmtask.FrontMonthCheckTask):
 
     def run(self, **kwargs):
         self.set_taskargs(True, **kwargs)
-        bar_reports, ts_reports = [], []
         rtype, rtime = self.args.report_config
         self.set_taskargs(**{self.args.DTFROM: rtime[0], self.args.DTTO: rtime[1]})
-        if not self.args.consolidate:
-            for prod in self.args.product:
-                self.set_taskargs(**{self.args.PRODUCT: prod})
+
+        for src in to_iter(self.args.source, ittype=iter):
+            bar_reports, ts_reports = [], []
+            self.set_taskargs(**{self.args.SOURCE: src})
+            if not self.args.consolidate:
+                for prod in self.args.product:
+                    self.set_taskargs(**{self.args.PRODUCT: prod})
+                    barhtml, tshtml = self.run_report_task()
+                    bar_reports.append(barhtml)
+                    ts_reports.append(tshtml)
+            else:
                 barhtml, tshtml = self.run_report_task()
                 bar_reports.append(barhtml)
                 ts_reports.append(tshtml)
-        else:
-            barhtml, tshtml = self.run_report_task()
-            bar_reports.append(barhtml)
-            ts_reports.append(tshtml)
 
-        if self.args.email:
-            title_time = self.args.REPORT_TIME_FMT[rtype](*rtime, '').split('.')[0]
-            bar_title = ' '.join([BAR_TITLE, title_time, f'({self.args.source})'])
-            ts_title = ' '.join([TS_TITLE, title_time, f'({self.args.source})'])
-            self.email_reports(self.args.login, self.args.recipients, bar_reports, ts_reports, bar_title, ts_title)
+            if self.args.email:
+                title_time = self.args.REPORT_TIME_FMT[rtype](*rtime).split('.')
+                bar_title = ' '.join([BAR_TITLE, title_time, f'({src})'])
+                ts_title = ' '.join([TS_TITLE, title_time, f'({src})'])
+                self.email_reports(self.args.login, self.args.recipients, bar_reports, ts_reports, bar_title, ts_title)
 
 
 if __name__ == '__main__':

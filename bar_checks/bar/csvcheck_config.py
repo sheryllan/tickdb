@@ -11,7 +11,7 @@ SCHEDULE = 'ScheduleBase'
 DIR = os.path.dirname(__file__)
 REPORTS = 'reports'
 BAR_REPORT_NAME = 'bar_check'
-TS_REPORT_NAME = 'timeseries_check'
+TS_REPORT_NAME = 'series_check'
 
 BAR_TITLE = 'Bar Integrity Check Report'
 TS_TITLE = 'Timeseries Integrity Check Report'
