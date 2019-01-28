@@ -103,7 +103,7 @@ class Lcmquantldn1Accessor(Accessor, BarAccessor):
             kwargs.update({self.config.YEAR: years})
 
             files = self.rcsv_listdir(filesys, self.config.BASEDIR, self.directories(**kwargs))
-            fpaths = pd.DataFrame((self.date_from_path(x), x) for x in files)
+            fpaths = pd.DataFrame((self.date_from_path(x), x) for x in files if self.date_from_path(x) is not None)
             return pd.Series() if fpaths.empty else fpaths.set_index(0).sort_index().loc[date_from: date_to, 1]
 
     class ContinuousContractManager(FileManager):

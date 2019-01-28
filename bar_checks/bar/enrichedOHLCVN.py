@@ -351,6 +351,8 @@ class TaskArguments(argparse.ArgumentParser):
     DTTO = 'dtto'
     TIMEZONE = 'timezone'
 
+    CHECK = 'check'
+
     def __init__(self, *args, **kwargs):
         self._arg_dict = {}
         super().__init__(*args, **kwargs)
@@ -377,6 +379,9 @@ class TaskArguments(argparse.ArgumentParser):
                           help='the end time in integers(yyyy, M, D, [optional HH, mm, ss]), today by default')
         self.add_argument('--' + self.TIMEZONE, nargs='*', type=str, default=pytz.UTC,
                           help='the timezone for the check to run')
+
+        self.add_argument('--' + self.CHECK, nargs='*', type=str,
+                          help='the type(s) of check to run, all if not set')
 
     def add_argument(self, *args, **kwargs):
         action = super().add_argument(*args, **kwargs)
@@ -433,6 +438,9 @@ class TaskArguments(argparse.ArgumentParser):
     def _timezone(self, value):
         return pytz.timezone(value) if isinstance(value, str) else value
 
+    def _check(self, value):
+        return to_iter(value)
+
 
 class CheckTask(object):
     REPORT = 'report'  # tag
@@ -446,18 +454,21 @@ class CheckTask(object):
     BAR = 'bar'  # tag
     DETAIL = 'detail'
 
-    CHECK_COLS = [BarChecker.PRICES_ROLLOVER_CHECK,
-                  BarChecker.HIGH_LOW_CHECK,
-                  BarChecker.PCLV_ORDER_CHECK,
-                  BarChecker.BID_ASK_CHECK,
-                  BarChecker.VOLUME_CHECK,
-                  BarChecker.VOL_ON_LV1_CHECK,
-                  BarChecker.VOL_ON_LV2_CHECK,
-                  BarChecker.VOL_ON_LV3_CHECK,
-                  BarChecker.VWAP_CHECK]
+    BAR_CHECK_COLS = [BarChecker.PRICES_ROLLOVER_CHECK,
+                      BarChecker.HIGH_LOW_CHECK,
+                      BarChecker.PCLV_ORDER_CHECK,
+                      BarChecker.BID_ASK_CHECK,
+                      BarChecker.VOLUME_CHECK,
+                      BarChecker.VOL_ON_LV1_CHECK,
+                      BarChecker.VOL_ON_LV2_CHECK,
+                      BarChecker.VOL_ON_LV3_CHECK,
+                      BarChecker.VWAP_CHECK]
 
     BARXSL = os.path.join(os.path.dirname(__file__), 'bar_check.xsl')
     TSXSL = os.path.join(os.path.dirname(__file__), 'timeseries_check.xsl')
+
+    BAR_CHECK = 'bar'
+    TIMESERIESE_CHECK = 'timeseries'
 
     def __init__(self, data_accessor, task_args=TaskArguments()):
         self.accessor = data_accessor
@@ -466,14 +477,24 @@ class CheckTask(object):
         self.schedule_bound = None
 
         self.args = task_args
-        self.to_enriched_mapping = {self.args.PRODUCT: Tags.PRODUCT,
-                                    self.args.TYPE: Tags.TYPE,
-                                    self.args.EXPIRY: Tags.EXPIRY,
-                                    self.args.DTFROM: self.accessor.TIME_FROM,
-                                    self.args.DTTO: self.accessor.TIME_TO}
+        self.args.set_defaults(**{self.args.CHECK: [self.BAR_CHECK, self.TIMESERIESE_CHECK]})
+
+        self.map_to_enriched = {self.args.PRODUCT: Tags.PRODUCT,
+                                self.args.TYPE: Tags.TYPE,
+                                self.args.EXPIRY: Tags.EXPIRY,
+                                self.args.DTFROM: self.accessor.TIME_FROM,
+                                self.args.DTTO: self.accessor.TIME_TO}
+
+        self.single_check_funcs = {self.BAR_CHECK: self.single_bar_check_xml,
+                                   self.TIMESERIESE_CHECK: self.single_timeseries_check_xml}
+        self.check_etrees = {self.BAR_CHECK: lambda: self.bar_etree,
+                             self.TIMESERIESE_CHECK: lambda: self.ts_etree}
+
+        self.check_split_funcs = {self.BAR_CHECK: self.split_barhtml,
+                                  self.TIMESERIESE_CHECK: self.split_tshtml}
 
     @property
-    def task_bar_etree(self):
+    def bar_etree(self):
         root = rcsv_addto_etree({self.PRODUCT: ', '.join(to_iter(self.args.product)),
                                  self.TIME: f'{self.args.dtfrom.round("s")} - {self.args.dtto.round("s")}',
                                  self.WINDOW: '{} - {} ({})'.format(*self.args.window, str(self.args.window_tz))},
@@ -481,7 +502,7 @@ class CheckTask(object):
         return to_elementtree(root, xsl_pi(self.BARXSL))
 
     @property
-    def task_ts_etree(self):
+    def ts_etree(self):
         root = rcsv_addto_etree({self.PRODUCT: ', '.join(to_iter(self.args.product)),
                                  self.TIME: f'{self.args.dtfrom.round("s")} - {self.args.dtto.round("s")}',
                                  self.WINDOW: '{} - {} ({})'.format(*self.args.window, str(self.args.window_tz))},
@@ -510,11 +531,11 @@ class CheckTask(object):
             self.set_schecker()
 
     def get_bar_data(self, **kwargs):
-        new_kwargs = {self.to_enriched_mapping.get(k, k): v for k, v in kwargs.items()}
-        taskargs = {k: new_kwargs[self.to_enriched_mapping.get(k, k)] for k, v in self.args.arg_dict.items()
-                    if self.to_enriched_mapping.get(k, k) in new_kwargs}
+        new_kwargs = {self.map_to_enriched.get(k, k): v for k, v in kwargs.items()}
+        taskargs = {k: new_kwargs[self.map_to_enriched.get(k, k)] for k, v in self.args.arg_dict.items()
+                    if self.map_to_enriched.get(k, k) in new_kwargs}
         self.set_taskargs(**taskargs)
-        new_kwargs.update({self.to_enriched_mapping.get(k, k): v for k, v in self.args.arg_dict.items()})
+        new_kwargs.update({self.map_to_enriched.get(k, k): v for k, v in self.args.arg_dict.items()})
         return self.accessor.get_data(Enriched.name(), **new_kwargs)
 
     def run_bar_checks(self, data):
@@ -535,15 +556,15 @@ class CheckTask(object):
                 BarChecker.check_vwap(data_cap)]
             results = pd.concat(checks, axis=1)
 
-        return results[self.CHECK_COLS][~results.all(axis=1)] \
-            if not results.empty else pd.DataFrame(columns=self.CHECK_COLS)
+        return results[self.BAR_CHECK_COLS][~results.all(axis=1)] \
+            if not results.empty else pd.DataFrame(columns=self.BAR_CHECK_COLS)
 
     def barid_element(self, value, fill_value='*'):
         bar = Barid(value, fill_value).asdict()
         return rcsv_addto_etree(bar, self.BAR)
 
     def single_bar_check_xml(self, data, bar, root=None):
-        xml = to_elementtree(self.task_bar_etree if root is None else root)
+        xml = to_elementtree(self.bar_etree if root is None else root)
         root = xml.getroot()
         barid = Barid(bar)
 
@@ -555,7 +576,7 @@ class CheckTask(object):
         return xml
 
     def single_timeseries_check_xml(self, data, bar, root=None):
-        xml = to_elementtree(self.task_ts_etree if root is None else root)
+        xml = to_elementtree(self.ts_etree if root is None else root)
         root = xml.getroot()
         barid = Barid(bar)
 
@@ -578,13 +599,13 @@ class CheckTask(object):
 
         return xml
 
-    def check_integrated(self, data, barxml=None, tsxml=None):
+    def check_integrated(self, data, checks_to_run):
         grouped = data.groupby(Tags.values()) if isinstance(data, pd.DataFrame) else data
 
         for bar, bar_df in grouped:
-            barxml = self.single_bar_check_xml(bar_df, bar, barxml)
-            tsxml = self.single_timeseries_check_xml(bar_df, bar, tsxml)
-        return barxml, tsxml
+            for check, xml in checks_to_run.items():
+                checks_to_run[check] = self.single_check_funcs[check](bar_df, bar, xml)
+        return checks_to_run
 
     def split_barhtml(self, html, size_limit):
         def grouping(tr_tags):
@@ -617,9 +638,4 @@ class CheckTask(object):
                 split_tags
         )
 
-    def email_reports(self, login, recipients, barhtml=None, tshtml=None, bar_title='', ts_title=''):
-        with EmailSession(*login) as session:
-            if barhtml is not None:
-                session.email_html(recipients, barhtml, bar_title, self.split_barhtml)
-            if tshtml is not None:
-                session.email_html(recipients, tshtml, ts_title, self.split_tshtml)
+

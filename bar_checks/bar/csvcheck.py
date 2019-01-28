@@ -8,6 +8,7 @@ from bar.csvcheck_config import *
 from bar.enrichedOHLCVN import TaskArguments
 from timeutils.commonfuncs import last_n_days
 from xmlconverter import *
+from htmlprocessor import EmailSession
 
 
 class CsvTaskArguments(TaskArguments):
@@ -138,32 +139,48 @@ class CsvCheckTask(fmtask.FrontMonthCheckTask):
 
     def __init__(self):
         super().__init__(CsvTaskArguments())
+        self.check_out_xmls = {self.BAR_CHECK: lambda: self.args.barxml,
+                               self.TIMESERIESE_CHECK: lambda: self.args.tsxml}
+        self.check_out_htmls = {self.BAR_CHECK: lambda: self.args.barhtml,
+                                self.TIMESERIESE_CHECK: lambda: self.args.tshtml}
+        self.email_titles = {self.BAR_CHECK: lambda *args: f'{BAR_TITLE} {" ".join(args)}',
+                             self.TIMESERIESE_CHECK: lambda *args: f'{TS_TITLE} {" ".join(args)}'}
 
     @property
-    def task_bar_etree(self):
-        tree = super().task_bar_etree
+    def bar_etree(self):
+        tree = super().bar_etree
         root = tree.getroot()
         root.set(self.SOURCE, ', '.join(to_iter(self.args.source)))
         return tree
 
     @property
-    def task_ts_etree(self):
-        tree = super().task_ts_etree
+    def ts_etree(self):
+        tree = super().ts_etree
         root = tree.getroot()
         root.set(self.SOURCE, ', '.join(to_iter(self.args.source)))
         return tree
 
     def run_report_task(self, **kwargs):
-        barxml, tsxml = self.task_bar_etree, self.task_ts_etree
-        self.run_check_task(barxml, tsxml, **kwargs)
-        if self.args.xml:
-            write_etree(barxml, self.args.barxml)
-            write_etree(tsxml, self.args.tsxml)
-        barhtml, tshtml = to_styled_xml(barxml), to_styled_xml(tsxml)
-        if self.args.html:
-            write_etree(barhtml, self.args.barhtml, method='html')
-            write_etree(tshtml, self.args.tshtml, method='html')
-        return barhtml, tshtml
+        checks_to_run = {check: self.check_etrees[check]() for check in self.args.check}
+        xmls = self.run_check_task(checks_to_run, **kwargs)
+        htmls = {}
+        for check, xml in xmls.items():
+            html = to_styled_xml(xml)
+            htmls[check] = html
+
+            if self.args.xml:
+                write_etree(xml, self.check_out_xmls[check]())
+            if self.args.html:
+                write_etree(html, self.check_out_htmls[check](), method='html')
+
+        return htmls
+
+    def email_reports(self, reports, *args):
+        with EmailSession(*self.args.login) as session:
+            for check, html in reports.items():
+                title = self.email_titles[check](*args)
+                split_funcs = self.check_split_funcs[check]
+                session.email_html(self.args.recipients, html, title, split_funcs)
 
     def run(self, **kwargs):
         self.set_taskargs(True, **kwargs)
@@ -171,24 +188,19 @@ class CsvCheckTask(fmtask.FrontMonthCheckTask):
         self.set_taskargs(**{self.args.DTFROM: rtime[0], self.args.DTTO: rtime[1]})
 
         for src in to_iter(self.args.source, ittype=iter):
-            bar_reports, ts_reports = [], []
             self.set_taskargs(**{self.args.SOURCE: src})
             if not self.args.consolidate:
+                reports = defaultdict(list)
                 for prod in self.args.product:
                     self.set_taskargs(**{self.args.PRODUCT: prod})
-                    barhtml, tshtml = self.run_report_task()
-                    bar_reports.append(barhtml)
-                    ts_reports.append(tshtml)
+                    htmls = self.run_report_task()
+                    for check, html in htmls.items():
+                        reports[check].append(html)
             else:
-                barhtml, tshtml = self.run_report_task()
-                bar_reports.append(barhtml)
-                ts_reports.append(tshtml)
+                reports = self.run_report_task()
 
             if self.args.email:
-                title_time = self.args.REPORT_TIME_FMT[rtype](*rtime).split('.')
-                bar_title = ' '.join([BAR_TITLE, title_time, f'({src})'])
-                ts_title = ' '.join([TS_TITLE, title_time, f'({src})'])
-                self.email_reports(self.args.login, self.args.recipients, bar_reports, ts_reports, bar_title, ts_title)
+                self.email_reports(reports, self.args.REPORT_TIME_FMT[rtype](*rtime).split('.'), f'({src})')
 
 
 if __name__ == '__main__':
