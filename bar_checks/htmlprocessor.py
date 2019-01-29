@@ -1,15 +1,13 @@
-from bs4 import BeautifulSoup
-from bs4.element import Tag
 import os
-import premailer
 import smtplib
-from itertools import groupby
-
+from contextlib import AbstractContextManager
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from contextlib import AbstractContextManager
-from xmlconverter import *
+from itertools import groupby
 
+import premailer
+
+from xmlconverter import *
 
 BODY = 'body'
 
@@ -21,80 +19,58 @@ TH = 'th'
 COLSPAN = 'colspan'
 
 
-def level_order_traverse(element, targets):
-    level_dict = {}
-    found_list, targets = [], set(targets)
 
-    el_queue, dict_queue = list(element), [level_dict]*len(element)
-    while len(el_queue) > 0:
-        el_curr = el_queue.pop(0)
-        dict_curr = dict_queue.pop(0)
-        if len(found_list) == len(targets):
-            dict_curr[el_curr] = False
-        elif el_curr in targets:
-            found_list.append(el_curr)
-            dict_curr[el_curr] = True
-        else:
-            children = list(el_curr)
-            if not children:
-                dict_curr[el_curr] = None
-            else:
-                new_dict = {}
-                dict_curr[el_curr] = new_dict
-                el_queue.extend(children)
-                dict_queue.extend([new_dict] * len(children))
-
-    return level_dict
+def get_str(element):
+    return etree_to_str(element, xml_declaration=False, method='html', decode=True)
 
 
-def get_len(element):
-    return len(etree_to_str(element, xml_declaration=False, method='html'))
-
-
-def target_insert_pos(el_dict, parent):
+def target_group_pos(parent, is_target_func):
+    children = list(parent)
     parent[:] = []
+    other_children = list(parent)
     i = 0
-    for is_target, el_group in groupby(el_dict, lambda x: el_dict[x] is True):
+    for is_target, target_group in groupby(children, is_target_func):
         if is_target:
-            for el in el_group:
+            for el in target_group:
                 yield el, i
         else:
-            el_group = list(el_group)
-            parent[:] = list(parent) + el_group
-            i += len(el_group)
+            target_group = list(target_group)
+            other_children = other_children + target_group
+            i += len(target_group)
+
+    parent[:] = other_children
 
 
 def split_from_element(html, el_xpath, desc_xpath, buffer_size, grouping=lambda x: [x]):
 
-    def rcsv_split(parent, el_dict, parent_buffer):
-        if not isinstance(el_dict, dict):
-            return iter('')
+    def rcsv_split(parent, target_ids, parent_buffer):
+        if not target_ids:
+            yield get_str(html)
+            return
 
-        target_pos = dict(target_insert_pos(el_dict, parent))
+        target_pos = dict(target_group_pos(parent, lambda x: id(x) in target_ids))
         if not target_pos:
             for child in parent:
-                yield from rcsv_split(child, el_dict[child], parent_buffer)
+                yield from rcsv_split(child, target_ids, parent_buffer)
         else:
-            buffer = parent_buffer - get_len(parent)
-            children_orig = list(parent)
-            for chunk in func_grouper(grouping(target_pos.keys()), buffer, lambda x: sum(map(get_len, x))):
-                for k, child in enumerate(flatten_iter(chunk, excl_types=(str, etree._Element))):
-                    parent.insert(target_pos[child] + k, child)
-                yield etree_to_str(html, xml_declaration=False, method='html', decode=True)
-                parent[:] = children_orig
+            buffer = parent_buffer - len(get_str(parent))
+            other_children = list(parent)
+            for chunk in func_grouper(grouping(target_pos.keys()), buffer, lambda x: sum(map(len, map(get_str, x)))):
+                for k, tchild in enumerate(flatten_iter(chunk, excl_types=(str, etree._Element))):
+                    parent.insert(target_pos[tchild] + k, tchild)
+                    target_ids.remove(id(tchild))
+                yield get_str(html)
+                parent[:] = other_children
 
     html = to_elementtree(html)
     element = html.find(el_xpath)
     if element is None:
-        yield etree_to_str(html, xml_declaration=False, method='html', decode=True)
-    else:
-        desc_elements = element.findall(desc_xpath)
-        if not desc_elements:
-            yield etree_to_str(html, xml_declaration=False, method='html', decode=True)
-        else:
-            level_dict = level_order_traverse(element, desc_elements)
-            buffer_init = buffer_size - get_len(html) + get_len(element)
-            yield from rcsv_split(element, level_dict, buffer_init)
+        yield get_str(html)
+        return
+
+    desc_ids = set(map(id, element.findall(desc_xpath)))
+    buffer_init = buffer_size - len(get_str(html)) + len(get_str(element))
+    yield from rcsv_split(element, desc_ids, buffer_init)
 
 
 class EmailSession(AbstractContextManager):
