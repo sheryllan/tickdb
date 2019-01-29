@@ -200,7 +200,7 @@ class CsvCheckTask(fmtask.FrontMonthCheckTask):
                 reports = self.run_report_task()
 
             if self.args.email:
-                self.email_reports(reports, self.args.REPORT_TIME_FMT[rtype](*rtime).split('.'), f'({src})')
+                self.email_reports(reports, self.args.REPORT_TIME_FMT[rtype](*rtime), f'({src})')
 
 
 if __name__ == '__main__':
@@ -211,6 +211,5 @@ if __name__ == '__main__':
     task.run()
     # products = ['ES', 'NQ', 'YM', 'ZN', 'ZB', 'UB', '6E', '6J', '6B', 'GC', 'CL']
     # task.set_taskargs(True)
-    # task.email_reports(task.args.login, task.args.recipients,
-    #                    None, 'timeseries_check.html',
-    #                    BAR_TITLE, TS_TITLE)
+    # task.email_reports({task.BAR_CHECK: ['reports/html/QTG.2019.ES.bar_check.html',
+    #                                      'reports/html/QTG.2019.ZN.bar_check.html']})

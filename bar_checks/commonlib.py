@@ -82,26 +82,30 @@ def na_equal(v1, v2):
     return (pd.isna(v1) & pd.isna(v2)) | (v1 == v2)
 
 
-def func_grouper(iterable, n, func=lambda x: 1, chunk_type=list):
+def func_grouper(iterable, n, func=lambda x: 1, chunk_type=list, with_n=False):
     iteritems = iter(iterable)
     prev = next(iteritems, None)
     curr = next(iteritems, None)
+    count = 0
 
     def slice():
-        nonlocal prev, curr
+        nonlocal prev, curr, count
         count = func(prev)
 
         while prev is not None:
             yield prev
 
+            prev_count = count
             count += 0 if curr is None else func(curr)
             prev = curr
             curr = next(iteritems, None)
-            if count >= n:
+            if count > n:
+                count = prev_count
                 break
 
     while prev is not None:
-        yield chunk_type(slice())
+        item = chunk_type(slice())
+        yield (item, count) if with_n else item
 
 
 def source_from(src):
@@ -111,7 +115,7 @@ def source_from(src):
     try:
         with open(src) as fh:
             return fh.read()
-    except FileNotFoundError:
+    except Exception:
         return src
 
 

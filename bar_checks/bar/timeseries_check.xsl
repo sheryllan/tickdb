@@ -30,10 +30,12 @@
 			</head>
 			
 			<body>
-				<h3>Time Series Integrity Check</h3>
-				<xsl:for-each select="@*">
-					<div><xsl:value-of select="concat(translate(substring(local-name(.), 1, 1), $vLower, $vUpper), substring(local-name(.), 2))" />: <xsl:value-of select="." /></div>
-				</xsl:for-each>
+				<div>
+					<h3>Time Series Integrity Check</h3>
+					<xsl:for-each select="@*">
+						<div><xsl:value-of select="concat(translate(substring(local-name(.), 1, 1), $vLower, $vUpper), substring(local-name(.), 2))" />: <xsl:value-of select="." /></div>
+					</xsl:for-each>
+				</div>
 				<xsl:apply-templates select="record" mode="record" />
 			</body>			
 		</html>

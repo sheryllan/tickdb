@@ -99,7 +99,7 @@ class Lcmquantldn1Accessor(Accessor, BarAccessor):
             date_from = None if time_from is None else time_from.normalize()
             date_to = None if time_to is None else time_to.normalize()
 
-            years =  None if any(x is None for x in (date_from, date_to)) else (date_from.year, date_to.year)
+            years = None if any(x is None for x in (date_from, date_to)) else (date_from.year, date_to.year)
             kwargs.update({self.config.YEAR: years})
 
             files = self.rcsv_listdir(filesys, self.config.BASEDIR, self.directories(**kwargs))

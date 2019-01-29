@@ -1,10 +1,11 @@
 import unittest as ut
 from htmlprocessor import *
 from itertools import groupby
+import numpy as np
 
 
 class HtmlTests(ut.TestCase):
-    def test_split_html(self):
+    def test_split_from_element(self):
         html ="""<html>
   <head>
     <style media="screen" type="text/css">
@@ -313,23 +314,16 @@ cask3 undefined</pre>
   </body>
 </html>"""
 
-        def grouping(tags):
+        def grouping(trs):
+            th_xpath = XPathBuilder.find_expr(tag=TH)
+            by = np.cumsum([True if tr.find(th_xpath) is not None else False for tr in trs])
+            for _, tr_group in groupby(zip(trs, by), lambda x: x[1]):
+                tr_group = list(map(lambda x: x[0], tr_group))
+                yield tr_group
 
-            def is_bar_row(tr):
-                th = tr.find(TH, recursive=False)
-                return th is not None and int(th[COLSPAN]) > 1
+        html = html.translate(dict.fromkeys(range(32)))
+        tbody_xpath = XPathBuilder.find_expr(relation=XPathBuilder.DESCENDANT, tag=TBODY)
+        tr_xpath = XPathBuilder.find_expr(relation=XPathBuilder.DESCENDANT, tag=TR)
 
-            bar = []
-            for is_bar, group in groupby(tags, is_bar_row):
-                if is_bar:
-                    bar = list(group)
-                else:
-                    bar.extend(group)
-                    yield bar
-                    bar = []
-
-
-
-        for split in split_html(html, lambda x: x.find_all(TBODY), lambda x: find_all_by_depth(x, TR), 5000,
-                                lambda x, y: split_tags(x, y, grouping), True):
+        for split in split_from_element(html, tbody_xpath, tr_xpath, 5000, grouping):
             print(split)

@@ -73,17 +73,22 @@ def to_elementtree(root, pis=None):
     return tree
 
 
-def write_etree(element, outpath=None, pis=None, xml_declaration=True, method='xml', encoding='utf-8',
-                append=False, decode=False):
-    if outpath is None:
-        return None
+def etree_to_str(element, pis=None, xml_declaration=True, method='xml', encoding='utf-8', decode=False):
     tree = to_elementtree(element, pis)
     text = etree.tostring(tree, xml_declaration=xml_declaration, method=method, encoding=encoding, pretty_print=True)
+    return text.decode(encoding) if decode else text
+
+
+def write_etree(element, outpath=None, pis=None, xml_declaration=True, method='xml', encoding='utf-8',
+                append=False):
+    if outpath is None:
+        return None
+
+    text = etree_to_str(element, pis, xml_declaration, method, encoding)
     if text is not None:
         mode = 'ab+' if append else 'wb+'
         with open(outpath, mode) as stream:
             stream.write(text)
-    return text.decode(encoding) if decode else text
 
 
 def to_styled_xml(xml, xsl=None):
@@ -114,13 +119,14 @@ class XPathBuilder(object):
 
     @classmethod
     def selector(cls, value):
-        return '[{}]'.format(value)
+        return "[{}]".format(value)
 
     @classmethod
     def expression(cls, is_attrib=False, **kwargs):
-        evaluation = "{}='{}'"
-        return''.join(cls.selector(evaluation.format('@' + k if is_attrib else k, v)) for k, v in kwargs.items())
+        evaluation = r"{}='{}'"
+        return ''.join(cls.selector(evaluation.format('@' + k if is_attrib else k, v)) for k, v in kwargs.items())
 
     @classmethod
     def find_expr(cls, start_tag=CURRENT, relation=CHILD, tag=ALL, selector=None):
-        return ''.join(filter(None, [start_tag, relation, tag, selector]))
+        expr = ''.join(filter(None, [start_tag, relation, tag, selector]))
+        return expr

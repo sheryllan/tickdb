@@ -32,10 +32,12 @@
 			</head>
 			
 			<body>
-				<h3>Bar Integrity Check</h3>
-				<xsl:for-each select="@*">
-					<div><xsl:value-of select="concat(translate(substring(local-name(.), 1, 1), $vLower, $vUpper), substring(local-name(.), 2))" />: <xsl:value-of select="." /></div>
-				</xsl:for-each>
+				<div>
+					<h3>Bar Integrity Check</h3>
+					<xsl:for-each select="@*">
+						<div><xsl:value-of select="concat(translate(substring(local-name(.), 1, 1), $vLower, $vUpper), substring(local-name(.), 2))" />: <xsl:value-of select="." /></div>
+					</xsl:for-each>
+				</div>
 				<table> 
 					<thead>
 						<tr>

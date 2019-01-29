@@ -608,34 +608,21 @@ class CheckTask(object):
         return checks_to_run
 
     def split_barhtml(self, html, size_limit):
-        def grouping(tr_tags):
-            def is_bar_tr(tr):
-                th = tr.find(TH, recursive=False)
-                return th is not None and int(th[COLSPAN]) > 1
 
-            bar = []
-            for is_bar, tr_group in groupby(tr_tags, is_bar_tr):
-                if is_bar:
-                    bar = list(tr_group)
-                else:
-                    bar.extend(tr_group)
-                    yield bar
+        def grouping(trs):
+            th_xpath = XPathBuilder.find_expr(tag=TH)
+            by = np.cumsum([True if tr.find(th_xpath) is not None else False for tr in trs])
+            for _, tr_group in groupby(zip(trs, by), lambda x: x[1]):
+                yield list(map(lambda x: x[0], tr_group))
 
-        yield from split_html(
-            html,
-            lambda x: x.find_all(TBODY),
-            lambda x: find_all_by_depth(x, TR),
-            size_limit,
-            lambda x, y: split_tags(x, y, grouping)
-        )
+        tbody_xpath = XPathBuilder.find_expr(relation=XPathBuilder.DESCENDANT, tag=TBODY)
+        tr_xpath = XPathBuilder.find_expr(relation=XPathBuilder.DESCENDANT, tag=TR)
+        yield from split_from_element(html, tbody_xpath, tr_xpath, size_limit, grouping)
 
     def split_tshtml(self, html, size_limit):
-        yield from split_html(
-                html,
-                lambda x: x.find_all(BODY),
-                lambda x: find_all_by_depth(x, TABLE),
-                size_limit,
-                split_tags
-        )
+        body_xpath = XPathBuilder.find_expr(relation=XPathBuilder.DESCENDANT, tag=BODY)
+        table_xpath = XPathBuilder.find_expr(relation=XPathBuilder.DESCENDANT, tag=TABLE)
+        yield from split_from_element(html, body_xpath, table_xpath, size_limit)
+
 
 
