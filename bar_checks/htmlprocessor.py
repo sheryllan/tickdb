@@ -19,7 +19,6 @@ TH = 'th'
 COLSPAN = 'colspan'
 
 
-
 def get_str(element):
     return etree_to_str(element, xml_declaration=False, method='html', decode=True)
 

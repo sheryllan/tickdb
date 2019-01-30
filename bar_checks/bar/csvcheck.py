@@ -29,12 +29,17 @@ class CsvTaskArguments(TaskArguments):
     RECIPIENTS = 'recipients'
     REPORT_CONFIG = 'report_config'
 
+    SOURCE_MAP = {'qtg': 'gzips',
+                  'reactor': 'reactor_gzips'}
+
     REPORT_NAME_SEP = '.'
     REPORT_TIME_FMT = {
         Report.ANNUAL.value: lambda *args: f'{args[0].year}',
         Report.DAILY.value: lambda *args: args[0].strftime('%Y%m%d'),
         Report.DATES.value: lambda *args: f'{args[0].strftime("%Y%m%d")}-{args[1].strftime("%Y%m%d")}'}
-    REPORT_SOURCE_MAP = {'gzips': 'QTG', 'reactor_gzips': 'Reactor'}
+
+    REPORT_SOURCE_MAP = {SOURCE_MAP['qtg']: 'QTG',
+                         SOURCE_MAP['reactor']: 'Reactor'}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -43,7 +48,7 @@ class CsvTaskArguments(TaskArguments):
                              self.SCHEDULE: SCHEDULE,
                              self.TIMEZONE: TIMEZONE})
 
-        self.add_argument('--' + self.SOURCE, nargs='*', type=str,
+        self.add_argument('--' + self.SOURCE, nargs='*', type=str, default=SOURCE,
                           help='the source directory of the data')
 
         self.add_argument('--' + self.OUTDIR, nargs='?', type=str, default=DIR,
@@ -94,7 +99,7 @@ class CsvTaskArguments(TaskArguments):
         return self.report_path(TS_REPORT_NAME, self.XML)
 
     def _source(self, value):
-        source = to_iter(value)
+        source = [self.SOURCE_MAP.get(v, v) for v in to_iter(value)]
         return source[0] if len(source) == 1 else source
 
     def _report_config(self, value):

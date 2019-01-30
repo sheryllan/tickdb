@@ -7,6 +7,7 @@ TIMEZONE = 'UTC'
 WINDOW = ('18:00', '15:00')
 WINDOW_TZ = 'America/Chicago'
 SCHEDULE = 'ScheduleBase'
+SOURCE = 'qtg'
 
 DIR = os.path.dirname(__file__)
 REPORTS = 'reports'
