@@ -21,4 +21,4 @@ pip install -r ${REQUIREMNTS}
 echo "Packages installed:"
 pip list
 
-source deactive
+source deactivate
