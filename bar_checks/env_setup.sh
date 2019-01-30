@@ -7,7 +7,7 @@ echo "Setting up virtual environment ${VENV_NAME}"
 
 if ! conda info --envs | grep -q ${VENV_NAME}; then
     echo "Creating virtual environment"
-    conda create -n ${VENV_NAME} python
+    conda create -n --yes ${VENV_NAME} python
     echo "Virtual environment created"
 fi
 
