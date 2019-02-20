@@ -104,11 +104,10 @@ class CsvTaskArguments(TaskArguments):
 
     def _report_config(self, value):
         report_config = to_iter(value, ittype=tuple)
-        rtype, rtime = (str(report_config[0]), None) if len(report_config) == 1 \
-            else (str(report_config[0]), report_config[1:])
+        rtype, rtime = str(report_config[0]), report_config[1:]
 
         if rtype == Report.ANNUAL.value:
-            if rtime is None:
+            if not rtime:
                 year = dt.datetime.now(pytz.timezone(self.TIMEZONE)).year - 1
             elif isinstance(rtime[0], dt.datetime):
                 year = rtime[0].year
@@ -119,8 +118,8 @@ class CsvTaskArguments(TaskArguments):
             time_config = self._dtfrom((year, 1, 1)), self._dtto((year, 12, 31))
 
         elif rtype == Report.DAILY.value:
-            if rtime is None:
-                dtfrom = last_n_days(2)
+            if not rtime:
+                dtfrom = last_n_days(1)
             elif isinstance(rtime[0], dt.datetime):
                 dtfrom = rtime[0]
             elif str(rtime[0]).isdigit():

@@ -387,7 +387,7 @@ class TaskArguments(argparse.ArgumentParser):
         action = super().add_argument(*args, **kwargs)
         self._arg_dict.update({action.dest: action.default})
         if not hasattr(self.__class__, action.dest):
-            setattr(self.__class__, action.dest, property(lambda x: x._arg_dict.get(action.dest)))
+            setattr(self.__class__, action.dest, property(lambda x: x.arg_dict.get(action.dest)))
 
     def parse_args(self, args=None, namespace=None):
         parsed = super().parse_args(args, namespace)
