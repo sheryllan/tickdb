@@ -6,7 +6,7 @@ SERVERNAME = 'lcmquantldn1'
 TIMEZONE = 'UTC'
 WINDOW = ('18:00', '15:00')
 WINDOW_TZ = 'America/Chicago'
-SCHEDULE = 'ScheduleBase'
+SCHEDULE = 'BaseSchedule'
 SOURCE = 'qtg'
 
 DIR = os.path.dirname(__file__)

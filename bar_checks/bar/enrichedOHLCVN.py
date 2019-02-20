@@ -334,8 +334,8 @@ class SeriesChecker(object):
         if validation is None:
             validation = self.get_validator(barid)
         for error_type, error_value in validation.compound_validation(timestamps, self.valtypes):
-            date = error_value[SeriesValidation.START_TS].date() \
-                if error_type == SeriesValidation.GAP else error_value.date()
+            ts_key = SeriesValidation.START_TS if error_type == SeriesValidation.GAP else SeriesValidation.TIMESTAMP
+            date = error_value[ts_key].date()
             yield self.record_dict(date, barid, error_type, error_value)
 
 
