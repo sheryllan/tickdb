@@ -90,7 +90,6 @@ class ScheduleBound(object):
         self.closed = closed
         self.tz = tz
         self._schedule_list, self._schedule_dict = None, None
-        # self._keyfuncs = [lambda x: x[0].date(), lambda x: x[1].date()]
         self.schedule_list = schedules
 
     @property
@@ -99,7 +98,7 @@ class ScheduleBound(object):
 
     @schedule_list.setter
     def schedule_list(self, value):
-        value = value if value else []
+        value = value if value is not None else []
         self._schedule_list = SortedList(
             [(to_tz_datetime(start, to_tz=self.tz), to_tz_datetime(end, to_tz=self.tz)) for start, end in value])
         self._set_schedule_dict(self._schedule_list)

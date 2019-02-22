@@ -62,6 +62,7 @@ class EnrichedOHLCVN(object):
         NET_VOLUME = 'net_volume'
         VOLUME = 'volume'
 
+        TIME = 'time'
         SOFTWARE_TIME = 'software_time'
         TRIGGER_TIME = 'trigger_time'
         EXCH_TIME = 'exch_time'
@@ -135,8 +136,7 @@ class Lcmquantldn1(Basedb):
         DATA_FILE = 'data_file'
 
         TIMEZONE = pytz.UTC
-        DATETIME_COLS = [0]
-        TIME_IDX_COL = 0
+        TIME_COL_IDX = 0
 
         FILE_STRUCTURE = []
 

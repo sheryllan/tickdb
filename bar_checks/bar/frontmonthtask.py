@@ -16,8 +16,8 @@ def set_dbconfig(server):
 
 class FrontMonthCheckTask(en.CheckTask):
 
-    def __init__(self, task_args=TaskArguments()):
-        super().__init__(BarAccessor.factory(en.Server.HOSTNAME), task_args)
+    def __init__(self, taskargs_cls=TaskArguments):
+        super().__init__(BarAccessor.factory(en.Server.HOSTNAME), taskargs_cls)
         self.map_to_continuous = {self.args.PRODUCT: TagsC.PRODUCT,
                                   self.args.TYPE: TagsC.TYPE,
                                   self.args.EXPIRY: FieldsC.EXPIRY,

@@ -68,6 +68,7 @@ class InfluxBarAccessor(InfluxdbAccessor, BarAccessor):
 
 
 class Lcmquantldn1Accessor(Accessor, BarAccessor):
+    IN_FILE = 'in_file'
 
     def __init__(self):
         super().__init__(Lcmquantldn1)
@@ -131,18 +132,17 @@ class Lcmquantldn1Accessor(Accessor, BarAccessor):
 
     def read(self, filepath, filesys, tbclass):
         extension = splitext(filepath)[1]
-        if extension == '.gz':
-            compression = 'gzip'
-        else:
-            compression = 'infer'
+        compression = 'gzip' if extension == '.gz' else 'infer'
 
         with filesys.open(filepath) as fhandle:
-            return pd.read_csv(fhandle,
-                               parse_dates=to_iter(tbclass.DATETIME_COLS),
-                               date_parser=lambda x: tbclass.TIMEZONE.localize(pd.to_datetime(int(x))),
-                               index_col=tbclass.TIME_IDX_COL,
-                               compression=compression)\
-                .rename_axis(self.TIME_IDX)
+            df = pd.read_csv(fhandle, compression=compression)
+            time_col = df.columns[tbclass.TIME_COL_IDX]
+            df.rename(columns={time_col: str(time_col).strip('#')}, inplace=True)
+            index = df.iloc[:, tbclass.TIME_COL_IDX].map(lambda x: tbclass.TIMEZONE.localize(pd.to_datetime(int(x))))\
+                .rename(self.TIME_IDX)
+            df = df.set_index(index)
+            df[self.IN_FILE] = filepath
+            return df
 
     def get_data(self, table, empty=None, concat=True, **kwargs):
         file_mgr = self.fmanager_factory(table)
@@ -194,7 +194,6 @@ class Lcmquantldn1Accessor(Accessor, BarAccessor):
 
             elif not contracts.empty:
                 yield (time_from, time_to), contracts.loc[:time_from].iloc[-1]
-
 
 # fa = Lcmquantldn1Accessor()
 # # r = fa.find_files(product='ES', type='F', expiry='SEP2018', table='EnrichedOHLCVN', clock='M')

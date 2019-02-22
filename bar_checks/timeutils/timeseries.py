@@ -59,72 +59,74 @@ class StepTimestampGenerator(object):
 
 class SeriesValidation(object):
     # Validation type
-    GAP = 'gap'
-    REVERSION = 'reversion'
-    INVALID = 'invalid'
+    # GAP = 'gap'
+    # REVERSION = 'reversion'
+    # INVALID = 'invalid'
+    #
+    # LOC = 'loc'
+    # TIMESTAMP = 'timestamp'
+    # PRIOR_TS = 'prior_ts'
+    # CURR_TS = 'current_ts'
+    # START_TS = 'start_ts'
+    # END_TS = 'end_ts'
+    #
+    # AGGR_TYPES = {GAP}
+    # FLAG_TYPES = {REVERSION, INVALID}
+    #
+    # def __init__(self, tsgenerator: StepTimestampGenerator, schedule_bound: ScheduleBound):
+    #     self.tsgenerator = tsgenerator
+    #     self._schedule_bound = schedule_bound
+    #     self._tz = schedule_bound.tz
+    #     self._closed = schedule_bound.closed
+    #     self.valfunc_dict = {self.GAP: self.gaps,
+    #                          self.REVERSION: self.is_incremental,
+    #                          self.INVALID: self.is_valid}
 
-    TIMESTAMP = 'timestamp'
-    START_TS = 'start_ts'
-    END_TS = 'end_ts'
-
-    AGGR_TYPES = {GAP}
-    FALSE_MASK_TYPES = {REVERSION, INVALID}
-
-    def __init__(self, tsgenerator: StepTimestampGenerator, schedule_bound: ScheduleBound):
-        self.tsgenerator = tsgenerator
-        self._schedule_bound = schedule_bound
-        self._tz = schedule_bound.tz
-        self._closed = schedule_bound.closed
-        self.valfunc_dict = {self.GAP: self.gaps,
-                             self.REVERSION: self.is_time_increasing,
-                             self.INVALID: self.is_valid}
-
-    @classmethod
-    def is_time_increasing(cls, timestamps):
+    @staticmethod
+    def is_incremental(timestamps):
         max_pre = None
         for curr in timestamps:
-            if max_pre is None or max_pre <= curr:
-                max_pre = curr
-                yield True
-            else:
-                yield False
+            yield max_pre is None or max_pre <= curr
+            max_pre = curr
 
-    def gaps(self, timestamps):
-        grouped = normal_group_by(timestamps, self._schedule_bound.enclosing_schedule, True)
-        for bound in self._schedule_bound.schedule_list:
-            valids = self.tsgenerator.valid_date_range(*bound, self._closed, self._tz)
+    @staticmethod
+    def gaps(timestamps, tsgenerator, schedule_bound: ScheduleBound):
+        grouped = normal_group_by(timestamps, schedule_bound.enclosing_schedule, True)
+        for bound in schedule_bound.schedule_list:
+            valids = tsgenerator.valid_date_range(*bound, schedule_bound.closed, schedule_bound.tz)
             if valids.empty:
                 continue
 
             if bound not in grouped:
-                yield {self.START_TS: bound[0], self.END_TS: bound[1]}
+                yield bound
             else:
                 for contains, grouper in groupby(valids, lambda x: x in grouped[bound]):
                     if not contains:
                         ts_chunk = list(grouper)
-                        yield {self.START_TS: ts_chunk[0],  self.END_TS: ts_chunk[-1]}
+                        yield ts_chunk[0], ts_chunk[-1]
 
-    def is_valid(self, timestamps):
+    @staticmethod
+    def is_valid(timestamps, tsgenerator: StepTimestampGenerator):
         for ts in timestamps:
-            yield self.tsgenerator.is_valid(ts)
+            yield tsgenerator.is_valid(ts)
 
-    def compound_validation(self, timestamps: pd.DatetimeIndex, valtypes):
-        timestamps = to_tz_series(timestamps, to_tz=self._tz)
-        valfuncs = {vt: self.valfunc_dict[vt](timestamps) for vt in valtypes}
-
-        for ts in timestamps:
-            for vtype in valfuncs:
-                if vtype not in self.FALSE_MASK_TYPES:
-                    continue
-                vresult = next(valfuncs[vtype])
-                if not vresult:
-                    yield vtype, {self.TIMESTAMP: ts}
-
-        for vtype in valfuncs:
-            if vtype in self.AGGR_TYPES:
-                vfunc = valfuncs[vtype]
-                for vresult in vfunc:
-                    yield vtype, vresult
+    # def compound_validation(self, timestamps: pd.DatetimeIndex, valtypes):
+    #     timestamps = to_tz_series(timestamps, to_tz=self._tz)
+    #     valfuncs = {vt: self.valfunc_dict[vt](timestamps) for vt in valtypes}
+    #
+    #     for ts in timestamps:
+    #         for vtype in valfuncs:
+    #             if vtype not in self.FLAG_TYPES:
+    #                 continue
+    #             vresult = next(valfuncs[vtype])
+    #             if not vresult:
+    #                 yield vtype, {self.TIMESTAMP: ts}
+    #
+    #     for vtype in valfuncs:
+    #         if vtype in self.AGGR_TYPES:
+    #             vfunc = valfuncs[vtype]
+    #             for vresult in vfunc:
+    #                 yield vtype, vresult
 
 
 

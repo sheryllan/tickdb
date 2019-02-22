@@ -1,14 +1,14 @@
 import datetime as dt
 import logging
-
 import pytz
+from numpy import cumsum
 
+import bar.enrichedOHLCVN as enriched
 import bar.frontmonthtask as fmtask
 from bar.csvcheck_config import *
 from bar.enrichedOHLCVN import TaskArguments
 from timeutils.commonfuncs import last_n_days
-from xmlconverter import *
-from htmlprocessor import EmailSession
+from htmlprocessor import *
 
 
 class CsvTaskArguments(TaskArguments):
@@ -138,34 +138,74 @@ class CsvTaskArguments(TaskArguments):
         return rtype, time_config
 
 
-class CsvCheckTask(fmtask.FrontMonthCheckTask):
+class BarCheckTask(enriched.BarCheckTask):
     SOURCE = 'source'
 
+    @property
+    def xml_etree(self):
+        tree = super().xml_etree
+        root = tree.getroot()
+        root.set(self.SOURCE, ', '.join(to_iter(self.args.source)))
+        return tree
+
+    def split_html(self, html, size_limit):
+        def grouping(trs):
+            th_xpath = XPathBuilder.find_expr(tag=TH)
+            by = cumsum([True if tr.find(th_xpath) is not None else False for tr in trs])
+            for _, tr_group in groupby(zip(trs, by), lambda x: x[1]):
+                yield list(map(lambda x: x[0], tr_group))
+
+        tbody_xpath = XPathBuilder.find_expr(relation=XPathBuilder.DESCENDANT, tag=TBODY)
+        tr_xpath = XPathBuilder.find_expr(relation=XPathBuilder.DESCENDANT, tag=TR)
+        yield from split_from_element(html, tbody_xpath, tr_xpath, size_limit, grouping)
+
+
+class TimeSeriesCheckTask(enriched.TimeSeriesCheckTask):
+    SOURCE = 'source'
+
+    @property
+    def xml_etree(self):
+        tree = super().xml_etree
+        root = tree.getroot()
+        root.set(self.SOURCE, ', '.join(to_iter(self.args.source)))
+        return tree
+
+    def split_html(self, html, size_limit):
+        body_xpath = XPathBuilder.find_expr(relation=XPathBuilder.DESCENDANT, tag=BODY)
+        table_xpath = XPathBuilder.find_expr(relation=XPathBuilder.DESCENDANT, tag=TABLE)
+        yield from split_from_element(html, body_xpath, table_xpath, size_limit)
+
+
+class CsvCheckTask(fmtask.FrontMonthCheckTask):
+    # SOURCE = 'source'
+
     def __init__(self):
-        super().__init__(CsvTaskArguments())
+        super().__init__(CsvTaskArguments)
         self.check_out_xmls = {self.BAR_CHECK: lambda: self.args.barxml,
                                self.TIMESERIESE_CHECK: lambda: self.args.tsxml}
         self.check_out_htmls = {self.BAR_CHECK: lambda: self.args.barhtml,
                                 self.TIMESERIESE_CHECK: lambda: self.args.tshtml}
         self.email_titles = {self.BAR_CHECK: lambda *args: f'{BAR_TITLE} {" ".join(args)}',
                              self.TIMESERIESE_CHECK: lambda *args: f'{TS_TITLE} {" ".join(args)}'}
+        self.subtasks = {self.BAR_CHECK: BarCheckTask(self.args),
+                         self.TIMESERIESE_CHECK: TimeSeriesCheckTask(self.args)}
 
-    @property
-    def bar_etree(self):
-        tree = super().bar_etree
-        root = tree.getroot()
-        root.set(self.SOURCE, ', '.join(to_iter(self.args.source)))
-        return tree
-
-    @property
-    def ts_etree(self):
-        tree = super().ts_etree
-        root = tree.getroot()
-        root.set(self.SOURCE, ', '.join(to_iter(self.args.source)))
-        return tree
+    # @property
+    # def bar_etree(self):
+    #     tree = super().bar_etree
+    #     root = tree.getroot()
+    #     root.set(self.SOURCE, ', '.join(to_iter(self.args.source)))
+    #     return tree
+    #
+    # @property
+    # def ts_etree(self):
+    #     tree = super().ts_etree
+    #     root = tree.getroot()
+    #     root.set(self.SOURCE, ', '.join(to_iter(self.args.source)))
+    #     return tree
 
     def run_report_task(self, **kwargs):
-        checks_to_run = {check: self.check_etrees[check]() for check in self.args.check}
+        checks_to_run = {check: self.subtasks[check].xml_etree for check in self.args.check}
         xmls = self.run_check_task(checks_to_run, **kwargs)
         htmls = {}
         for check, xml in xmls.items():
@@ -183,7 +223,7 @@ class CsvCheckTask(fmtask.FrontMonthCheckTask):
         with EmailSession(*self.args.login) as session:
             for check, html in reports.items():
                 title = self.email_titles[check](*args)
-                split_funcs = self.check_split_funcs[check]
+                split_funcs = self.subtasks[check].split_html
                 session.email_html(self.args.recipients, html, title, split_funcs)
 
     def run(self, **kwargs):
