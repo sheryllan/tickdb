@@ -1,7 +1,7 @@
 import datetime as dt
 import re
 import paramiko
-from os.path import basename, splitext
+from os.path import basename
 from itertools import zip_longest
 
 from dataaccess import *
@@ -68,10 +68,13 @@ class InfluxBarAccessor(InfluxdbAccessor, BarAccessor):
 
 
 class Lcmquantldn1Accessor(Accessor, BarAccessor):
-    IN_FILE = 'in_file'
+    ServerConfig = Lcmquantldn1()
+    ServerConfig.EnrichedOHLCVN.Fields = StrEnum('Fields',
+                                                 {**Lcmquantldn1.EnrichedOHLCVN.Fields.__members__,
+                                                  'IN_FILE': 'in_file'})
 
     def __init__(self):
-        super().__init__(Lcmquantldn1)
+        super().__init__(self.ServerConfig)
 
     def fmanager_factory(self, type_name):
         if type_name == Lcmquantldn1.EnrichedOHLCVN.name():
@@ -79,15 +82,37 @@ class Lcmquantldn1Accessor(Accessor, BarAccessor):
         elif type_name == Lcmquantldn1.ContinuousContract.name():
             return self.ContinuousContractManager()
 
-    class EnrichedManager(FileManager):
-        def __init__(self, arg_time_from, arg_time_to):
-            super().__init__(Lcmquantldn1.TABLES[Lcmquantldn1.EnrichedOHLCVN.name()])
-            self.arg_time_from = arg_time_from
-            self.arg_time_to = arg_time_to
-
+    class CommonFileManager(FileManager):
         def directories(self, **kwargs):
             kwargs[self.config.TABLE] = self.config.name()
             return [kwargs.get(x) for x in self.config.FILE_STRUCTURE]
+
+        def find_files(self, filesys, **kwargs):
+            raise NotImplementedError
+
+        def get_file_handle(self, filepath, filesys):
+            open_func = self.any_compressed_open(filepath)
+            return open_func(filesys.open(filepath, mode='rb'))
+
+        def get_table(self, fhandle):
+            tbclass = self.config
+            df = pd.read_table(fhandle, sep=tbclass.SEPARATOR, comment='#',
+                               skipinitialspace=True, skip_blank_lines=True)
+            index = df.iloc[:, tbclass.TIME_COL_IDX].map(lambda x: tbclass.TIMEZONE.localize(pd.to_datetime(int(x))))
+            df = df.set_index(index)
+            return df
+
+        def read(self, filepath, filesys):
+            with self.get_file_handle(filepath, filesys) as fhandle:
+                return self.get_table(fhandle)
+
+    class EnrichedManager(CommonFileManager):
+        def __init__(self, arg_time_from, arg_time_to):
+            super().__init__(Lcmquantldn1Accessor.ServerConfig.TABLES
+                             [Lcmquantldn1Accessor.ServerConfig.EnrichedOHLCVN.name()])
+            self.arg_time_from = arg_time_from
+            self.arg_time_to = arg_time_to
+            self.in_file = self.config.Fields.IN_FILE
 
         def date_from_path(self, path):
             match = re.search(self.config.FILENAME_DATE_PATTERN, basename(path))
@@ -107,9 +132,25 @@ class Lcmquantldn1Accessor(Accessor, BarAccessor):
             fpaths = pd.DataFrame((self.date_from_path(x), x) for x in files if self.date_from_path(x) is not None)
             return pd.Series() if fpaths.empty else fpaths.set_index(0).sort_index().loc[date_from: date_to, 1]
 
-    class ContinuousContractManager(FileManager):
+        def get_file_handle(self, filepath, filesys):
+            fhandle = super().get_file_handle(filepath, filesys)
+            line = fhandle.readline().decode()
+            while self.config.SEPARATOR not in line:
+                line = fhandle.readline().decode()
+            match = re.search('(?<= )[^# ]', line)
+            offset = 0 if match is None else match.start() - len(line)
+            fhandle.seek(offset, 1)
+            return fhandle
+
+        def read(self, filepath, filesys):
+            df = super().read(filepath, filesys)
+            df[self.in_file] = filepath
+            return df
+
+    class ContinuousContractManager(CommonFileManager):
         def __init__(self):
-            super().__init__(Lcmquantldn1.TABLES[Lcmquantldn1.ContinuousContract.name()])
+            super().__init__(Lcmquantldn1Accessor.ServerConfig.TABLES
+                             [Lcmquantldn1Accessor.ServerConfig.ContinuousContract.name()])
             self.tz = self.config.TIMEZONE
 
         def data_file(self, path):
@@ -117,32 +158,25 @@ class Lcmquantldn1Accessor(Accessor, BarAccessor):
             dirs_dict = {k: v for k, v in zip_longest(self.config.FILE_STRUCTURE, dirs)}
             return self.config.FILENAME_FORMAT.format(*(dirs_dict.get(s, '') for s in self.config.FILENAME_STRUCTURE))
 
-        def directories(self, **kwargs):
-            kwargs[self.config.TABLE] = self.config.name()
-            kwargs[self.config.DATA_FILE] = self.data_file
-            return [kwargs.get(x) for x in self.config.FILE_STRUCTURE]
-
         def find_files(self, filesys, **kwargs):
+            kwargs[self.config.DATA_FILE] = self.data_file
             return pd.Series(self.rcsv_listdir(filesys, self.config.BASEDIR, self.directories(**kwargs)))
+
+        def get_file_handle(self, filepath, filesys):
+            fhandle = super().get_file_handle(filepath, filesys)
+
+            line = fhandle.readline().decode()
+            while self.config.SEPARATOR not in line:
+                line = fhandle.readline().decode()
+            match = re.search('[^#]', line)
+            offset = 0 if match is None else match.start() - len(line)
+            fhandle.seek(offset, 1)
+            return fhandle
 
     def transport_session(self):
         transport = paramiko.Transport(self.config.HOSTNAME)
         transport.connect(username=self.config.USERNAME, password=self.config.PASSWORD)
         return transport
-
-    def read(self, filepath, filesys, tbclass):
-        extension = splitext(filepath)[1]
-        compression = 'gzip' if extension == '.gz' else 'infer'
-
-        with filesys.open(filepath) as fhandle:
-            df = pd.read_csv(fhandle, compression=compression)
-            time_col = df.columns[tbclass.TIME_COL_IDX]
-            df.rename(columns={time_col: str(time_col).strip('#')}, inplace=True)
-            index = df.iloc[:, tbclass.TIME_COL_IDX].map(lambda x: tbclass.TIMEZONE.localize(pd.to_datetime(int(x))))\
-                .rename(self.TIME_IDX)
-            df = df.set_index(index)
-            df[self.IN_FILE] = filepath
-            return df
 
     def get_data(self, table, empty=None, concat=True, **kwargs):
         file_mgr = self.fmanager_factory(table)
@@ -162,7 +196,8 @@ class Lcmquantldn1Accessor(Accessor, BarAccessor):
                 if files_found.empty:
                     return empty
 
-                data_df = pd.concat(self.read(f, sftp, file_mgr.config) for f in files_found)
+                data_df = pd.concat(file_mgr.read(f, sftp) for f in files_found)
+                data_df.rename_axis(self.TIME_IDX, inplace=True)
                 if data_df.empty:
                     return empty
                 results = list(bound_by_time(data_df))

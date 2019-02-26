@@ -11,6 +11,19 @@ from timeutils.commonfuncs import last_n_days
 from htmlprocessor import *
 
 
+def set_dbconfig(server):
+    global DataAccessor
+    global Server, Barid
+    global Enriched, Fields
+
+    fmtask.set_dbconfig(server)
+    DataAccessor = fmtask.DataAccessor
+    Server = fmtask.Server
+    Barid = fmtask.Barid
+    Enriched = Server.TABLES[Server.EnrichedOHLCVN.name()]
+    Fields = Enriched.Fields
+
+
 class CsvTaskArguments(TaskArguments):
     SOURCE = 'source'
 
@@ -160,8 +173,30 @@ class BarCheckTask(enriched.BarCheckTask):
         yield from split_from_element(html, tbody_xpath, tr_xpath, size_limit, grouping)
 
 
+class SeriesChecker(enriched.SeriesChecker):
+
+    @classmethod
+    def invalid(cls, irow):
+        error_dict = super().invalid(irow)
+        errorval = error_dict[cls.ERRORVAL]
+        errorval.update({Fields.IN_FILE: irow[1][Fields.IN_FILE]})
+        return error_dict
+
+    @classmethod
+    def reversion(cls, irow, irow_pre):
+        error_dict = super().reversion(irow, irow_pre)
+        errorval = error_dict[cls.ERRORVAL]
+        prior_ts, curr_ts = errorval[cls.PRIOR_TS], errorval[cls.CURR_TS]
+        prior_ts.update({Fields.IN_FILE: irow_pre[1][Fields.IN_FILE]})
+        curr_ts.update({Fields.IN_FILE: irow[1][Fields.IN_FILE]})
+        return error_dict
+
+
 class TimeSeriesCheckTask(enriched.TimeSeriesCheckTask):
     SOURCE = 'source'
+
+    def __init__(self, args):
+        super().__init__(args, SeriesChecker)
 
     @property
     def xml_etree(self):
@@ -177,10 +212,9 @@ class TimeSeriesCheckTask(enriched.TimeSeriesCheckTask):
 
 
 class CsvCheckTask(fmtask.FrontMonthCheckTask):
-    # SOURCE = 'source'
 
     def __init__(self):
-        super().__init__(CsvTaskArguments)
+        super().__init__(DataAccessor, CsvTaskArguments)
         self.check_out_xmls = {self.BAR_CHECK: lambda: self.args.barxml,
                                self.TIMESERIESE_CHECK: lambda: self.args.tsxml}
         self.check_out_htmls = {self.BAR_CHECK: lambda: self.args.barhtml,
@@ -189,20 +223,6 @@ class CsvCheckTask(fmtask.FrontMonthCheckTask):
                              self.TIMESERIESE_CHECK: lambda *args: f'{TS_TITLE} {" ".join(args)}'}
         self.subtasks = {self.BAR_CHECK: BarCheckTask(self.args),
                          self.TIMESERIESE_CHECK: TimeSeriesCheckTask(self.args)}
-
-    # @property
-    # def bar_etree(self):
-    #     tree = super().bar_etree
-    #     root = tree.getroot()
-    #     root.set(self.SOURCE, ', '.join(to_iter(self.args.source)))
-    #     return tree
-    #
-    # @property
-    # def ts_etree(self):
-    #     tree = super().ts_etree
-    #     root = tree.getroot()
-    #     root.set(self.SOURCE, ', '.join(to_iter(self.args.source)))
-    #     return tree
 
     def run_report_task(self, **kwargs):
         checks_to_run = {check: self.subtasks[check].xml_etree for check in self.args.check}
@@ -249,7 +269,7 @@ class CsvCheckTask(fmtask.FrontMonthCheckTask):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    fmtask.set_dbconfig(SERVERNAME)
+    set_dbconfig(SERVERNAME)
 
     task = CsvCheckTask()
     task.run()

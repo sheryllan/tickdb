@@ -98,15 +98,28 @@
 			<table class="content">
 				<xsl:for-each select="key('error_type', concat(generate-id(parent::bar), '|', local-name(.)))">					
 					<tr>
-						<xsl:for-each select="@*">
-							<td headers="Error detail">
-								<span style="font-weight:bold"><xsl:value-of select="local-name(.)"/>:</span>&#160;<xsl:value-of select="."/>
-							</td>
-						</xsl:for-each>	
+						<xsl:choose>
+							<xsl:when test="*">
+								<xsl:for-each select="*">
+									<td headers="Error detail">
+										<div><span style="font-weight:bold"><xsl:value-of select="local-name(.)"/></span></div>
+										<xsl:for-each select="@*">
+											<div><span style="font-weight:bold"><xsl:value-of select="local-name(.)"/>:</span>&#160;<xsl:value-of select="."/></div>
+										</xsl:for-each>
+									</td>
+								</xsl:for-each>	
+							</xsl:when>
+							<xsl:otherwise>
+								<xsl:for-each select="@*">
+									<td headers="Error detail">
+										<span style="font-weight:bold"><xsl:value-of select="local-name(.)"/>:</span>&#160;<xsl:value-of select="."/>
+									</td>
+								</xsl:for-each>	
+							</xsl:otherwise>
+						</xsl:choose>
 					</tr>
 				</xsl:for-each>
 			</table>
 		</td>
 	</xsl:template>
-		
 </xsl:stylesheet>

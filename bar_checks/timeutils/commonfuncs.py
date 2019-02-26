@@ -103,6 +103,7 @@ def isin_closed(value: dt.datetime, start: dt.datetime=None, end: dt.datetime=No
     right = True if end is None else (value <= end if include_end else value < end)
     return left and right
 
+
 # def last_n_years(n=1, d=dt.date.today()):
 #     return d + relativedelta(years=-n)
 #

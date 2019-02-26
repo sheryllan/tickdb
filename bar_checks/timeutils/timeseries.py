@@ -58,29 +58,6 @@ class StepTimestampGenerator(object):
 
 
 class SeriesValidation(object):
-    # Validation type
-    # GAP = 'gap'
-    # REVERSION = 'reversion'
-    # INVALID = 'invalid'
-    #
-    # LOC = 'loc'
-    # TIMESTAMP = 'timestamp'
-    # PRIOR_TS = 'prior_ts'
-    # CURR_TS = 'current_ts'
-    # START_TS = 'start_ts'
-    # END_TS = 'end_ts'
-    #
-    # AGGR_TYPES = {GAP}
-    # FLAG_TYPES = {REVERSION, INVALID}
-    #
-    # def __init__(self, tsgenerator: StepTimestampGenerator, schedule_bound: ScheduleBound):
-    #     self.tsgenerator = tsgenerator
-    #     self._schedule_bound = schedule_bound
-    #     self._tz = schedule_bound.tz
-    #     self._closed = schedule_bound.closed
-    #     self.valfunc_dict = {self.GAP: self.gaps,
-    #                          self.REVERSION: self.is_incremental,
-    #                          self.INVALID: self.is_valid}
 
     @staticmethod
     def is_incremental(timestamps):
@@ -109,26 +86,6 @@ class SeriesValidation(object):
     def is_valid(timestamps, tsgenerator: StepTimestampGenerator):
         for ts in timestamps:
             yield tsgenerator.is_valid(ts)
-
-    # def compound_validation(self, timestamps: pd.DatetimeIndex, valtypes):
-    #     timestamps = to_tz_series(timestamps, to_tz=self._tz)
-    #     valfuncs = {vt: self.valfunc_dict[vt](timestamps) for vt in valtypes}
-    #
-    #     for ts in timestamps:
-    #         for vtype in valfuncs:
-    #             if vtype not in self.FLAG_TYPES:
-    #                 continue
-    #             vresult = next(valfuncs[vtype])
-    #             if not vresult:
-    #                 yield vtype, {self.TIMESTAMP: ts}
-    #
-    #     for vtype in valfuncs:
-    #         if vtype in self.AGGR_TYPES:
-    #             vfunc = valfuncs[vtype]
-    #             for vresult in vfunc:
-    #                 yield vtype, vresult
-
-
 
 
 # region unused

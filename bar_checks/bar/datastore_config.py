@@ -137,6 +137,7 @@ class Lcmquantldn1(Basedb):
 
         TIMEZONE = pytz.UTC
         TIME_COL_IDX = 0
+        SEPARATOR = ','
 
         FILE_STRUCTURE = []
 
@@ -182,7 +183,3 @@ class Lcmquantldn1(Basedb):
     TABLES = {EnrichedOHLCVN.name(): EnrichedOHLCVN(),
               ContinuousContract.name(): ContinuousContract()}
 
-
-dbbox_configs = {'quantdb1': Quantdb1,
-                 'quantsim1': Quantsim1,
-                 'lcmquantldn1': Lcmquantldn1}

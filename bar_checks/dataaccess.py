@@ -2,6 +2,11 @@ import stat
 import posixpath
 from influxdb import DataFrameClient
 
+import gzip
+import bz2
+import lzma
+import zipfile
+
 from influxcommon import *
 
 
@@ -30,6 +35,19 @@ class InfluxdbAccessor(Accessor):
 class FileManager(object):
     def __init__(self, config):
         self.config = config
+
+    @classmethod
+    def any_compressed_open(cls, filepath):
+        if filepath.endswith('gz'):
+            return gzip.open
+        elif filepath.endswith('bz2'):
+            return bz2.open
+        elif filepath.endswith('xz'):
+            return lzma.open
+        elif filepath.endswith('zip'):
+            return zipfile.ZipFile
+        else:
+            return open
 
     @classmethod
     def rcsv_listdir(cls, filesys, path, dirs):

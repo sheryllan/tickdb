@@ -1,7 +1,7 @@
 from commonlib import *
 
-
 TIME_IDX = 'time'
+
 
 def logic_join(terms, relation='AND'):
     separator = ' ' + relation.strip() + ' '
@@ -29,7 +29,7 @@ def time_terms(time_from=None, time_to=None, include_from=True, include_to=True)
     try:
         if time_from is not None:
             ts_from = time_from.isoformat() if time_from.tzinfo is not None else str(time_from)
-            terms.append(where_term(TIME_IDX, ts_from,  '>=' if include_from else '>'))
+            terms.append(where_term(TIME_IDX, ts_from, '>=' if include_from else '>'))
         if time_to is not None:
             ts_to = time_to.isoformat() if time_to.tzinfo is not None else str(time_to)
             terms.append(where_term(TIME_IDX, ts_to, '<=' if include_to else '<'))

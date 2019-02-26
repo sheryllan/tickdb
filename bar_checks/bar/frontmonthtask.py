@@ -1,23 +1,28 @@
 import logging
 from pandas import DataFrame
 
-import bar.enrichedOHLCVN as en
-from bar.bardataaccess import BarAccessor
+import bar.enrichedOHLCVN as enriched
 from bar.enrichedOHLCVN import TaskArguments
 
 
 def set_dbconfig(server):
+    global DataAccessor
+    global Server, Barid
     global Continous, TagsC, FieldsC
-    en.set_dbconfig(server)
-    Continous = en.Server.TABLES[en.Server.ContinuousContract.name()]
+
+    enriched.set_dbconfig(server)
+    DataAccessor = enriched.DataAccessor
+    Server = enriched.Server
+    Barid = enriched.Barid
+    Continous = Server.TABLES[Server.ContinuousContract.name()]
     TagsC = Continous.Tags
     FieldsC = Continous.Fields
 
 
-class FrontMonthCheckTask(en.CheckTask):
+class FrontMonthCheckTask(enriched.CheckTask):
 
-    def __init__(self, taskargs_cls=TaskArguments):
-        super().__init__(BarAccessor.factory(en.Server.HOSTNAME), taskargs_cls)
+    def __init__(self, data_accessor, taskargs_cls=TaskArguments):
+        super().__init__(data_accessor, taskargs_cls)
         self.map_to_continuous = {self.args.PRODUCT: TagsC.PRODUCT,
                                   self.args.TYPE: TagsC.TYPE,
                                   self.args.EXPIRY: FieldsC.EXPIRY,
