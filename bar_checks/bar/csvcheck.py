@@ -151,7 +151,7 @@ class CsvTaskArguments(TaskArguments):
         return rtype, time_config
 
 
-class BarCheckTask(enriched.BarCheckTask):
+class SubCheckTask(enriched.SubCheckTask):
     SOURCE = 'source'
 
     @property
@@ -160,6 +160,20 @@ class BarCheckTask(enriched.BarCheckTask):
         root = tree.getroot()
         root.set(self.SOURCE, ', '.join(to_iter(self.args.source)))
         return tree
+
+    def bar_series_check_xml(self, data, bar, root=None):
+        raise NotImplementedError
+
+
+class BarCheckTask(enriched.BarCheckTask, SubCheckTask):
+
+    @property
+    def xml_file(self):
+        return self.args.barxml
+
+    @property
+    def html_file(self):
+        return self.args.barhtml
 
     def split_html(self, html, size_limit):
         def grouping(trs):
@@ -171,6 +185,9 @@ class BarCheckTask(enriched.BarCheckTask):
         tbody_xpath = XPathBuilder.find_expr(relation=XPathBuilder.DESCENDANT, tag=TBODY)
         tr_xpath = XPathBuilder.find_expr(relation=XPathBuilder.DESCENDANT, tag=TR)
         yield from split_from_element(html, tbody_xpath, tr_xpath, size_limit, grouping)
+
+    def email_title(self, *args):
+        return f'{BAR_TITLE} {" ".join(args)}'
 
 
 class SeriesChecker(enriched.SeriesChecker):
@@ -192,35 +209,38 @@ class SeriesChecker(enriched.SeriesChecker):
         return error_dict
 
 
-class TimeSeriesCheckTask(enriched.TimeSeriesCheckTask):
-    SOURCE = 'source'
+class TimeSeriesCheckTask(enriched.TimeSeriesCheckTask, SubCheckTask):
 
     def __init__(self, args):
         super().__init__(args, SeriesChecker)
 
     @property
-    def xml_etree(self):
-        tree = super().xml_etree
-        root = tree.getroot()
-        root.set(self.SOURCE, ', '.join(to_iter(self.args.source)))
-        return tree
+    def xml_file(self):
+        return self.args.tsxml
+
+    @property
+    def html_file(self):
+        return self.args.tshtml
 
     def split_html(self, html, size_limit):
         body_xpath = XPathBuilder.find_expr(relation=XPathBuilder.DESCENDANT, tag=BODY)
         table_xpath = XPathBuilder.find_expr(relation=XPathBuilder.DESCENDANT, tag=TABLE)
         yield from split_from_element(html, body_xpath, table_xpath, size_limit)
 
+    def email_title(self, *args):
+        return f'{TS_TITLE} {" ".join(args)}'
+
 
 class CsvCheckTask(fmtask.FrontMonthCheckTask):
 
     def __init__(self):
         super().__init__(DataAccessor, CsvTaskArguments)
-        self.check_out_xmls = {self.BAR_CHECK: lambda: self.args.barxml,
-                               self.TIMESERIESE_CHECK: lambda: self.args.tsxml}
-        self.check_out_htmls = {self.BAR_CHECK: lambda: self.args.barhtml,
-                                self.TIMESERIESE_CHECK: lambda: self.args.tshtml}
-        self.email_titles = {self.BAR_CHECK: lambda *args: f'{BAR_TITLE} {" ".join(args)}',
-                             self.TIMESERIESE_CHECK: lambda *args: f'{TS_TITLE} {" ".join(args)}'}
+        # self.check_out_xmls = {self.BAR_CHECK: lambda: self.args.barxml,
+        #                        self.TIMESERIESE_CHECK: lambda: self.args.tsxml}
+        # self.check_out_htmls = {self.BAR_CHECK: lambda: self.args.barhtml,
+        #                         self.TIMESERIESE_CHECK: lambda: self.args.tshtml}
+        # self.email_titles = {self.BAR_CHECK: lambda *args: f'{BAR_TITLE} {" ".join(args)}',
+        #                      self.TIMESERIESE_CHECK: lambda *args: f'{TS_TITLE} {" ".join(args)}'}
         self.subtasks = {self.BAR_CHECK: BarCheckTask(self.args),
                          self.TIMESERIESE_CHECK: TimeSeriesCheckTask(self.args)}
 
@@ -233,16 +253,16 @@ class CsvCheckTask(fmtask.FrontMonthCheckTask):
             htmls[check] = html
 
             if self.args.xml:
-                write_etree(xml, self.check_out_xmls[check]())
+                write_etree(xml, self.subtasks[check].xml_file)
             if self.args.html:
-                write_etree(html, self.check_out_htmls[check](), method='html')
+                write_etree(html, self.subtasks[check].html_file, method='html')
 
         return htmls
 
     def email_reports(self, reports, *args):
         with EmailSession(*self.args.login) as session:
             for check, html in reports.items():
-                title = self.email_titles[check](*args)
+                title = self.subtasks[check].email_title(*args)
                 split_funcs = self.subtasks[check].split_html
                 session.email_html(self.args.recipients, html, title, split_funcs)
 

@@ -3,10 +3,52 @@ import re
 import paramiko
 from os.path import basename
 from itertools import zip_longest
+from types import GeneratorType
 
 from dataaccess import *
 from bar.datastore_config import *
 from timeutils.commonfuncs import isin_closed, to_tz_datetime
+
+
+class ResultData(object):
+
+    def __init__(self, df_or_groupby_obj, keys):
+        self._dataframe = None
+        self._groupby_obj = None
+        self.keys = keys
+
+        if isinstance(df_or_groupby_obj, pd.DataFrame):
+            self._dataframe = df_or_groupby_obj
+        else:
+            self._groupby_obj = df_or_groupby_obj
+
+        if self._dataframe is None and self._groupby_obj is None:
+            raise ValueError('Invalid initialization: the first argument must be set(not None)')
+
+    @property
+    def dataframe(self):
+        if self._dataframe is None:
+            self._dataframe = pd.concat(self.groupby_obj.values())
+        return self._dataframe
+
+    @property
+    def groupby_obj(self):
+        if self._groupby_obj is None:
+            grouby_obj = self.dataframe.groupby(self.keys)
+            self._groupby_obj = {k: v for k, v in grouby_obj}
+        elif isinstance(self._groupby_obj, GeneratorType):
+            self._groupby_obj = {k: v for k, v in self}
+
+        return self._groupby_obj
+
+    def __iter__(self):
+        if isinstance(self._groupby_obj, dict):
+            yield from self._groupby_obj.items()
+        else:
+            groupby_obj = {}
+            for key, key_df in self._groupby_obj:
+                yield key, key_df
+                groupby_obj[key] = key_df
 
 
 class BarAccessor(object):
@@ -129,7 +171,11 @@ class Lcmquantldn1Accessor(Accessor, BarAccessor):
             kwargs.update({self.config.YEAR: years})
 
             files = self.rcsv_listdir(filesys, self.config.BASEDIR, self.directories(**kwargs))
-            fpaths = pd.DataFrame((self.date_from_path(x), x) for x in files if self.date_from_path(x) is not None)
+
+            try:
+                fpaths = pd.DataFrame((self.date_from_path(x), x) for x in files if self.date_from_path(x) is not None)
+            except ValueError:
+
             return pd.Series() if fpaths.empty else fpaths.set_index(0).sort_index().loc[date_from: date_to, 1]
 
         def get_file_handle(self, filepath, filesys):
@@ -178,17 +224,15 @@ class Lcmquantldn1Accessor(Accessor, BarAccessor):
         transport.connect(username=self.config.USERNAME, password=self.config.PASSWORD)
         return transport
 
+    def bound_by_time(self, df, keys, time_from=None, time_to=None, closed=None):
+        for key, key_df in df.groupby(keys):
+            i, j = bound_indices(key_df.index, lambda x: isin_closed(x, time_from, time_to, closed))
+            yield dict(zip(keys, key)), key_df.iloc[i:j]
+
     def get_data(self, table, empty=None, concat=True, **kwargs):
         file_mgr = self.fmanager_factory(table)
         time_from, time_to = self.set_arg_time_range(kwargs, file_mgr.config.TIMEZONE)
         closed = self.set_arg_includes(kwargs)
-
-        def bound_by_time(df):
-            tags = file_mgr.config.Tags.values()
-            for tag_key, tag_df in df.groupby(file_mgr.config.Tags.values()):
-                i, j = bound_indices(tag_df.index,
-                                     lambda x: isin_closed(x, time_from, time_to, closed))
-                yield dict(zip(tags, tag_key)), tag_df.iloc[i:j]
 
         with self.transport_session() as transport:
             with paramiko.SFTPClient.from_transport(transport) as sftp:
@@ -200,8 +244,8 @@ class Lcmquantldn1Accessor(Accessor, BarAccessor):
                 data_df.rename_axis(self.TIME_IDX, inplace=True)
                 if data_df.empty:
                     return empty
-                results = list(bound_by_time(data_df))
-                return pd.concat(y for x, y in results) if concat else results
+                results = self.bound_by_time(data_df, file_mgr.config.Tags.values(), time_from, time_to, closed)
+                return pd.concat(y for x, y in results) if concat else list(results)
 
     def get_continuous_contracts(self, **kwargs):
         table_config = self.config.TABLES[self.config.ContinuousContract.name()]

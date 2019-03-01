@@ -597,10 +597,6 @@ class CheckTask(object):
 
     def __init__(self, data_accessor, taskargs_cls=TaskArguments):
         self.accessor = data_accessor
-        self.bscheduler = BScheduler()
-        self.schecker = None
-        self.schedule_bound = None
-
         self.args = self.expand_taskargs(taskargs_cls)()
         self.args.set_defaults(**{self.args.CHECK: [self.BAR_CHECK, self.TIMESERIESE_CHECK]})
 

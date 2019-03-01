@@ -115,7 +115,7 @@ def source_from(src):
     try:
         with open(src) as fh:
             return fh.read()
-    except Exception:
+    except EnvironmentError:
         return src
 
 
@@ -124,15 +124,21 @@ def bound_indices(items, bound_func):
         raise ValueError("'items' object must be subscriptable")
 
     i, j = 0, len(items)
-    not_head = not bound_func(items[i])
-    not_tail = not bound_func(items[j - 1])
-    while i < j and (not_head or not_tail):
+    if j == 0:
+        return i, j
+
+    not_head, not_tail = True, True
+    while i < j:
+        not_head = not_head and (not bound_func(items[i]))
+        not_tail = not_tail and (not bound_func(items[j - 1]))
+
+        if (not not_head) and (not not_tail):
+            break
+
         if not_head:
             i += 1
-            not_head = not bound_func(items[i])
         if not_tail:
             j -= 1
-            not_tail = not bound_func(items[j - 1])
 
     return i, j
 
