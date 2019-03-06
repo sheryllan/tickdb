@@ -21,8 +21,10 @@ LOGIN = ('slan@liquidcapital.com', 'atnahqxjoemdtpqa')
 RECIPIENTS = ['slan@liquidcapital.com']
 
 
-class Report(Enum):
+class Report(str, Enum):
     ANNUAL = 'annual'
     DAILY = 'daily'
     DATES = 'dates'
 
+    def __str__(self):
+        return self._value_

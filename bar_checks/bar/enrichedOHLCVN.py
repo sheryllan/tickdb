@@ -7,7 +7,7 @@ from types import MappingProxyType
 
 from pandas.tseries import offsets
 
-from bar.bardataaccess import BarAccessor
+from bar.bardataaccess import BarAccessor, ResultData
 from dataframeutils import *
 from timeutils.timeseries import *
 from xmlconverter import *
@@ -410,21 +410,22 @@ class TaskArguments(argparse.ArgumentParser):
         self.add_argument('--' + self.CLOSED, nargs='?', type=str,
                           help="""defines how the window will be closed: "left" or "right", 
                                           defaults to None(both sides)""")
+
+        self.add_argument('--' + self.TIMEZONE, nargs='*', type=str, default=pytz.UTC,
+                          help='the timezone for the check to run')
         self.add_argument('--' + self.DTFROM, nargs='*', type=int, default=last_n_days(),
                           help='the start time in integers(yyyy, M, D, [optional HH, mm, ss]), yesterday by default')
         self.add_argument('--' + self.DTTO, nargs='*', type=int, default=last_n_days(0),
                           help='the end time in integers(yyyy, M, D, [optional HH, mm, ss]), today by default')
-        self.add_argument('--' + self.TIMEZONE, nargs='*', type=str, default=pytz.UTC,
-                          help='the timezone for the check to run')
 
         self.add_argument('--' + self.CHECK, nargs='*', type=str,
                           help='the type(s) of check to run, all if not set')
 
     def add_argument(self, *args, **kwargs):
         action = super().add_argument(*args, **kwargs)
-        self._arg_dict.update({action.dest: action.default})
         if not hasattr(self.__class__, action.dest):
             setattr(self.__class__, action.dest, property(lambda x: x.arg_dict.get(action.dest)))
+        self.update_args(**{action.dest: action.default})
 
     def parse_args(self, args=None, namespace=None):
         parsed = super().parse_args(args, namespace)
@@ -438,7 +439,7 @@ class TaskArguments(argparse.ArgumentParser):
                 self._arg_dict[k] = getattr(self, '_' + k, lambda x: x)(v)
 
     def max_dtto(self):
-        return to_tz_datetime(date=last_n_days(), time=MAX_TIME, to_tz=self.timezone)
+        return pd.Timestamp(to_tz_datetime(date=last_n_days(), time=MAX_TIME, to_tz=self.timezone))
 
     @property
     def arg_dict(self):
@@ -495,15 +496,15 @@ class SubCheckTask(object):
 
     @property
     def xml_etree(self):
-        root = rcsv_addto_etree({self.PRODUCT: ', '.join(to_iter(self.args.product)),
-                                 self.TIME: f'{self.args.dtfrom.round("s")} - {self.args.dtto.round("s")}',
-                                 self.WINDOW: '{} - {} ({})'.format(*self.args.window, str(self.args.window_tz))},
-                                self.REPORT)
+        root = rcsv_addto_element({self.PRODUCT: ', '.join(to_iter(self.args.product)),
+                                   self.TIME: f'{self.args.dtfrom.round("s")} - {self.args.dtto.round("s")}',
+                                   self.WINDOW: '{} - {} ({})'.format(*self.args.window, str(self.args.window_tz))},
+                                  self.REPORT)
         return to_elementtree(root, self.xsl_pi)
 
     def barid_element(self, value, fill_value='*'):
         bar = Barid(value, fill_value).asdict()
-        return rcsv_addto_etree(bar, self.BAR)
+        return rcsv_addto_element(bar, self.BAR)
 
     def bar_series_check_xml(self, data, bar, root=None):
         raise NotImplementedError
@@ -553,7 +554,7 @@ class BarCheckTask(SubCheckTask):
         logging.info('Running bar check for {}'.format(barid))
         results = self.run_check(data)
         if not results.empty:
-            root.append(df_to_etree(results, self.barid_element(barid), self.RECORD, None))
+            root.append(df_to_element(results, self.barid_element(barid), self.RECORD, None))
 
         return xml
 
@@ -576,10 +577,13 @@ class TimeSeriesCheckTask(SubCheckTask):
         curr_pos = 0
         for date_dict, dated_df in to_grouped_df(validated, [self.checker.DATE, self.checker.TIMEZONE]):
             error_df = dated_df.set_index(self.checker.ERRORTYPE)
-            new_subele = rcsv_addto_etree(error_df[self.checker.ERRORVAL], self.barid_element(barid))
+            new_subele = rcsv_addto_element(error_df[self.checker.ERRORVAL], self.barid_element(barid))
+
+            while curr_pos < len(root) and root[curr_pos].tag != self.RECORD:
+                curr_pos += 1
 
             if curr_pos >= len(root) or date_dict[self.checker.DATE] < root[curr_pos].get(self.checker.DATE):
-                new_ele = rcsv_addto_etree(date_dict, self.RECORD)
+                new_ele = rcsv_addto_element(date_dict, self.RECORD)
                 new_ele.append(new_subele)
                 root.insert(curr_pos, new_ele)
             elif date_dict[self.checker.DATE] == root[curr_pos].get(self.checker.DATE):
@@ -660,10 +664,8 @@ class CheckTask(object):
         new_kwargs.update({self.map_to_enriched.get(k, k): v for k, v in self.args.arg_dict.items()})
         return self.accessor.get_data(Enriched.name(), **new_kwargs)
 
-    def check_integrated(self, data, checks_to_run):
-        grouped = data.groupby(Tags.values()) if isinstance(data, pd.DataFrame) else data
-
-        for bar, bar_df in grouped:
-            for check, xml in checks_to_run.items():
-                checks_to_run[check] = self.subtasks[check].bar_series_check_xml(bar_df, bar, xml)
-        return checks_to_run
+    def check_integrated(self, data: ResultData, check_xmls):
+        for bar, bar_df in data:
+            for check, xml in check_xmls.items():
+                check_xmls[check] = self.subtasks[check].bar_series_check_xml(bar_df, bar, xml)
+        return check_xmls

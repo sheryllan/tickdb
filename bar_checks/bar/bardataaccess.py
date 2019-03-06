@@ -28,7 +28,7 @@ class ResultData(object):
     @property
     def dataframe(self):
         if self._dataframe is None:
-            self._dataframe = pd.concat(self.groupby_obj.values())
+            self._dataframe = pd.concat(self.groupby_obj.values()) if self.groupby_obj else pd.DataFrame()
         return self._dataframe
 
     @property
@@ -170,13 +170,22 @@ class Lcmquantldn1Accessor(Accessor, BarAccessor):
             years = None if any(x is None for x in (date_from, date_to)) else (date_from.year, date_to.year)
             kwargs.update({self.config.YEAR: years})
 
-            files = self.rcsv_listdir(filesys, self.config.BASEDIR, self.directories(**kwargs))
+            def parse_date():
+                for f in self.rcsv_listdir(filesys, self.config.BASEDIR, self.directories(**kwargs)):
+                    try:
+                        date = self.date_from_path(f)
+                        if date is not None:
+                            yield True, date, f
+                    except ValueError as e:
+                        yield False, e, f
 
-            try:
-                fpaths = pd.DataFrame((self.date_from_path(x), x) for x in files if self.date_from_path(x) is not None)
-            except ValueError:
+            files = pd.DataFrame(parse_date())
+            if files.empty:
+                return pd.Series(), None
 
-            return pd.Series() if fpaths.empty else fpaths.set_index(0).sort_index().loc[date_from: date_to, 1]
+            valid_files = files[files[0]].set_index(1).sort_index().loc[date_from: date_to, 2]
+            invalid_files = files[~files[0]].set_index(1)[2]
+            return valid_files, None if invalid_files.empty else invalid_files
 
         def get_file_handle(self, filepath, filesys):
             fhandle = super().get_file_handle(filepath, filesys)
@@ -206,7 +215,10 @@ class Lcmquantldn1Accessor(Accessor, BarAccessor):
 
         def find_files(self, filesys, **kwargs):
             kwargs[self.config.DATA_FILE] = self.data_file
-            return pd.Series(self.rcsv_listdir(filesys, self.config.BASEDIR, self.directories(**kwargs)))
+            try:
+                return pd.Series(self.rcsv_listdir(filesys, self.config.BASEDIR, self.directories(**kwargs))), None
+            except EnvironmentError as e:
+                return pd.Series(), pd.Series([e.filename], e)
 
         def get_file_handle(self, filepath, filesys):
             fhandle = super().get_file_handle(filepath, filesys)
@@ -219,39 +231,46 @@ class Lcmquantldn1Accessor(Accessor, BarAccessor):
             fhandle.seek(offset, 1)
             return fhandle
 
+    class ResultData(ResultData):
+        def __init__(self, df_or_groupby_obj, keys, invalid_files=None):
+            super().__init__(df_or_groupby_obj, keys)
+            self.invalid_files = invalid_files
+
     def transport_session(self):
         transport = paramiko.Transport(self.config.HOSTNAME)
         transport.connect(username=self.config.USERNAME, password=self.config.PASSWORD)
         return transport
 
     def bound_by_time(self, df, keys, time_from=None, time_to=None, closed=None):
-        for key, key_df in df.groupby(keys):
+        for key_values, key_df in df.groupby(keys):
             i, j = bound_indices(key_df.index, lambda x: isin_closed(x, time_from, time_to, closed))
-            yield dict(zip(keys, key)), key_df.iloc[i:j]
+            yield key_values, key_df.iloc[i:j]
 
-    def get_data(self, table, empty=None, concat=True, **kwargs):
+    def get_data(self, table, empty=None, **kwargs):
         file_mgr = self.fmanager_factory(table)
         time_from, time_to = self.set_arg_time_range(kwargs, file_mgr.config.TIMEZONE)
         closed = self.set_arg_includes(kwargs)
 
         with self.transport_session() as transport:
             with paramiko.SFTPClient.from_transport(transport) as sftp:
-                files_found = file_mgr.find_files(sftp, **kwargs)
-                if files_found.empty:
-                    return empty
+                valid_files, invalid_files = file_mgr.find_files(sftp, **kwargs)
+                keys = file_mgr.config.Tags.values()
+                if valid_files.empty:
+                    return self.ResultData(empty, keys, invalid_files)
 
-                data_df = pd.concat(file_mgr.read(f, sftp) for f in files_found)
-                data_df.rename_axis(self.TIME_IDX, inplace=True)
+                data_df = pd.concat(file_mgr.read(f, sftp) for f in valid_files)
                 if data_df.empty:
-                    return empty
-                results = self.bound_by_time(data_df, file_mgr.config.Tags.values(), time_from, time_to, closed)
-                return pd.concat(y for x, y in results) if concat else list(results)
+                    return self.ResultData(empty, keys, invalid_files)
+
+                data_df.rename_axis(self.TIME_IDX, inplace=True)
+                results = self.bound_by_time(data_df, keys, time_from, time_to, closed)
+                return self.ResultData(results, keys, invalid_files)
 
     def get_continuous_contracts(self, **kwargs):
         table_config = self.config.TABLES[self.config.ContinuousContract.name()]
         time_from, time_to = self.set_arg_time_range(kwargs, table_config.TIMEZONE)
         new_kwargs = {k: v for k, v in kwargs.items() if k not in [self.TIME_FROM, self.TIME_TO]}
-        for _, contracts in self.get_data(table_config.name(), empty=[], concat=False, **new_kwargs):
+        for _, contracts in self.get_data(table_config.name(), empty=[], **new_kwargs):
             contracts = contracts.sort_index()
             filtered = contracts.loc[time_from: time_to]
 

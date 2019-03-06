@@ -20,7 +20,7 @@ def validate_element(element):
     return element
 
 
-def df_to_etree(df, root, row_ele=None, index_name=False):
+def df_to_element(df, root, row_ele=None, index_name=False):
     if not isinstance(df, pd.DataFrame):
         df = pd.DataFrame(df)
 
@@ -29,12 +29,12 @@ def df_to_etree(df, root, row_ele=None, index_name=False):
         subelement = etree.SubElement(xml, i if row_ele is None else row_ele)
         if index_name is not False:
             subelement.set(df.index.name if index_name is None else index_name, str(i))
-        rcsv_addto_etree(row, subelement)
+        rcsv_addto_element(row, subelement)
 
     return xml
 
 
-def rcsv_addto_etree(value, root, **kwargs):
+def rcsv_addto_element(value, root, **kwargs):
     if isinstance(root, str):
         root = etree.Element(root)
     elif not etree.iselement(root):
@@ -43,14 +43,14 @@ def rcsv_addto_etree(value, root, **kwargs):
     if isinstance(value, (Mapping, pd.Series)):
         for fk, fv in value.items():
             if nontypes_iterable(fv):
-                root.append(rcsv_addto_etree(fv, fk, **kwargs))
+                root.append(rcsv_addto_element(fv, fk, **kwargs))
             else:
                 root.set(fk, str(fv))
     elif isinstance(value, pd.DataFrame):
-        df_to_etree(value, root, **kwargs)
+        df_to_element(value, root, **kwargs)
     elif nontypes_iterable(value):
         for val in value:
-            rcsv_addto_etree(val, root, **kwargs)
+            rcsv_addto_element(val, root, **kwargs)
     else:
         root.text = str(value)
 

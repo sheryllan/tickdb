@@ -94,10 +94,10 @@ def closed_convert(closed):
     return include_start, include_end
 
 
-def isin_closed(value: dt.datetime, start: dt.datetime=None, end: dt.datetime=None, closed=None):
-    if value.tzinfo is None:
-        value = to_tz_datetime(value, to_tz=start.tzinfo)
+def isin_closed(value: dt.datetime, start: dt.datetime=dt.datetime.min, end: dt.datetime=dt.datetime.max, closed=None):
     include_start, include_end = closed_convert(closed)
+    start = to_tz_datetime(start, to_tz=value.tzinfo)
+    end = to_tz_datetime(end, to_tz=value.tzinfo)
 
     left = True if start is None else (value >= start if include_start else value > start)
     right = True if end is None else (value <= end if include_end else value < end)

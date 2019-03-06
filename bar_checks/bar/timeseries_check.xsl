@@ -9,9 +9,10 @@
 		<html>
 			<head>
 				<style media="screen" type="text/css">
+					div.container { margin: 5px; }
 					table { 
 					text-align:center; border-collapse: collapse; margin: 25px 0;
-					border-left-style: hidden; border-right-style: hidden;
+					border-left-style: hidden; border-right-style: hidden; width: 100%; 
 					font-family:"Lucida Grande","Lucida Sans Unicode","Bitstream Vera Sans","Trebuchet MS",Verdana,sans-serif; }
 					
 					table th, td { color: #000000; font-size: small; text-align:center; padding: 0; border: 2px solid #f2f2f2;}
@@ -25,21 +26,53 @@
 					table.content td { padding: 2px 5px; }
 					
 					tr:nth-child(odd) { background-color: #DDDDFF; }
-					tr:nth-child(even) { background-color: #FFFFFF; }			
+					tr:nth-child(even) { background-color: #FFFFFF; }	
+					
+					.stressed { font-weight:bold; }		
 				</style>
 			</head>
 			
 			<body>
-				<div>
-					<h3>Time Series Integrity Check</h3>
-					<xsl:for-each select="@*">
-						<div><xsl:value-of select="concat(translate(substring(local-name(.), 1, 1), $vLower, $vUpper), substring(local-name(.), 2))" />: <xsl:value-of select="." /></div>
-					</xsl:for-each>
+				<div class="container">
+					<div>
+						<h3>Time Series Integrity Check</h3>
+						<xsl:for-each select="@*">
+							<div><xsl:value-of select="concat(translate(substring(local-name(.), 1, 1), $vLower, $vUpper), substring(local-name(.), 2))" />: <xsl:value-of select="." /></div>
+						</xsl:for-each>
+					</div>
+					<xsl:apply-templates select="invalid_files" mode="invalid_files" />
+					<xsl:apply-templates select="record" mode="record" />
 				</div>
-				<xsl:apply-templates select="record" mode="record" />
 			</body>			
 		</html>
 
+	</xsl:template>
+	
+	
+	<xsl:template match="invalid_files" mode="invalid_files">
+		<table>
+			<caption>Invalid Files</caption>
+			<thead>
+				<tr>
+					<xsl:for-each select="*[1]">
+						<xsl:for-each select="@*">
+							<th class="lv1">
+								<xsl:value-of select="concat(translate(substring(local-name(.), 1, 1), $vLower, $vUpper), substring(local-name(.), 2))" />
+							</th>
+						</xsl:for-each>
+					</xsl:for-each>
+				</tr>
+			</thead>
+			<tbody>
+				<xsl:for-each select="*">
+					<tr>
+						<xsl:for-each select="@*">
+							<td><xsl:value-of select="."/></td>				
+						</xsl:for-each>
+					</tr>
+				</xsl:for-each>
+			</tbody>
+		</table>
 	</xsl:template>
 	
 	
@@ -102,9 +135,9 @@
 							<xsl:when test="*">
 								<xsl:for-each select="*">
 									<td headers="Error detail">
-										<div><span style="font-weight:bold"><xsl:value-of select="local-name(.)"/></span></div>
+										<div><span class="stressed"><xsl:value-of select="local-name(.)"/></span></div>
 										<xsl:for-each select="@*">
-											<div><span style="font-weight:bold"><xsl:value-of select="local-name(.)"/>:</span>&#160;<xsl:value-of select="."/></div>
+											<div><span class="stressed"><xsl:value-of select="local-name(.)"/>:</span>&#160;<xsl:value-of select="."/></div>
 										</xsl:for-each>
 									</td>
 								</xsl:for-each>	
@@ -112,7 +145,7 @@
 							<xsl:otherwise>
 								<xsl:for-each select="@*">
 									<td headers="Error detail">
-										<span style="font-weight:bold"><xsl:value-of select="local-name(.)"/>:</span>&#160;<xsl:value-of select="."/>
+										<span class="stressed"><xsl:value-of select="local-name(.)"/>:</span>&#160;<xsl:value-of select="."/>
 									</td>
 								</xsl:for-each>	
 							</xsl:otherwise>

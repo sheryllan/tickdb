@@ -8,11 +8,8 @@
 		<html>
 			<head>
 				<style media="screen" type="text/css">
-					dl dt { font-weight: bold; padding: 7px 0;}
-					dl dd { display:inline-block; }
-					dl dd:before { content: '\00a0\2022\00a0\00a0'; color:#999;	color:rgba(0,0,0,0.5); font-size:11px; }
-					
-					table { border-collapse:collapse; margin: 25px 0; text-align:center; 
+					div.container { margin: 5px; }					
+					table { border-collapse:collapse; margin: 25px 0; text-align:center; width: 100%; 
 					font-family:"Lucida Grande","Lucida Sans Unicode","Bitstream Vera Sans","Trebuchet MS",Verdana,sans-serif}
 					table th, td { padding:3px 7px 2px; font-size: small; border: 2px solid #f2f2f2; }
 					table caption { text-align: left; white-space: nowrap; overflow: hidden; }
@@ -32,24 +29,26 @@
 			</head>
 			
 			<body>
-				<div>
-					<h3>Bar Integrity Check</h3>
-					<xsl:for-each select="@*">
-						<div><xsl:value-of select="concat(translate(substring(local-name(.), 1, 1), $vLower, $vUpper), substring(local-name(.), 2))" />: <xsl:value-of select="." /></div>
-					</xsl:for-each>
+				<div class="container">
+					<div>
+						<h3>Bar Integrity Check</h3>
+						<xsl:for-each select="@*">
+							<div><xsl:value-of select="concat(translate(substring(local-name(.), 1, 1), $vLower, $vUpper), substring(local-name(.), 2))" />: <xsl:value-of select="." /></div>
+						</xsl:for-each>
+					</div>
+					<table> 
+						<thead>
+							<tr>
+								<xsl:apply-templates select="bar[1]/record[1]" mode="header" />
+							</tr>
+						</thead>
+						<tbody>
+							<xsl:apply-templates select="bar" mode="bar">
+								<xsl:with-param name="colspan" select="count(bar[1]/record[1]/*) + 1"/>
+							</xsl:apply-templates>
+						</tbody>
+					</table>
 				</div>
-				<table> 
-					<thead>
-						<tr>
-							<xsl:apply-templates select="bar[1]/record[1]" mode="header" />
-						</tr>
-					</thead>
-					<tbody>
-						<xsl:apply-templates select="bar" mode="bar">
-							<xsl:with-param name="colspan" select="count(bar[1]/record[1]/*) + 1"/>
-						</xsl:apply-templates>
-					</tbody>
-				</table>
 			</body>
 			
 		</html>

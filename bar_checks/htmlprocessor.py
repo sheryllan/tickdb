@@ -23,7 +23,7 @@ def get_str(element):
     return etree_to_str(element, xml_declaration=False, method='html', decode=True)
 
 
-def target_group_pos(parent, is_target_func):
+def extract_target_pos(parent, is_target_func):
     children = list(parent)
     parent[:] = []
     other_children = list(parent)
@@ -47,7 +47,7 @@ def split_from_element(html, el_xpath, desc_xpath, buffer_size, grouping=lambda 
             yield get_str(html)
             return
 
-        target_pos = dict(target_group_pos(parent, lambda x: id(x) in target_ids))
+        target_pos = dict(extract_target_pos(parent, lambda x: id(x) in target_ids))
         if not target_pos:
             for child in parent:
                 yield from rcsv_split(child, target_ids, parent_buffer)
@@ -97,6 +97,8 @@ class EmailSession(AbstractContextManager):
             msg['Subject'] = subject
             msg.attach(body)
             self.smtp.sendmail(self.user, msg_to, msg.as_string())
+            txt = os.linesep.join(content)
+            print(txt)
 
     def __enter__(self):
         self.login()

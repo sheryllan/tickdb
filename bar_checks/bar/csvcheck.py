@@ -47,9 +47,9 @@ class CsvTaskArguments(TaskArguments):
 
     REPORT_NAME_SEP = '.'
     REPORT_TIME_FMT = {
-        Report.ANNUAL.value: lambda *args: f'{args[0].year}',
-        Report.DAILY.value: lambda *args: args[0].strftime('%Y%m%d'),
-        Report.DATES.value: lambda *args: f'{args[0].strftime("%Y%m%d")}-{args[1].strftime("%Y%m%d")}'}
+        Report.ANNUAL: lambda *args: f'{args[0].year}',
+        Report.DAILY: lambda *args: args[0].strftime('%Y%m%d'),
+        Report.DATES: lambda *args: f'{args[0].strftime("%Y%m%d")}-{args[1].strftime("%Y%m%d")}'}
 
     REPORT_SOURCE_MAP = {SOURCE_MAP['qtg']: 'QTG',
                          SOURCE_MAP['reactor']: 'Reactor'}
@@ -80,7 +80,7 @@ class CsvTaskArguments(TaskArguments):
         self.add_argument('--' + self.RECIPIENTS, nargs='*', type=str, default=RECIPIENTS,
                           help='the email address of recipients')
 
-        self.add_argument('--' + self.REPORT_CONFIG, nargs='*', type=str, default=Report.DATES.value,
+        self.add_argument('--' + self.REPORT_CONFIG, nargs='*', type=str, default=Report.DATES,
                           help='the configuration of report to run, including the type and time setting')
 
     def report_path(self, name, extension):
@@ -119,9 +119,9 @@ class CsvTaskArguments(TaskArguments):
         report_config = to_iter(value, ittype=tuple)
         rtype, rtime = str(report_config[0]), report_config[1:]
 
-        if rtype == Report.ANNUAL.value:
+        if rtype == Report.ANNUAL:
             if not rtime:
-                year = dt.datetime.now(pytz.timezone(self.TIMEZONE)).year - 1
+                year = dt.datetime.now(self.timezone).year - 1
             elif isinstance(rtime[0], dt.datetime):
                 year = rtime[0].year
             elif str(rtime[0]).isdigit():
@@ -130,7 +130,7 @@ class CsvTaskArguments(TaskArguments):
                 raise ValueError('Invalid time setting for report_config: must be a datetime or positive integer')
             time_config = self._dtfrom((year, 1, 1)), self._dtto((year, 12, 31))
 
-        elif rtype == Report.DAILY.value:
+        elif rtype == Report.DAILY:
             if not rtime:
                 dtfrom = last_n_days(1)
             elif isinstance(rtime[0], dt.datetime):
@@ -142,7 +142,7 @@ class CsvTaskArguments(TaskArguments):
             dtto = last_n_days(-1, dtfrom)
             time_config = self._dtfrom(dtfrom), self._dtto(dtto)
 
-        elif rtype == Report.DATES.value:
+        elif rtype == Report.DATES:
             time_config = self.dtfrom, self.dtto
 
         else:
@@ -210,6 +210,10 @@ class SeriesChecker(enriched.SeriesChecker):
 
 
 class TimeSeriesCheckTask(enriched.TimeSeriesCheckTask, SubCheckTask):
+    INVALID_FILES = 'invalid_files'
+    INVALID_DETAILS = 'file'
+    INVALID_FILENAME = 'filename'
+    INVALID_ERRMSG = 'error'
 
     def __init__(self, args):
         super().__init__(args, SeriesChecker)
@@ -223,30 +227,44 @@ class TimeSeriesCheckTask(enriched.TimeSeriesCheckTask, SubCheckTask):
         return self.args.tshtml
 
     def split_html(self, html, size_limit):
-        body_xpath = XPathBuilder.find_expr(relation=XPathBuilder.DESCENDANT, tag=BODY)
-        table_xpath = XPathBuilder.find_expr(relation=XPathBuilder.DESCENDANT, tag=TABLE)
-        yield from split_from_element(html, body_xpath, table_xpath, size_limit)
+        # body_xpath = XPathBuilder.find_expr(relation=XPathBuilder.DESCENDANT, tag=BODY)
+        # table_xpath = XPathBuilder.find_expr(relation=XPathBuilder.DESCENDANT, tag=TABLE)
+        # yield from split_from_element(html, body_xpath, table_xpath, size_limit)
+        yield get_str(html)
 
     def email_title(self, *args):
         return f'{TS_TITLE} {" ".join(args)}'
+
+    def update_invalid_files(self, value: pd.Series, root):
+        root = to_elementtree(root).getroot()
+
+        if len(root) == 0 or root[0].tag != self.INVALID_FILES:
+            root.insert(0, validate_element(self.INVALID_FILES))
+
+        rcsv_addto_element(pd.DataFrame(list(value.items()),
+                                        [self.INVALID_DETAILS] * len(value),
+                                        [self.INVALID_ERRMSG, self.INVALID_FILENAME]), root[0])
 
 
 class CsvCheckTask(fmtask.FrontMonthCheckTask):
 
     def __init__(self):
         super().__init__(DataAccessor, CsvTaskArguments)
-        # self.check_out_xmls = {self.BAR_CHECK: lambda: self.args.barxml,
-        #                        self.TIMESERIESE_CHECK: lambda: self.args.tsxml}
-        # self.check_out_htmls = {self.BAR_CHECK: lambda: self.args.barhtml,
-        #                         self.TIMESERIESE_CHECK: lambda: self.args.tshtml}
-        # self.email_titles = {self.BAR_CHECK: lambda *args: f'{BAR_TITLE} {" ".join(args)}',
-        #                      self.TIMESERIESE_CHECK: lambda *args: f'{TS_TITLE} {" ".join(args)}'}
         self.subtasks = {self.BAR_CHECK: BarCheckTask(self.args),
                          self.TIMESERIESE_CHECK: TimeSeriesCheckTask(self.args)}
 
+    def check_integrated(self, data, check_xmls):
+        if data.invalid_files is not None:
+            ts_subtask = self.subtasks[self.TIMESERIESE_CHECK]
+            if self.TIMESERIESE_CHECK not in check_xmls:
+                check_xmls[self.TIMESERIESE_CHECK] = ts_subtask.xml_etree
+            ts_subtask.update_invalid_files(data.invalid_files, check_xmls[self.TIMESERIESE_CHECK])
+
+        return super().check_integrated(data, check_xmls)
+
     def run_report_task(self, **kwargs):
-        checks_to_run = {check: self.subtasks[check].xml_etree for check in self.args.check}
-        xmls = self.run_check_task(checks_to_run, **kwargs)
+        check_xmls = {check: self.subtasks[check].xml_etree for check in self.args.check}
+        xmls = self.run_check_task(check_xmls, **kwargs)
         htmls = {}
         for check, xml in xmls.items():
             html = to_styled_xml(xml)
@@ -295,5 +313,4 @@ if __name__ == '__main__':
     task.run()
     # products = ['ES', 'NQ', 'YM', 'ZN', 'ZB', 'UB', '6E', '6J', '6B', 'GC', 'CL']
     # task.set_taskargs(True)
-    # task.email_reports({task.BAR_CHECK: ['reports/html/QTG.2019.ES.bar_check.html',
-    #                                      'reports/html/QTG.2019.ZN.bar_check.html']})
+    # task.email_reports({task.TIMESERIESE_CHECK: ['reports/html/QTG.20190217-20190222.series_check.html']})
