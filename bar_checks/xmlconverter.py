@@ -92,12 +92,7 @@ def write_etree(element, outpath=None, pis=None, xml_declaration=True, method='x
 
 
 def to_styled_xml(xml, xsl=None):
-    doc = xml
-    if isinstance(xml, str):
-        doc = etree.parse(xml)
-    elif etree.iselement(xml):
-        doc = etree.ElementTree(xml)
-
+    doc = to_elementtree(xml)
     if xsl is None:
         pi = find_first_n(doc.xpath(XPathBuilder.PI), lambda x: x.target == XSL_PI_TARGET)
         if not etree.iselement(pi):

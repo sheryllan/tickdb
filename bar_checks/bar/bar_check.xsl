@@ -6,6 +6,10 @@
 	
 	<xsl:template match="report">
 		<html>
+			<xsl:attribute name="status">
+				<xsl:if test="*">0</xsl:if>
+				<xsl:if test="not(*)">1</xsl:if>
+			</xsl:attribute>
 			<head>
 				<style media="screen" type="text/css">
 					div.container { margin: 5px; }					
@@ -36,23 +40,42 @@
 							<div><xsl:value-of select="concat(translate(substring(local-name(.), 1, 1), $vLower, $vUpper), substring(local-name(.), 2))" />: <xsl:value-of select="." /></div>
 						</xsl:for-each>
 					</div>
-					<table> 
-						<thead>
-							<tr>
-								<xsl:apply-templates select="bar[1]/record[1]" mode="header" />
-							</tr>
-						</thead>
-						<tbody>
-							<xsl:apply-templates select="bar" mode="bar">
-								<xsl:with-param name="colspan" select="count(bar[1]/record[1]/*) + 1"/>
-							</xsl:apply-templates>
-						</tbody>
-					</table>
+					<xsl:apply-templates select="bar[1]" mode="table" />
 				</div>
 			</body>
 			
 		</html>
 	</xsl:template>	
+	
+	
+	<xsl:template match="bar" mode="table">
+		<table> 
+			<thead>
+				<tr>
+					<xsl:apply-templates select="record[1]" mode="header" />
+				</tr>
+			</thead>
+			<tbody>
+				<xsl:apply-templates select="../bar" mode="bar">
+					<xsl:with-param name="colspan" select="count(record[1]/*) + 1"/>
+				</xsl:apply-templates>
+			</tbody>
+		</table>
+		
+	</xsl:template>
+	
+	
+	<xsl:template match="record" mode="header">
+		<th class="lv1" id="{local-name(@time)}" scope="col">
+			 <xsl:value-of select="local-name(@time)"/>
+		</th>
+		<xsl:for-each select="./*">            
+			 <th class="lv1" id="{local-name(.)}" scope="col">
+				 <xsl:value-of select="local-name(.)"/>
+			</th>
+		</xsl:for-each>
+	</xsl:template>
+	
 	
 	<xsl:template match="record" mode="record">
 		<td>
@@ -121,18 +144,6 @@
 			<tr>
 				<xsl:apply-templates select="." mode="record"/>
 			</tr>
-		</xsl:for-each>
-	</xsl:template>
-	
-	
-	<xsl:template match="record" mode="header">
-		<th class="lv1" id="{local-name(@time)}" scope="col">
-			 <xsl:value-of select="local-name(@time)"/>
-		</th>
-		<xsl:for-each select="./*">            
-			 <th class="lv1" id="{local-name(.)}" scope="col">
-				 <xsl:value-of select="local-name(.)"/>
-			</th>
 		</xsl:for-each>
 	</xsl:template>
 		

@@ -1,14 +1,13 @@
 import datetime as dt
 import logging
-import pytz
 from numpy import cumsum
 
 import bar.enrichedOHLCVN as enriched
 import bar.frontmonthtask as fmtask
 from bar.csvcheck_config import *
 from bar.enrichedOHLCVN import TaskArguments
-from timeutils.commonfuncs import last_n_days
 from htmlprocessor import *
+from timeutils.commonfuncs import last_n_days
 
 
 def set_dbconfig(server):
@@ -153,6 +152,7 @@ class CsvTaskArguments(TaskArguments):
 
 class SubCheckTask(enriched.SubCheckTask):
     SOURCE = 'source'
+    TITLE = 'Check Report'
 
     @property
     def xml_etree(self):
@@ -161,11 +161,19 @@ class SubCheckTask(enriched.SubCheckTask):
         root.set(self.SOURCE, ', '.join(to_iter(self.args.source)))
         return tree
 
+    def html_status(self, html):
+        root = to_elementtree(html).getroot()
+        return int(root.get('status'))
+
+    def email_title(self, status, *args):
+        return f'{status}: {self.TITLE} {" ".join(args)}'
+
     def bar_series_check_xml(self, data, bar, root=None):
         raise NotImplementedError
 
 
 class BarCheckTask(enriched.BarCheckTask, SubCheckTask):
+    TITLE = BAR_TITLE
 
     @property
     def xml_file(self):
@@ -185,9 +193,6 @@ class BarCheckTask(enriched.BarCheckTask, SubCheckTask):
         tbody_xpath = XPathBuilder.find_expr(relation=XPathBuilder.DESCENDANT, tag=TBODY)
         tr_xpath = XPathBuilder.find_expr(relation=XPathBuilder.DESCENDANT, tag=TR)
         yield from split_from_element(html, tbody_xpath, tr_xpath, size_limit, grouping)
-
-    def email_title(self, *args):
-        return f'{BAR_TITLE} {" ".join(args)}'
 
 
 class SeriesChecker(enriched.SeriesChecker):
@@ -210,6 +215,8 @@ class SeriesChecker(enriched.SeriesChecker):
 
 
 class TimeSeriesCheckTask(enriched.TimeSeriesCheckTask, SubCheckTask):
+    TITLE = TS_TITLE
+
     INVALID_FILES = 'invalid_files'
     INVALID_DETAILS = 'file'
     INVALID_FILENAME = 'filename'
@@ -231,9 +238,6 @@ class TimeSeriesCheckTask(enriched.TimeSeriesCheckTask, SubCheckTask):
         # table_xpath = XPathBuilder.find_expr(relation=XPathBuilder.DESCENDANT, tag=TABLE)
         # yield from split_from_element(html, body_xpath, table_xpath, size_limit)
         yield get_str(html)
-
-    def email_title(self, *args):
-        return f'{TS_TITLE} {" ".join(args)}'
 
     def update_invalid_files(self, value: pd.Series, root):
         root = to_elementtree(root).getroot()
@@ -284,10 +288,12 @@ class CsvCheckTask(fmtask.FrontMonthCheckTask):
 
     def email_reports(self, reports, *args):
         with EmailSession(*self.args.login) as session:
-            for check, html in reports.items():
-                title = self.subtasks[check].email_title(*args)
+            for check, htmls in reports.items():
+                status = all(self.subtasks[check].html_status(html) for html in htmls)
+                status = 'PASS' if status else 'FAIL'
+                title = self.subtasks[check].email_title(status, *args)
                 split_funcs = self.subtasks[check].split_html
-                session.email_html(self.args.recipients, html, title, split_funcs)
+                session.email_html(self.args.recipients, htmls, title, split_funcs)
 
     def run(self):
         self.set_taskargs(True)
@@ -295,19 +301,17 @@ class CsvCheckTask(fmtask.FrontMonthCheckTask):
         # self.set_taskargs(**{self.args.DTFROM: rtime[0], self.args.DTTO: rtime[1]})
 
         for src in to_iter(self.args.source, ittype=iter):
-            self.set_taskargs(**{self.args.SOURCE: src})
-            if not self.args.consolidate:
-                reports = defaultdict(list)
-                for prod in self.args.product:
-                    self.set_taskargs(**{self.args.PRODUCT: prod,
-                                         self.args.DTFROM: rtime[0],
-                                         self.args.DTTO: rtime[1]})  # temp solution
-                    htmls = self.run_report_task(**self.fixed_accessor_args)
-                    for check, html in htmls.items():
-                        reports[check].append(html)
-            else:
-                self.set_taskargs(**{self.args.DTFROM: rtime[0], self.args.DTTO: rtime[1]})
-                reports = self.run_report_task(**self.fixed_accessor_args)
+            reports = defaultdict(list)
+            products = [self.args.product] if self.args.consolidate else to_iter(self.args.product)
+            for prod in products:
+                self.set_taskargs(**{
+                    self.args.SOURCE: src,
+                    self.args.PRODUCT: prod,
+                    self.args.DTFROM: rtime[0],
+                    self.args.DTTO: rtime[1]})  # temp solution
+                htmls = self.run_report_task(**self.fixed_accessor_args)
+                for check, html in htmls.items():
+                    reports[check].append(html)
 
             if self.args.email:
                 self.email_reports(reports, self.args.REPORT_TIME_FMT[rtype](*rtime), f'({src})')

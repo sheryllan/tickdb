@@ -7,6 +7,10 @@
 	
 	<xsl:template match="report">
 		<html>
+			<xsl:attribute name="status">
+				<xsl:if test="*">0</xsl:if>
+				<xsl:if test="not(*)">1</xsl:if>
+			</xsl:attribute>
 			<head>
 				<style media="screen" type="text/css">
 					div.container { margin: 5px; }
@@ -90,6 +94,7 @@
 		</table>
 	</xsl:template>
 	
+	
 	<xsl:template match="bar" mode="header">
 		<tr>
 			<th id="Bar" class="span lv1" colspan="{count(@*[name()!='id'])}" scope="colgroup">Bar</th>
@@ -107,6 +112,7 @@
 		</tr>
 	</xsl:template>
 	
+	
 	<xsl:template match="bar" mode="bar">
 		<xsl:variable name="error_types" select="*[generate-id()=generate-id(key('error_type', concat(generate-id(current()), '|', local-name(.)))[1])]" />
 		<tr>
@@ -121,6 +127,7 @@
 			<tr> <xsl:apply-templates select="." mode="error" /> </tr>
 		</xsl:for-each>	
 	</xsl:template>
+	
 	
 	<xsl:template match="bar/child::*" mode="error">
 		<th headers="Error type" class="lv3" > 
