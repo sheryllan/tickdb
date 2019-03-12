@@ -52,11 +52,11 @@ class FrontMonthCheckTask(enriched.CheckTask):
                 logging.info('Start: {}, End: {}, {}'.format(time_start, time_end, contract_info))
 
                 empty_data = [({self.map_to_enriched.get(k, k): v for k, v in field_dict.items()}, DataFrame())]
-                data = self.get_bar_data(**field_dict,
-                                         **{self.args.DTFROM: time_start,
-                                            self.args.DTTO: time_end,
-                                            self.accessor.INCLUDE_TO: time_end == dtto},
-                                         empty=empty_data)
+                data_params = {**kwargs, **field_dict,
+                               self.args.DTFROM: time_start,
+                               self.args.DTTO: time_end,
+                               self.accessor.INCLUDE_TO: time_end == dtto}
+                data = self.get_bar_data(**data_params, empty=empty_data)
                 xmls = self.check_integrated(data, check_xmls)
             except Exception as e:
                 logging.error(e, exc_info=True)

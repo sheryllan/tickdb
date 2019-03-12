@@ -14,14 +14,14 @@ from htmlprocessor import *
 def set_dbconfig(server):
     global DataAccessor
     global Server, Barid
-    global Enriched, Fields
+    global Enriched, Fields, Tags
 
     fmtask.set_dbconfig(server)
     DataAccessor = fmtask.DataAccessor
     Server = fmtask.Server
     Barid = fmtask.Barid
     Enriched = Server.TABLES[Server.EnrichedOHLCVN.name()]
-    Fields = Enriched.Fields
+    Fields, Tags = Enriched.Fields, Enriched.Tags
 
 
 class CsvTaskArguments(TaskArguments):
@@ -121,7 +121,7 @@ class CsvTaskArguments(TaskArguments):
 
         if rtype == Report.ANNUAL:
             if not rtime:
-                year = dt.datetime.now(self.timezone).year - 1
+                year = dt.datetime.now(self.timezone).year
             elif isinstance(rtime[0], dt.datetime):
                 year = rtime[0].year
             elif str(rtime[0]).isdigit():
@@ -253,6 +253,11 @@ class CsvCheckTask(fmtask.FrontMonthCheckTask):
         self.subtasks = {self.BAR_CHECK: BarCheckTask(self.args),
                          self.TIMESERIESE_CHECK: TimeSeriesCheckTask(self.args)}
 
+    @property
+    def fixed_accessor_args(self):
+        return {Tags.TYPE: 'F',
+                Tags.CLOCK_TYPE: 'M'}
+
     def check_integrated(self, data, check_xmls):
         if data.invalid_files is not None:
             ts_subtask = self.subtasks[self.TIMESERIESE_CHECK]
@@ -284,22 +289,25 @@ class CsvCheckTask(fmtask.FrontMonthCheckTask):
                 split_funcs = self.subtasks[check].split_html
                 session.email_html(self.args.recipients, html, title, split_funcs)
 
-    def run(self, **kwargs):
-        self.set_taskargs(True, **kwargs)
+    def run(self):
+        self.set_taskargs(True)
         rtype, rtime = self.args.report_config
-        self.set_taskargs(**{self.args.DTFROM: rtime[0], self.args.DTTO: rtime[1]})
+        # self.set_taskargs(**{self.args.DTFROM: rtime[0], self.args.DTTO: rtime[1]})
 
         for src in to_iter(self.args.source, ittype=iter):
             self.set_taskargs(**{self.args.SOURCE: src})
             if not self.args.consolidate:
                 reports = defaultdict(list)
                 for prod in self.args.product:
-                    self.set_taskargs(**{self.args.PRODUCT: prod})
-                    htmls = self.run_report_task()
+                    self.set_taskargs(**{self.args.PRODUCT: prod,
+                                         self.args.DTFROM: rtime[0],
+                                         self.args.DTTO: rtime[1]})  # temp solution
+                    htmls = self.run_report_task(**self.fixed_accessor_args)
                     for check, html in htmls.items():
                         reports[check].append(html)
             else:
-                reports = self.run_report_task()
+                self.set_taskargs(**{self.args.DTFROM: rtime[0], self.args.DTTO: rtime[1]})
+                reports = self.run_report_task(**self.fixed_accessor_args)
 
             if self.args.email:
                 self.email_reports(reports, self.args.REPORT_TIME_FMT[rtype](*rtime), f'({src})')

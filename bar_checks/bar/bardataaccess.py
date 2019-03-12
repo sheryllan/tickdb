@@ -170,16 +170,18 @@ class Lcmquantldn1Accessor(Accessor, BarAccessor):
             years = None if any(x is None for x in (date_from, date_to)) else (date_from.year, date_to.year)
             kwargs.update({self.config.YEAR: years})
 
-            def parse_date():
-                for f in self.rcsv_listdir(filesys, self.config.BASEDIR, self.directories(**kwargs)):
+            def parse_date(paths):
+                for path in paths:
+                    if not path.endswith('.csv.gz'):
+                        continue
                     try:
-                        date = self.date_from_path(f)
+                        date = self.date_from_path(path)
                         if date is not None:
-                            yield True, date, f
+                            yield True, date, path
                     except ValueError as e:
-                        yield False, e, f
+                        yield False, e, path
 
-            files = pd.DataFrame(parse_date())
+            files = pd.DataFrame(parse_date(self.rcsv_listdir(filesys, self.config.BASEDIR, self.directories(**kwargs))))
             if files.empty:
                 return pd.Series(), None
 
