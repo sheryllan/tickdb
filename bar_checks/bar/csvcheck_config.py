@@ -1,12 +1,29 @@
 import os
 from enum import Enum
+from typing import NamedTuple
+
 
 SERVERNAME = 'lcmquantldn1'
 
+
+class SourceSpecificConfigs(NamedTuple):
+    window: tuple = ('00:00', '23:59:59.999999')
+    window_tz: str = 'UTC'
+    schedule: str = 'BaseSchedule'
+
+
+CME_CONFIGS = SourceSpecificConfigs(('18:00', '15:00'), 'America/Chicago', 'CMESchedule')
+CHINA_CONFIGS = SourceSpecificConfigs(window_tz='Asia/Hong_Kong', schedule='ChinaSchedule')
+EUREX_CONFIGS = SourceSpecificConfigs(window_tz='US/Central', schedule='EurexSchedule')
+OSE_CONFIGS = SourceSpecificConfigs(window_tz='Asia/Tokyo', schedule='OSESchedule')
+ASX_CONFIGS = SourceSpecificConfigs(window_tz='Australia/Sydney', schedule='ASXSchedule')
+
+
+# WINDOW = ('18:00', '15:00')
+# WINDOW_TZ = 'America/Chicago'
+# SCHEDULE = 'BaseSchedule'
+
 TIMEZONE = 'UTC'
-WINDOW = ('18:00', '15:00')
-WINDOW_TZ = 'America/Chicago'
-SCHEDULE = 'BaseSchedule'
 SOURCE = 'qtg'
 
 DIR = os.path.dirname(__file__)

@@ -4,10 +4,49 @@ import paramiko
 from os.path import basename
 from itertools import zip_longest
 from types import GeneratorType
+from collections import MutableMapping
 
 from dataaccess import *
 from bar.datastore_config import *
 from timeutils.commonfuncs import isin_closed, to_tz_datetime
+
+
+class FixedKwargs(MutableMapping):
+    def __init__(self, keys, default_val=None, **aliases):
+        self.fixed_keys = frozenset(keys)
+        self.default_val = default_val
+        self._data_all = {k: self.default_val for k in self.fixed_keys}
+        self.__data = {}
+        self._aliases = aliases
+
+    def add_alias(self, **aliases):
+        self._aliases.update(aliases)
+
+    def __len__(self):
+        return len(self.__data)
+
+    def __iter__(self):
+        return iter(self.__data)
+
+    def __setitem__(self, k, v):
+        if k not in self.fixed_keys and k not in self._aliases:
+            raise KeyError(k)
+
+        key = self._aliases.get(k, k)
+        self._data_all[key] = v
+        if v != self.default_val:
+            self.__data[key] = v
+        else:
+            self.__data.__delitem__(key)
+
+    def __delitem__(self, k):
+        raise NotImplementedError
+
+    def __getitem__(self, k):
+        return self._data_all[k]
+
+    def __contains__(self, k):
+        return k in self.fixed_keys
 
 
 class ResultData(object):

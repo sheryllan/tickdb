@@ -128,9 +128,6 @@ class Lcmquantldn1(Basedb):
         BASEDIR = '/opt/data'
 
         SOURCE = 'source'
-        GZIPS = 'gzips'
-        REACTOR_GZIPS = 'reactor_gzips'
-
         TABLE = 'table'
         YEAR = 'year'
         DATA_FILE = 'data_file'

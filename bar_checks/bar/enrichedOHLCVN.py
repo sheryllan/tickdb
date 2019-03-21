@@ -345,7 +345,9 @@ class SeriesChecker(object):
     @classmethod
     def gap(cls, gap):
         date, tz = gap[0].date(), gap[0].tz
-        return cls.error_dict(date, tz, cls.GAP, {cls.START_TS: gap[0], cls.END_TS: gap[1]})
+        return cls.error_dict(date, tz, cls.GAP,
+                              {cls.START_TS: gap[0].round('s'),
+                               cls.END_TS: gap[1].round('s')})
 
     @classmethod
     def validate_sequential(cls, df, tsgenerator: StepTimestampGenerator):
@@ -520,7 +522,8 @@ class BarCheckTask(SubCheckTask):
                 BarChecker.VOL_ON_LV1_CHECK,
                 BarChecker.VOL_ON_LV2_CHECK,
                 BarChecker.VOL_ON_LV3_CHECK,
-                BarChecker.VWAP_CHECK]
+                # BarChecker.VWAP_CHECK
+    ]
 
     def __init__(self, args):
         super().__init__(args, self.XSL)
@@ -540,7 +543,8 @@ class BarCheckTask(SubCheckTask):
                 BarChecker.check_bid_ask(data_cap),
                 BarChecker.check_volume(data_cap),
                 BarChecker.check_vol_on_lv(data_cap),
-                BarChecker.check_vwap(data_cap)]
+                # BarChecker.check_vwap(data_cap)
+                ]
             results = pd.concat(checks, axis=1)
 
         return results[self.OUT_COLS][~results.all(axis=1)] \

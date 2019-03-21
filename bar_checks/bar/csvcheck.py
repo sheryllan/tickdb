@@ -41,23 +41,30 @@ class CsvTaskArguments(TaskArguments):
     RECIPIENTS = 'recipients'
     REPORT_CONFIG = 'report_config'
 
-    SOURCE_MAP = {'qtg': 'gzips',
-                  'reactor': 'reactor_gzips'}
-
     REPORT_NAME_SEP = '.'
     REPORT_TIME_FMT = {
         Report.ANNUAL: lambda *args: f'{args[0].year}',
         Report.DAILY: lambda *args: args[0].strftime('%Y%m%d'),
         Report.DATES: lambda *args: f'{args[0].strftime("%Y%m%d")}-{args[1].strftime("%Y%m%d")}'}
 
-    REPORT_SOURCE_MAP = {SOURCE_MAP['qtg']: 'QTG',
-                         SOURCE_MAP['reactor']: 'Reactor'}
+    REPORT_SOURCE_MAP = {'qtg': 'QTG',
+                         'reactor': 'Reactor',
+                         'china': 'China',
+                         'eurex': 'Eurex',
+                         'ose': 'OSE',
+                         'asx': 'ASX',
+                         'gzips': 'QTG',
+                         'reactor_gzips': 'Reactor',
+                         'china_reactor_bar': 'China',
+                         'eurex_reactor_bar': 'Eurex',
+                         'ose_reactor_bar': 'OSE',
+                         'asx_reactor': 'ASX'}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.set_defaults(**{self.WINDOW: WINDOW,
-                             self.WINDOW_TZ: WINDOW_TZ,
-                             self.SCHEDULE: SCHEDULE,
+        self.set_defaults(**{# self.WINDOW: WINDOW,
+                             # self.WINDOW_TZ: WINDOW_TZ,
+                             # self.SCHEDULE: SCHEDULE,
                              self.TIMEZONE: TIMEZONE})
 
         self.add_argument('--' + self.SOURCE, nargs='*', type=str, default=SOURCE,
@@ -87,7 +94,8 @@ class CsvTaskArguments(TaskArguments):
         os.makedirs(path, exist_ok=True)
 
         rtype, rtime = self.report_config
-        names = [self.REPORT_SOURCE_MAP.get(self.source, ''), self.REPORT_TIME_FMT[rtype](*rtime)] + \
+        names = ['-'.join(self.REPORT_SOURCE_MAP[s] for s in self.source),
+                 self.REPORT_TIME_FMT[rtype](*rtime)] + \
                 ([str(self.product)] if not self.consolidate else []) +\
                 [name, extension]
 
@@ -111,8 +119,10 @@ class CsvTaskArguments(TaskArguments):
         return self.report_path(TS_REPORT_NAME, self.XML)
 
     def _source(self, value):
-        source = [self.SOURCE_MAP.get(v, v) for v in to_iter(value)]
-        return source[0] if len(source) == 1 else source
+        source = to_iter(value)
+        if any(v not in self.REPORT_SOURCE_MAP for v in source):
+            raise ValueError('Invalid input of argument [source]: {}'.format(value))
+        return source
 
     def _report_config(self, value):
         report_config = to_iter(value, ittype=tuple)
@@ -251,6 +261,20 @@ class TimeSeriesCheckTask(enriched.TimeSeriesCheckTask, SubCheckTask):
 
 
 class CsvCheckTask(fmtask.FrontMonthCheckTask):
+    # temp solution, should be moved into sub_task_args
+    SOURCE_MAP = {'qtg': 'gzips',
+                  'reactor': 'reactor_gzips',
+                  'china': 'china_reactor_bar',
+                  'eurex': 'eurex_reactor_bar',
+                  'ose': 'ose_reactor_bar',
+                  'asx': 'asx_reactor'}
+
+    SOURCE_LIBS = {'qtg': CME_CONFIGS,
+                   'reactor': CME_CONFIGS,
+                   'china': CHINA_CONFIGS,
+                   'eurex': EUREX_CONFIGS,
+                   'ose': OSE_CONFIGS,
+                   'asx': ASX_CONFIGS}
 
     def __init__(self):
         super().__init__(DataAccessor, CsvTaskArguments)
@@ -298,17 +322,22 @@ class CsvCheckTask(fmtask.FrontMonthCheckTask):
     def run(self):
         self.set_taskargs(True)
         rtype, rtime = self.args.report_config
+        sources = self.args.source
         # self.set_taskargs(**{self.args.DTFROM: rtime[0], self.args.DTTO: rtime[1]})
 
-        for src in to_iter(self.args.source, ittype=iter):
+        for src in sources:
             reports = defaultdict(list)
             products = [self.args.product] if self.args.consolidate else to_iter(self.args.product)
+            src_specific_configs = self.SOURCE_LIBS[src]
             for prod in products:
                 self.set_taskargs(**{
-                    self.args.SOURCE: src,
+                    self.args.SOURCE: self.SOURCE_MAP[src],
                     self.args.PRODUCT: prod,
                     self.args.DTFROM: rtime[0],
-                    self.args.DTTO: rtime[1]})  # temp solution
+                    self.args.DTTO: rtime[1],
+                    self.args.WINDOW: src_specific_configs.window,
+                    self.args.WINDOW_TZ: src_specific_configs.window_tz,
+                    self.args.SCHEDULE: src_specific_configs.schedule})  # temp solution
                 htmls = self.run_report_task(**self.fixed_accessor_args)
                 for check, html in htmls.items():
                     reports[check].append(html)

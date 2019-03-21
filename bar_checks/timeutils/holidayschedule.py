@@ -97,4 +97,30 @@ class CMESchedule(BaseSchedule):
     weekmask = 'Sun Mon Tue Wed Thu Fri'
 
 
+class ChinaSchedule(BaseSchedule):
+    calendar = GeneralCalendar('ChinaCalendar')
+    open_time = dt.time(9, 30)
+    close_time = dt.time(16)
+    tzinfo = pytz.timezone('Asia/Hong_Kong')
+
+
+class EurexSchedule(BaseSchedule):
+    calendar = GeneralCalendar('EurexCalendar')
+    open_time = dt.time(1)
+    close_time = dt.time(22, 30)
+    tzinfo = pytz.timezone('US/Central')
+
+
+class OSESchedule(BaseSchedule):
+    calendar = GeneralCalendar('OSECalendar')
+    open_time = dt.time(16, 30)
+    close_time = dt.time(15, 15)
+    tzinfo = pytz.timezone('Asia/Tokyo')
+
+
+class ASXSchedule(BaseSchedule):
+    calendar = GeneralCalendar('ASXCalendar')
+    open_time = dt.time(17)
+    close_time = dt.time(16, 30)
+    tzinfo = pytz.timezone('Australia/Sydney')
 
