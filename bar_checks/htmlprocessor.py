@@ -85,7 +85,7 @@ class EmailSession(AbstractContextManager):
         self.smtp.login(self.user, self.password)
 
     # contents must be an iterable of str or etree._ElementTree
-    def email_html(self, recipients, contents, subject, splitfunc=lambda x, y: x):
+    def email_html(self, recipients, contents, subject, splitfunc=lambda x, y: get_str(x)):
         msg_to = ', '.join(recipients)
         transformed = (splitfunc(premailer.transform(to_elementtree(c).getroot()), self.ATTACHMENT_LIMIT)
                        for c in to_iter(contents))
@@ -96,9 +96,9 @@ class EmailSession(AbstractContextManager):
             msg['To'] = msg_to
             msg['Subject'] = subject
             msg.attach(body)
-            self.smtp.sendmail(self.user, msg_to, msg.as_string())
-            txt = os.linesep.join(content)
-            print(txt)
+            self.smtp.send_message(msg)
+            # txt = os.linesep.join(content)
+            # print(txt)
 
     def __enter__(self):
         self.login()
