@@ -100,8 +100,8 @@ class CMESchedule(BaseSchedule):
 class ChinaSchedule(BaseSchedule):
     calendar = GeneralCalendar('ChinaCalendar')
     open_time = dt.time(9, 30)
-    close_time = dt.time(16)
-    tzinfo = pytz.timezone('Asia/Hong_Kong')
+    close_time = dt.time(15)
+    tzinfo = pytz.timezone('Asia/Shanghai')
 
 
 class EurexSchedule(BaseSchedule):

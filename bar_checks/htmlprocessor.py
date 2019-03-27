@@ -97,8 +97,6 @@ class EmailSession(AbstractContextManager):
             msg['Subject'] = subject
             msg.attach(body)
             self.smtp.send_message(msg)
-            # txt = os.linesep.join(content)
-            # print(txt)
 
     def __enter__(self):
         self.login()
