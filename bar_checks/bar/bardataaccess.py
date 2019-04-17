@@ -76,18 +76,12 @@ class ResultData(object):
             grouby_obj = self.dataframe.groupby(self.keys)
             self._groupby_obj = {k: v for k, v in grouby_obj}
         elif isinstance(self._groupby_obj, GeneratorType):
-            self._groupby_obj = {k: v for k, v in self}
+            self._groupby_obj = dict(self._groupby_obj)
 
         return self._groupby_obj
 
     def __iter__(self):
-        if isinstance(self._groupby_obj, dict):
-            yield from self._groupby_obj.items()
-        else:
-            groupby_obj = {}
-            for key, key_df in self._groupby_obj:
-                yield key, key_df
-                groupby_obj[key] = key_df
+        yield from self.groupby_obj.items()
 
 
 class BarAccessor(object):
@@ -334,23 +328,3 @@ class Lcmquantldn1Accessor(Accessor, BarAccessor):
             elif not contracts.empty:
                 yield (time_from, time_to), contracts.loc[:time_from].iloc[-1]
 
-# fa = Lcmquantldn1Accessor()
-# # r = fa.find_files(product='ES', type='F', expiry='SEP2018', table='EnrichedOHLCVN', clock='M')
-# # r = fa.get_data('EnrichedOHLCVN',
-# #                 time_from=dt.datetime(2018, 11, 1),
-# #                 include_from=False,
-# #                 product=['ES', 'ZN'],
-# #                 type='F',
-# #                 expiry='DEC2018',
-# #                 clock_type='M')
-# cc = fa.get_continuous_contracts(dt.datetime(2018, 1, 1), dt.datetime(2018, 12, 31),
-#                                  include_from=False,
-#                                  source='reactor_gzips',
-#                                  product=['ES'],
-#                                  type='F',
-#                                  clock_type='M'
-#                                  )
-#
-# for c in cc:
-#     print(c[0])
-#     print(c[1])

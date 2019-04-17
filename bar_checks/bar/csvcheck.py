@@ -62,10 +62,7 @@ class CsvTaskArguments(TaskArguments):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.set_defaults(**{# self.WINDOW: WINDOW,
-                             # self.WINDOW_TZ: WINDOW_TZ,
-                             # self.SCHEDULE: SCHEDULE,
-                             self.TIMEZONE: TIMEZONE})
+        self.set_defaults(**{self.TIMEZONE: TIMEZONE})
 
         self.add_argument('--' + self.SOURCE, nargs='*', type=str, default=SOURCE,
                           help='the source directory of the data')
@@ -262,19 +259,12 @@ class TimeSeriesCheckTask(enriched.TimeSeriesCheckTask, SubCheckTask):
 
 class CsvCheckTask(fmtask.FrontMonthCheckTask):
     # temp solution, should be moved into sub_task_args
-    SOURCE_MAP = {'qtg': 'gzips',
-                  'reactor': 'reactor_gzips',
+    SOURCE_MAP = {'qtg': 'cme_qtg_bar',
+                  'reactor': 'cme_reactor_bar',
                   'china': 'china_reactor_bar',
                   'eurex': 'eurex_reactor_bar',
                   'ose': 'ose_reactor_bar',
                   'asx': 'asx_reactor'}
-
-    SOURCE_LIBS = {'qtg': CME_CONFIGS,
-                   'reactor': CME_CONFIGS,
-                   'china': CHINA_CONFIGS,
-                   'eurex': EUREX_CONFIGS,
-                   'ose': OSE_CONFIGS,
-                   'asx': ASX_CONFIGS}
 
     def __init__(self):
         super().__init__(DataAccessor, CsvTaskArguments)
@@ -328,7 +318,7 @@ class CsvCheckTask(fmtask.FrontMonthCheckTask):
         for src in sources:
             reports = defaultdict(list)
             products = [self.args.product] if self.args.consolidate else to_iter(self.args.product)
-            src_specific_configs = self.SOURCE_LIBS[src]
+            src_specific_configs = SOURCE_LIBS[src]
             for prod in products:
                 self.set_taskargs(**{
                     self.args.SOURCE: self.SOURCE_MAP[src],

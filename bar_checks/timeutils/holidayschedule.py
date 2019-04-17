@@ -106,9 +106,9 @@ class ChinaSchedule(BaseSchedule):
 
 class EurexSchedule(BaseSchedule):
     calendar = GeneralCalendar('EurexCalendar')
-    open_time = dt.time(1)
-    close_time = dt.time(22, 30)
-    tzinfo = pytz.timezone('US/Central')
+    open_time = dt.time(8, 5)
+    close_time = dt.time(18, 55)
+    tzinfo = pytz.timezone('CET')
 
 
 class OSESchedule(BaseSchedule):
