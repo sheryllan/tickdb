@@ -3,8 +3,8 @@ import re
 import paramiko
 from os.path import basename
 from itertools import zip_longest
+from collections import MutableMapping, Iterator
 from types import GeneratorType
-from collections import MutableMapping
 
 from dataaccess import *
 from bar.datastore_config import *
@@ -67,21 +67,18 @@ class ResultData(object):
     @property
     def dataframe(self):
         if self._dataframe is None:
-            self._dataframe = pd.concat(self.groupby_obj.values()) if self.groupby_obj else pd.DataFrame()
+            try:
+                self._dataframe = pd.concat(group[1] for group in self)
+            except ValueError:
+                return pd.DataFrame()
         return self._dataframe
 
-    @property
-    def groupby_obj(self):
-        if self._groupby_obj is None:
-            grouby_obj = self.dataframe.groupby(self.keys)
-            self._groupby_obj = {k: v for k, v in grouby_obj}
-        elif isinstance(self._groupby_obj, GeneratorType):
-            self._groupby_obj = dict(self._groupby_obj)
-
-        return self._groupby_obj
-
     def __iter__(self):
-        yield from self.groupby_obj.items()
+        if self._groupby_obj is None:
+            self._groupby_obj = self.dataframe.groupby(self.keys)
+        elif isinstance(self._groupby_obj, Iterator):
+            self._groupby_obj = list(self._groupby_obj)
+        return iter(self._groupby_obj)
 
 
 class BarAccessor(object):
@@ -166,7 +163,7 @@ class Lcmquantldn1Accessor(Accessor, BarAccessor):
             raise NotImplementedError
 
         def get_file_handle(self, filepath, filesys):
-            open_func = self.any_compressed_open(filepath)
+            open_func = self.any_compressed_open(filepath, mode='rb')
             return open_func(filesys.open(filepath, mode='rb'))
 
         def get_table(self, fhandle):

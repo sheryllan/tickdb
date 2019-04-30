@@ -47,21 +47,12 @@ class CsvTaskArguments(TaskArguments):
         Report.DAILY: lambda *args: args[0].strftime('%Y%m%d'),
         Report.DATES: lambda *args: f'{args[0].strftime("%Y%m%d")}-{args[1].strftime("%Y%m%d")}'}
 
-    REPORT_SOURCE_MAP = {'qtg': 'QTG',
-                         'reactor': 'Reactor',
-                         'china': 'China',
-                         'eurex': 'Eurex',
-                         'ose': 'OSE',
-                         'asx': 'ASX',
-                         'gzips': 'QTG',
-                         'reactor_gzips': 'Reactor',
-                         'china_reactor_bar': 'China',
-                         'eurex_reactor_bar': 'Eurex',
-                         'ose_reactor_bar': 'OSE',
-                         'asx_reactor': 'ASX'}
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        self.source_names = Server.FileConfig.SourceNames
+        self.source_report_map = {k: v.name for k, v in self.source_names._value2member_map_.items()}
+
         self.set_defaults(**{self.TIMEZONE: TIMEZONE})
 
         self.add_argument('--' + self.SOURCE, nargs='*', type=str, default=SOURCE,
@@ -91,11 +82,10 @@ class CsvTaskArguments(TaskArguments):
         os.makedirs(path, exist_ok=True)
 
         rtype, rtime = self.report_config
-        names = ['-'.join(self.REPORT_SOURCE_MAP[s] for s in self.source),
-                 self.REPORT_TIME_FMT[rtype](*rtime)] + \
-                ([str(self.product)] if not self.consolidate else []) +\
-                [name, extension]
-
+        product_name = str(self.product) if not self.consolidate else ''
+        names = ['-'.join(self.source_report_map[s] for s in self.source),
+                 self.REPORT_TIME_FMT[rtype](*rtime),
+                 product_name, name, extension]
         filename = self.REPORT_NAME_SEP.join(names)
         return os.path.join(path, filename)
 
@@ -117,8 +107,12 @@ class CsvTaskArguments(TaskArguments):
 
     def _source(self, value):
         source = to_iter(value)
-        if any(v not in self.REPORT_SOURCE_MAP for v in source):
-            raise ValueError('Invalid input of argument [source]: {}'.format(value))
+        members = self.source_names.__members__
+        for i, s in enumerate(source):
+            s = members.get(s, s)
+            if s not in self.source_report_map:
+                raise ValueError('Invalid input of argument [source]: {}'.format(value))
+            source[i] = s
         return source
 
     def _report_config(self, value):
@@ -258,18 +252,17 @@ class TimeSeriesCheckTask(enriched.TimeSeriesCheckTask, SubCheckTask):
 
 
 class CsvCheckTask(fmtask.FrontMonthCheckTask):
-    # temp solution, should be moved into sub_task_args
-    SOURCE_MAP = {'qtg': 'cme_qtg_bar',
-                  'reactor': 'cme_reactor_bar',
-                  'china': 'china_reactor_bar',
-                  'eurex': 'eurex_reactor_bar',
-                  'ose': 'ose_reactor_bar',
-                  'asx': 'asx_reactor'}
 
     def __init__(self):
         super().__init__(DataAccessor, CsvTaskArguments)
         self.subtasks = {self.BAR_CHECK: BarCheckTask(self.args),
                          self.TIMESERIESE_CHECK: TimeSeriesCheckTask(self.args)}
+        self.source_config_map = {self.args.source_names.cme_qtg: CME_CONFIGS,
+                                  self.args.source_names.cme_reactor: CME_CONFIGS,
+                                  self.args.source_names.china_reactor: CHINA_CONFIGS,
+                                  self.args.source_names.eurex_reactor: EUREX_CONFIGS,
+                                  self.args.source_names.ose_reactor: OSE_CONFIGS,
+                                  self.args.source_names.asx_reactor: ASX_CONFIGS}
 
     @property
     def fixed_accessor_args(self):
@@ -318,10 +311,10 @@ class CsvCheckTask(fmtask.FrontMonthCheckTask):
         for src in sources:
             reports = defaultdict(list)
             products = [self.args.product] if self.args.consolidate else to_iter(self.args.product)
-            src_specific_configs = SOURCE_LIBS[src]
+            src_specific_configs = self.source_config_map[src]
             for prod in products:
                 self.set_taskargs(**{
-                    self.args.SOURCE: self.SOURCE_MAP[src],
+                    self.args.SOURCE: src,
                     self.args.PRODUCT: prod,
                     self.args.DTFROM: rtime[0],
                     self.args.DTTO: rtime[1],
@@ -333,7 +326,8 @@ class CsvCheckTask(fmtask.FrontMonthCheckTask):
                     reports[check].append(html)
 
             if self.args.email:
-                self.email_reports(reports, self.args.REPORT_TIME_FMT[rtype](*rtime), f'({src})')
+                self.email_reports(reports, self.args.REPORT_TIME_FMT[rtype](*rtime),
+                                   f'({self.args.source_report_map[src]})')
 
 
 if __name__ == '__main__':

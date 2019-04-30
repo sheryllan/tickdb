@@ -6,6 +6,7 @@ import gzip
 import bz2
 import lzma
 import zipfile
+import io
 
 from influxcommon import *
 
@@ -37,17 +38,17 @@ class FileManager(object):
         self.config = config
 
     @classmethod
-    def any_compressed_open(cls, filepath):
+    def any_compressed_open(cls, filepath, **kwargs):
         if filepath.endswith('gz'):
-            return gzip.open
+            return lambda x: gzip.open(x, **kwargs)
         elif filepath.endswith('bz2'):
-            return bz2.open
+            return lambda x: bz2.open(x, **kwargs)
         elif filepath.endswith('xz'):
-            return lzma.open
+            return lambda x: lzma.open(x, **kwargs)
         elif filepath.endswith('zip'):
-            return zipfile.ZipFile
+            return lambda x: zipfile.ZipFile(x, **kwargs)
         else:
-            return open
+            return lambda x: x if isinstance(x, io.IOBase) else open(x, **kwargs)
 
     @classmethod
     def rcsv_listdir(cls, filesys, path, dirs):

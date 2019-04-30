@@ -18,10 +18,7 @@ class BaseTable(object):
         return cls.__name__
 
 
-class EnrichedOHLCVN(object):
-    @classmethod
-    def name(cls):
-        return 'EnrichedOHLCVN'
+class EnrichedOHLCVN(BaseTable):
 
     class Fields(StrEnum):
         OPEN = 'open'
@@ -77,7 +74,7 @@ class EnrichedOHLCVN(object):
         OFFSET = 'offset'
 
 
-class ContinuousContract(object):
+class ContinuousContract(BaseTable):
     @classmethod
     def name(cls):
         return 'continuous_contract'
@@ -135,8 +132,15 @@ class Lcmquantldn1(Basedb):
         TIMEZONE = pytz.UTC
         TIME_COL_IDX = 0
         SEPARATOR = ','
-
         FILE_STRUCTURE = []
+
+        class SourceNames(StrEnum):
+            cme_qtg = 'cme_qtg_bar',
+            cme_reactor = 'cme_reactor_bar',
+            china_reactor = 'china_reactor_bar',
+            eurex_reactor = 'eurex_reactor_bar',
+            ose_reactor = 'ose_reactor_bar',
+            asx_reactor = 'asx_reactor'
 
     class EnrichedOHLCVN(EnrichedOHLCVN, FileConfig):
         FILENAME_DATE_PATTERN = '[0-9]{8}'

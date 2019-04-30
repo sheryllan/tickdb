@@ -17,15 +17,9 @@ EUREX_CONFIGS = SourceSpecificConfigs(('08:05', '18:55'), 'CET', 'EurexSchedule'
 OSE_CONFIGS = SourceSpecificConfigs(window_tz='Asia/Tokyo', schedule='OSESchedule')
 ASX_CONFIGS = SourceSpecificConfigs(window_tz='Australia/Sydney', schedule='ASXSchedule')
 
-SOURCE_LIBS = {'qtg': CME_CONFIGS,
-               'reactor': CME_CONFIGS,
-               'china': CHINA_CONFIGS,
-               'eurex': EUREX_CONFIGS,
-               'ose': OSE_CONFIGS,
-               'asx': ASX_CONFIGS}
 
 TIMEZONE = 'UTC'
-SOURCE = 'qtg'
+SOURCE = 'cme_reactor'
 
 DIR = os.path.dirname(__file__)
 REPORTS = 'reports'
