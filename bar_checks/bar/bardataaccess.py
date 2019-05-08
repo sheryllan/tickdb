@@ -3,8 +3,7 @@ import re
 import paramiko
 from os.path import basename
 from itertools import zip_longest
-from collections import MutableMapping, Iterator
-from types import GeneratorType
+from collections import MutableMapping
 
 from dataaccess import *
 from bar.datastore_config import *
@@ -50,35 +49,47 @@ class FixedKwargs(MutableMapping):
 
 
 class ResultData(object):
-
-    def __init__(self, df_or_groupby_obj, keys):
+    def __init__(self, df_or_groupby_obj, keys, **kwargs):
         self._dataframe = None
         self._groupby_obj = None
-        self.keys = keys
+        self.keys = to_iter(keys, ittype=tuple)
 
         if isinstance(df_or_groupby_obj, pd.DataFrame):
             self._dataframe = df_or_groupby_obj
+        elif not nontypes_iterable(df_or_groupby_obj):
+            raise TypeError('Invalid type of input: df_or_groupby_obj must be of an Iterable')
         else:
             self._groupby_obj = df_or_groupby_obj
 
         if self._dataframe is None and self._groupby_obj is None:
             raise ValueError('Invalid initialization: the first argument must be set(not None)')
 
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
     @property
     def dataframe(self):
         if self._dataframe is None:
-            try:
-                self._dataframe = pd.concat(group[1] for group in self)
-            except ValueError:
-                return pd.DataFrame()
+            group_obj = self.__iter__()
+            self._dataframe = pd.concat(v for _, v in group_obj) if self._groupby_obj else pd.DataFrame()
         return self._dataframe
+
+    def to_key_tuple(self, keys):
+        if isinstance(keys, dict):
+            return tuple(keys.get(k, None) for k in self.keys)
+        return keys if isinstance(keys, tuple) and len(self.keys) == len(keys) \
+            else tuple(k for _, k in zip_longest(self.keys, to_iter(keys, ittype=iter)))
 
     def __iter__(self):
         if self._groupby_obj is None:
             self._groupby_obj = self.dataframe.groupby(self.keys)
-        elif isinstance(self._groupby_obj, Iterator):
+        if not isinstance(self._groupby_obj, list):
             self._groupby_obj = list(self._groupby_obj)
-        return iter(self._groupby_obj)
+
+        for i, (k, v) in enumerate(self._groupby_obj):
+            ktuple = self.to_key_tuple(k)
+            self._groupby_obj[i] = ktuple, v
+            yield ktuple, v
 
 
 class BarAccessor(object):
@@ -263,11 +274,6 @@ class Lcmquantldn1Accessor(Accessor, BarAccessor):
             fhandle.seek(offset, 1)
             return fhandle
 
-    class ResultData(ResultData):
-        def __init__(self, df_or_groupby_obj, keys, invalid_files=None):
-            super().__init__(df_or_groupby_obj, keys)
-            self.invalid_files = invalid_files
-
     def transport_session(self):
         transport = paramiko.Transport(self.config.HOSTNAME)
         transport.connect(username=self.config.USERNAME, password=self.config.PASSWORD)
@@ -288,15 +294,15 @@ class Lcmquantldn1Accessor(Accessor, BarAccessor):
                 valid_files, invalid_files = file_mgr.find_files(sftp, **kwargs)
                 keys = file_mgr.config.Tags.values()
                 if valid_files.empty:
-                    return self.ResultData(empty, keys, invalid_files)
+                    return ResultData(empty, keys, invalid_files=invalid_files)
 
                 data_df = pd.concat(file_mgr.read(f, sftp) for f in valid_files)
                 if data_df.empty:
-                    return self.ResultData(empty, keys, invalid_files)
+                    return ResultData(empty, keys, invalid_files=invalid_files)
 
                 data_df.rename_axis(self.TIME_IDX, inplace=True)
                 results = self.bound_by_time(data_df, keys, time_from, time_to, closed)
-                return self.ResultData(results, keys, invalid_files)
+                return ResultData(results, keys, invalid_files=invalid_files)
 
     def get_continuous_contracts(self, **kwargs):
         table_config = self.config.TABLES[self.config.ContinuousContract.name()]

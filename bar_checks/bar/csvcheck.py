@@ -248,7 +248,8 @@ class TimeSeriesCheckTask(enriched.TimeSeriesCheckTask, SubCheckTask):
 
         rcsv_addto_element(pd.DataFrame(list(value.items()),
                                         [self.INVALID_DETAILS] * len(value),
-                                        [self.INVALID_ERRMSG, self.INVALID_FILENAME]), root[0])
+                                        [self.INVALID_ERRMSG, self.INVALID_FILENAME]),
+                           root[0])
 
 
 class CsvCheckTask(fmtask.FrontMonthCheckTask):
