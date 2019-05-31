@@ -270,18 +270,24 @@ class CsvCheckTask(fmtask.FrontMonthCheckTask):
         return {Tags.TYPE: 'F',
                 Tags.CLOCK_TYPE: 'M'}
 
-    def check_integrated(self, data, check_xmls):
+    def update_invalid_files(self, data, check_xmls):
         if data.invalid_files is not None:
             ts_subtask = self.subtasks[self.TIMESERIESE_CHECK]
             if self.TIMESERIESE_CHECK not in check_xmls:
                 check_xmls[self.TIMESERIESE_CHECK] = ts_subtask.xml_etree
             ts_subtask.update_invalid_files(data.invalid_files, check_xmls[self.TIMESERIESE_CHECK])
 
+    def check_integrated(self, data, check_xmls):
+        self.update_invalid_files(data, check_xmls)
         return super().check_integrated(data, check_xmls)
 
     def run_report_task(self, **kwargs):
         check_xmls = {check: self.subtasks[check].xml_etree for check in self.args.check}
-        xmls = self.run_check_task(check_xmls, **kwargs)
+
+        contracts = self.get_continuous_contracts(**kwargs)
+        self.update_invalid_files(contracts, check_xmls)
+        xmls = self.check_contracts(contracts, check_xmls, **kwargs)
+
         htmls = {}
         for check, xml in xmls.items():
             html = to_styled_xml(xml)
