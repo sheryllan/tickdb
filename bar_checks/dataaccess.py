@@ -52,25 +52,31 @@ class FileManager(object):
 
     @classmethod
     def rcsv_listdir(cls, filesys, path, dirs):
+        if not path:
+            return
+
+        path = str(path)
         if stat.S_ISREG(filesys.stat(path).st_mode):
             yield posixpath.join(filesys.getcwd(), path)
             return
 
-        filesys.chdir(str(path))
+        path_prev = filesys.getcwd()
+        filesys.chdir(path)
 
         if not dirs:
             yield filesys.getcwd()
-            filesys.chdir('..')
+            filesys.chdir(path_prev)
             return
 
         subdirs = filesys.listdir('.')
         if dirs[0] is not None:
-            dir_name = dirs[0](filesys.getcwd()) if callable(dirs[0]) else dirs[0]
-            subdirs = set(map(str, to_iter(dir_name, ittype=iter))).intersection(subdirs)
+            dir_name = to_iter(dirs[0](filesys.getcwd(), subdirs) if callable(dirs[0]) else dirs[0],
+                               ittype=set, dtype=str)
+            subdirs = dir_name.intersection(subdirs)
 
         for subdir in subdirs:
             yield from cls.rcsv_listdir(filesys, subdir, dirs[1:])
-        filesys.chdir('..')
+        filesys.chdir(path_prev)
 
     @staticmethod
     def tree():
@@ -82,7 +88,7 @@ class FileManager(object):
         if not dirs:
             return None
 
-        for dir_name in to_iter(dirs[0], ittype=iter):
+        for dir_name in to_iter(dirs[0], ittype=iter, dtype=str):
             root[dir_name] = cls.path_tree_from_lists(dirs[1:], root[dir_name])
 
         return root
@@ -101,21 +107,22 @@ class FileManager(object):
                 raise ValueError(f'Invalid listed path: {lp} must have base path of {base_path}')
             cls.path_tree_from_str(lp, base_path, dir_tree)
 
-        def rcsv_check(subdir_struct, subdir_tree, path_stack=None):
-            path_stack = [] if path_stack is None else path_stack
+        def rcsv_check(subdir_struct, subdir_tree, parent_dir=base_path):
             if not subdir_struct:
                 return
             if subdir_tree is None:
                 raise ValueError('Incompatible input parameters: '
                                  'the depth of subdir_tree is shorter than the length of subdir_struct')
-            subdirs = list(subdir_tree) if subdir_struct[0] is None else to_iter(subdir_struct[0], ittype=iter)
-            for subdir in subdirs:
-                path_stack.append(subdir)
+            if subdir_struct[0] is None:
+                return
+
+            subdirs = subdir_struct[0](parent_dir, list(subdir_tree)) if callable(subdir_struct[0]) else subdir_struct[0]
+            for subdir in to_iter(subdirs, ittype=iter, dtype=str):
+                curr_dir = posixpath.join(parent_dir, subdir)
                 if subdir in subdir_tree:
-                    yield from rcsv_check(subdir_struct[1:], subdir_tree[subdir], path_stack)
+                    yield from rcsv_check(subdir_struct[1:], subdir_tree[subdir], curr_dir)
                 else:
-                    yield posixpath.join(base_path, *path_stack)
-                path_stack.pop()
+                    yield curr_dir
 
         yield from rcsv_check(to_iter(dir_struct), dir_tree)
 

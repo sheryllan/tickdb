@@ -5,8 +5,6 @@ from collections import namedtuple
 from itertools import zip_longest
 from types import MappingProxyType
 
-from pandas.tseries import offsets
-
 from bar.bardataaccess import BarAccessor, ResultData
 from dataframeutils import *
 from timeutils.timeseries import *
@@ -317,7 +315,7 @@ class SeriesChecker(object):
     ERRORTYPE = 'error_type'
     ERRORVAL = 'error_value'
 
-    UNIT_MAPPING = {'M': offsets.Minute}
+    UNIT_MAPPING = {'M': 'T'}
 
     @classmethod
     def error_dict(cls, date, tz, error_type, error_val):
@@ -373,7 +371,9 @@ class SeriesChecker(object):
             return iter('')
 
         unit = cls.UNIT_MAPPING[barid.clock_type]
-        tsgenerator = StepTimestampGenerator(barid.width, unit, barid.offset)
+        offset, offset_unit = re.match('^(.*?)([A-Za-z]*)$', barid.offset).groups()
+        offset_unit = cls.UNIT_MAPPING.get(offset_unit, unit)
+        tsgenerator = StepTimestampGenerator(barid.width, unit, (offset, offset_unit))
         yield from cls.validate_sequential(bardf, tsgenerator)
         yield from cls.validate_aggregated(bardf, tsgenerator, schedule_bound)
 
@@ -479,7 +479,7 @@ class TaskArguments(argparse.ArgumentParser):
         return pytz.timezone(value) if isinstance(value, str) else value
 
     def _check(self, value):
-        return to_iter(value)
+        return self.get_default(self.CHECK) if value is None else to_iter(value, dtype=str)
 
 
 class SubCheckTask(object):
@@ -498,7 +498,7 @@ class SubCheckTask(object):
 
     @property
     def xml_etree(self):
-        root = rcsv_addto_element({self.PRODUCT: ', '.join(to_iter(self.args.product)),
+        root = rcsv_addto_element({self.PRODUCT: ', '.join(to_iter(self.args.product, dtype=str)),
                                    self.TIME: f'{self.args.dtfrom.round("s")} - {self.args.dtto.round("s")}',
                                    self.WINDOW: '{} - {} ({})'.format(*self.args.window, str(self.args.window_tz))},
                                   self.REPORT)

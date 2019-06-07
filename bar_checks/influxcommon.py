@@ -40,8 +40,8 @@ def time_terms(time_from=None, time_to=None, include_from=True, include_to=True)
 
 
 def select_query(measurement, fields=None, clauses=None):
-    fstring = '*' if fields is None else ', '.join(filter(None, to_iter(fields, ittype=iter)))
-    cstring = '' if clauses is None else ' '.join(filter(None, to_iter(clauses, ittype=iter)))
+    fstring = '*' if fields is None else ', '.join(filter(None, to_iter(fields, ittype=iter, dtype=str)))
+    cstring = '' if clauses is None else ' '.join(filter(None, to_iter(clauses, ittype=iter, dtype=str)))
     qselect = 'SELECT {} FROM {} {}'.format(fstring, measurement, cstring)
     return qselect.strip()
 

@@ -136,7 +136,7 @@ class Lcmquantldn1(Basedb):
 
         class SourceNames(StrEnum):
             cme_qtg = 'cme_qtg_bar',
-            cme_reactor = 'cme_reactor_bar',
+            cme_reactor = 'cme_reactor_bar_edge_new',
             china_reactor = 'china_reactor_bar',
             eurex_reactor = 'eurex_reactor_bar',
             ose_reactor = 'ose_reactor_bar',
@@ -169,7 +169,7 @@ class Lcmquantldn1(Basedb):
             ]
 
             self.FILENAME_STRUCTURE = [self.Tags.PRODUCT]
-            self.FILENAME_FORMAT = '{}-' + self.name() + '.csv.gz'
+            self.FILENAME_FORMAT = '{}-continuous_contract.csv.gz'
 
         class Fields(StrEnum):
             SHORT_CODE = 'short_code'

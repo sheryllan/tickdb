@@ -55,7 +55,7 @@ class CsvTaskArguments(TaskArguments):
 
         self.set_defaults(**{self.TIMEZONE: TIMEZONE})
 
-        self.add_argument('--' + self.SOURCE, nargs='*', type=str, default=SOURCE,
+        self.add_argument('--' + self.SOURCE, nargs='*', type=str,
                           help='the source directory of the data')
 
         self.add_argument('--' + self.OUTDIR, nargs='?', type=str, default=DIR,
@@ -106,7 +106,9 @@ class CsvTaskArguments(TaskArguments):
         return self.report_path(TS_REPORT_NAME, self.XML)
 
     def _source(self, value):
-        source = to_iter(value)
+        if value is None:
+            return self.get_default(self.SOURCE)
+        source = to_iter(value, dtype=str)
         members = self.source_names.__members__
         for i, s in enumerate(source):
             s = members.get(s, s)
@@ -159,7 +161,7 @@ class SubCheckTask(enriched.SubCheckTask):
     def xml_etree(self):
         tree = super().xml_etree
         root = tree.getroot()
-        root.set(self.SOURCE, ', '.join(to_iter(self.args.source)))
+        root.set(self.SOURCE, ', '.join(self.args.source))
         return tree
 
     def html_status(self, html):
@@ -317,9 +319,9 @@ class CsvCheckTask(fmtask.FrontMonthCheckTask):
 
         for src in sources:
             reports = defaultdict(list)
-            products = [self.args.product] if self.args.consolidate else to_iter(self.args.product)
+            products = to_iter(self.args.product, dtype=str)
             src_specific_configs = self.source_config_map[src]
-            for prod in products:
+            for prod in [products] if self.args.consolidate else products:
                 self.set_taskargs(**{
                     self.args.SOURCE: src,
                     self.args.PRODUCT: prod,

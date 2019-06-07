@@ -19,7 +19,6 @@ ASX_CONFIGS = SourceSpecificConfigs(window_tz='Australia/Sydney', schedule='ASXS
 
 
 TIMEZONE = 'UTC'
-SOURCE = 'cme_reactor'
 
 DIR = os.path.dirname(__file__)
 REPORTS = 'reports'
