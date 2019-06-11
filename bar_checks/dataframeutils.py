@@ -1,4 +1,4 @@
-from commonlib import *
+from .commonlib import *
 import numpy as np
 
 

@@ -1,7 +1,7 @@
 import unittest as ut
-from htmlprocessor import *
-from itertools import groupby
 import numpy as np
+
+from ..htmlprocessor import *
 
 
 class HtmlTests(ut.TestCase):

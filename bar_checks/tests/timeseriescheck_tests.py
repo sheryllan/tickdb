@@ -1,7 +1,8 @@
 import unittest as ut
-from timeutils.timeseries import *
-import pandas as pd
+
 from pandas.tseries import offsets
+
+from bar_checks.timeutils.timeseries import *
 
 
 class SeriesValidationTests(ut.TestCase):
@@ -9,13 +10,15 @@ class SeriesValidationTests(ut.TestCase):
         self.schedules = [(pd.Timestamp('2018-07-03 00:00:00'), pd.Timestamp('2018-07-03 22:00:00'))]
         self.schedule_bound = ScheduleBound(self.schedules)
         self.tsgenerator = StepTimestampGenerator(60, offsets.Minute)
-        self.validation = SeriesValidation(self.tsgenerator, self.schedule_bound)
+        self.validation = SeriesValidation()
+
+    #TODO test_SeriesValidation_schedule_list
 
     def test_reversions_all_reverse(self):
         timestamps = pd.date_range(pd.Timestamp('2018-07-03 22:00:00'), pd.Timestamp('2018-07-03 00:00:00'),
                                    freq=offsets.Minute(-60))
-        actual = list(self.validation.invalids_reversions(timestamps))
-        expected = list(map(lambda x: (True, x), timestamps[1:]))
+        actual = list(self.validation.is_incremental(timestamps))
+        expected = [True] + [False] * (len(actual) - 1)
         self.assertListEqual(expected, actual)
 
     def test_reversions_random_without_duplication(self):
@@ -26,10 +29,8 @@ class SeriesValidationTests(ut.TestCase):
                       pd.Timestamp('2018-07-03 10:00:00'),
                       pd.Timestamp('2018-07-03 08:00:00')]
 
-        actual = list(self.validation.invalids_reversions(timestamps))
-        expected = [(True, pd.Timestamp('2018-07-03 03:00:00')),
-                    (True, pd.Timestamp('2018-07-03 10:00:00')),
-                    (True, pd.Timestamp('2018-07-03 08:00:00'))]
+        actual = list(self.validation.is_incremental(timestamps))
+        expected = [True, True, False, True, False, False]
 
         self.assertListEqual(expected, actual)
 
@@ -47,14 +48,8 @@ class SeriesValidationTests(ut.TestCase):
                                        pd.Timestamp('2018-07-03 08:00:00'),
                                        pd.Timestamp('2018-07-03 08:00:00')])
 
-        actual = list(self.validation.invalids_reversions(timestamps))
-        expected = [(True, pd.Timestamp('2018-07-03 03:00:00')),
-                    (True, pd.Timestamp('2018-07-03 07:00:00')),
-                    (True, pd.Timestamp('2018-07-03 10:00:00')),
-                    (True, pd.Timestamp('2018-07-03 08:00:00')),
-                    (True, pd.Timestamp('2018-07-03 08:00:00')),
-                    (True, pd.Timestamp('2018-07-03 08:00:00')),
-                    (True, pd.Timestamp('2018-07-03 08:00:00'))]
+        actual = list(self.validation.is_incremental(timestamps))
+        expected = [True, True, False, True, False, False, True, False, True, False, False, False]
 
         self.assertListEqual(expected, actual)
 
@@ -74,19 +69,15 @@ class SeriesValidationTests(ut.TestCase):
                                        pd.Timestamp('2018-07-03 08:00:00'),
                                        pd.Timestamp('2018-07-03 08:00:00')])
 
-        actual = list(self.validation.invalids_reversions(timestamps))
-        expected = [(False, pd.Timestamp('2018-07-03 03:30:00')),
-                    (True, pd.Timestamp('2018-07-03 03:00:00')),
-                    (True, pd.Timestamp('2018-07-03 07:00:00')),
-                    (True, pd.Timestamp('2018-07-03 10:00:00')),
-                    (True, pd.Timestamp('2018-07-03 08:00:00')),
-                    (True, pd.Timestamp('2018-07-03 08:00:00')),
-                    (True, pd.Timestamp('2018-07-03 08:00:00')),
-                    (True, pd.Timestamp('2018-07-03 08:00:00'))]
+        actual_ordinal = list(self.validation.is_incremental(timestamps))
+        expected_ordinal = [True, True, True, False, True, False, False, True, False, True, False, True, False, False]
+        actual_valid = list(self.validation.is_valid(timestamps, self.tsgenerator, self.schedule_bound))
+        expected_valid = [True, False, True, True, True, True, True, True, True, True, True, False, True, True]
 
-        self.assertListEqual(expected, actual)
+        self.assertListEqual(expected_ordinal, actual_ordinal)
+        self.assertListEqual(expected_valid, actual_valid)
 
-
+    def test_gaps_random(self):
         timestamps = pd.DatetimeIndex(
             [pd.Timestamp('2018-07-02 21:00:00'),
              pd.Timestamp('2018-07-02 22:00:00'),
@@ -105,45 +96,74 @@ class SeriesValidationTests(ut.TestCase):
              pd.Timestamp('2018-07-03 08:00:00'),
              pd.Timestamp('2018-07-03 08:00:00')])
 
-        actual = list(self.validation.invalids_reversions(timestamps))
-        expected = [(False, pd.Timestamp('2018-07-03 03:30:00')),
-                    (True, pd.Timestamp('2018-07-03 03:00:00')),
-                    (True, pd.Timestamp('2018-07-03 07:00:00')),
-                    (True, pd.Timestamp('2018-07-03 10:00:00')),
-                    (True, pd.Timestamp('2018-07-03 08:00:00')),
-                    (True, pd.Timestamp('2018-07-03 08:00:00')),
-                    (True, pd.Timestamp('2018-07-02 20:00:00')),
-                    (True, pd.Timestamp('2018-07-03 08:00:00')),
-                    (True, pd.Timestamp('2018-07-03 08:00:00'))]
-
+        actual = list(self.validation.gaps(timestamps, self.tsgenerator, self.schedule_bound))
+        expected = [(pd.Timestamp('2018-07-03 00:00:00'), pd.Timestamp('2018-07-03 00:00:00')),
+                    (pd.Timestamp('2018-07-03 02:00:00'), pd.Timestamp('2018-07-03 02:00:00')),
+                    (pd.Timestamp('2018-07-03 04:00:00'), pd.Timestamp('2018-07-03 06:00:00')),
+                    (pd.Timestamp('2018-07-03 09:00:00'), pd.Timestamp('2018-07-03 09:00:00')),
+                    (pd.Timestamp('2018-07-03 13:00:00'), pd.Timestamp('2018-07-03 22:00:00'))]
         self.assertListEqual(expected, actual)
 
+    def test_valid_closed(self):
+        schedule_bound = ScheduleBound([(pd.Timestamp('2018-07-03 00:00:00'), pd.Timestamp('2018-07-03 22:00:00')),
+                                        (pd.Timestamp('2018-07-01 00:00:00'), pd.Timestamp('2018-07-02 16:00:00'))],
+                                       closed='right', tz=pytz.timezone('America/Chicago'))
+        tsgenerator = StepTimestampGenerator(60, offsets.Minute)
+        timestamps = [pd.Timestamp('2018-07-02 21:00:00', tz=pytz.UTC),
+                      pd.Timestamp('2018-07-03 01:00:00', tz=pytz.UTC),
+                      pd.Timestamp('2018-07-03 03:30:00', tz=pytz.UTC),
+                      pd.Timestamp('2018-07-03 05:00:00', tz=pytz.UTC)]
 
+        actual_right = list(self.validation.is_valid(timestamps, tsgenerator, schedule_bound))
+        expected_right = [True, False, False, False]
+        self.assertListEqual(expected_right, actual_right)
 
-    # def test_reversions_of_different_tz(self):
-    #     schedules = [(pd.Timestamp('2018-07-03 00:00:00'), pd.Timestamp('2018-07-03 22:00:00'))]
-    #     self.schedule_bound = ScheduleBound(self.schedules)
-    #     self.tsgenerator = StepTimestampGenerator(60, offsets.Minute)
-    #     self.validation = SeriesValidation(self.tsgenerator, self.schedule_bound)
-    #     timestamps = [pd.Timestamp('2018-07-02 21:00:00'),
-    #                   pd.Timestamp('2018-07-03 01:00:00'),
-    #                   pd.Timestamp('2018-07-03 03:30:00'),
-    #                   pd.Timestamp('2018-07-03 07:00:00'),
-    #                   pd.Timestamp('2018-07-03 03:00:00'),
-    #                   pd.Timestamp('2018-07-03 11:00:00'),
-    #                   pd.Timestamp('2018-07-03 11:00:00'),
-    #                   pd.Timestamp('2018-07-03 07:00:00'),
-    #                   pd.Timestamp('2018-07-03 10:00:00'),
-    #                   pd.Timestamp('2018-07-03 08:00:00'),
-    #                   pd.Timestamp('2018-07-03 12:00:00'),
-    #                   pd.Timestamp('2018-07-03 08:00:00'),
-    #                   pd.Timestamp('2018-07-03 23:00:00'),
-    #                   pd.Timestamp('2018-07-03 08:00:00'),
-    #                   pd.Timestamp('2018-07-03 08:00:00')]
-    #
-    #     self.validation.timestamps = timestamps
-    #     actual = list()
-    #     expected = [pd.Timestamp('2018-07-03 03:30:00'),
-    #                 pd.Timestamp('2018-07-03 23:00:00')]
-    #     self.assertListEqual(expected, actual)
+        schedule_bound.closed = 'left'
+        actual_left = list(self.validation.is_valid(timestamps, tsgenerator, schedule_bound))
+        expected_left = [False, False, False, True]
+        self.assertListEqual(expected_left, actual_left)
+
+    def test_validations_of_tz(self):
+        schedule_bound = ScheduleBound([(pd.Timestamp('2018-07-03 00:00:00'), pd.Timestamp('2018-07-03 22:00:00')),
+                                        (pd.Timestamp('2018-07-01 00:00:00'), pd.Timestamp('2018-07-02 16:00:00'))],
+                                       closed='right', tz=pytz.timezone('America/Chicago'))
+        tsgenerator = StepTimestampGenerator(60, offsets.Minute)
+        timestamps = [pd.Timestamp('2018-07-02 21:00:00', tz=pytz.UTC),
+                      pd.Timestamp('2018-07-03 01:00:00', tz=pytz.UTC),
+                      pd.Timestamp('2018-07-03 03:30:00', tz=pytz.UTC),
+                      pd.Timestamp('2018-07-03 07:00:00', tz=pytz.UTC),
+                      pd.Timestamp('2018-07-03 03:00:00', tz=pytz.UTC),
+                      pd.Timestamp('2018-07-03 11:00:00', tz=pytz.UTC),
+                      pd.Timestamp('2018-07-03 11:00:00', tz=pytz.UTC),
+                      pd.Timestamp('2018-07-03 07:00:00', tz=pytz.UTC),
+                      pd.Timestamp('2018-07-03 10:00:00', tz=pytz.UTC),
+                      pd.Timestamp('2018-07-03 08:00:00', tz=pytz.UTC),
+                      pd.Timestamp('2018-07-03 12:00:00', tz=pytz.UTC),
+                      pd.Timestamp('2018-07-03 08:00:00', tz=pytz.UTC),
+                      pd.Timestamp('2018-07-03 23:00:00', tz=pytz.UTC),
+                      pd.Timestamp('2018-07-03 08:00:00', tz=pytz.UTC),
+                      pd.Timestamp('2018-07-03 08:00:00', tz=pytz.UTC)]
+
+        actual_valid = list(self.validation.is_valid(timestamps, tsgenerator, schedule_bound))
+        expected_valid = [True, False, False, True, False, True, True, True, True, True, True, True, True, True, True]
+        self.assertListEqual(expected_valid, actual_valid)
+
+        actual_gaps = list(self.validation.gaps(timestamps, tsgenerator, schedule_bound))
+        expected_gaps = [(pd.Timestamp('2018-07-01 01:00:00', tz=pytz.timezone('America/Chicago')),
+                          pd.Timestamp('2018-07-02 15:00:00', tz=pytz.timezone('America/Chicago'))
+                          ),
+                         (pd.Timestamp('2018-07-03 01:00:00', tz=pytz.timezone('America/Chicago')),
+                          pd.Timestamp('2018-07-03 01:00:00', tz=pytz.timezone('America/Chicago'))
+                          ),
+                         (pd.Timestamp('2018-07-03 04:00:00', tz=pytz.timezone('America/Chicago')),
+                          pd.Timestamp('2018-07-03 04:00:00', tz=pytz.timezone('America/Chicago'))
+                          ),
+                         (pd.Timestamp('2018-07-03 08:00:00', tz=pytz.timezone('America/Chicago')),
+                          pd.Timestamp('2018-07-03 17:00:00', tz=pytz.timezone('America/Chicago'))
+                          ),
+                         (pd.Timestamp('2018-07-03 19:00:00', tz=pytz.timezone('America/Chicago')),
+                          pd.Timestamp('2018-07-03 22:00:00', tz=pytz.timezone('America/Chicago'))
+                          )
+                         ]
+        self.assertListEqual(expected_gaps, actual_gaps)
 

@@ -1,7 +1,7 @@
 from collections.abc import Mapping
 from lxml import etree
 
-from commonlib import *
+from .commonlib import *
 
 
 XSL_PI_TEXT_FMT = 'type="text/xsl" href="{}"'

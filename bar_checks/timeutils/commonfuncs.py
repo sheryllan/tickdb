@@ -21,33 +21,35 @@ def fmt_date(year, month=None, day=1, fmt='%Y%m'):
 
 def validate_time(time):
     if isinstance(time, str):
-        return dt.time(*map(int, re.findall('[0-9]+', time)))
+        return pd.to_datetime(time).time()
     elif isinstance(time, (tuple, list)):
         return dt.time(*time)
+    elif isinstance(time, dt.timedelta):
+        return (dt.datetime.min + time).time()
     elif isinstance(time, dt.time):
         return time
     else:
-        raise TypeError('Invalid time type: must be type of str, or tuple/list, or datetime.time')
+        raise TypeError('Invalid time type: must be type of str, tuple/list, or datetime.time/timedelta')
 
 
-def to_tz_datetime(dttm=None, date=None, time=None, from_tz=None, to_tz=pytz.UTC):
-    if dttm is not None and date is not None:
-        raise ValueError('Argument datetime and date and time together should not both be set')
-    elif dttm is not None:
-        from_dttm = dttm
-    elif date is not None:
-        time = MIN_TIME if time is None else validate_time(time)
-        from_dttm = dt.datetime.combine(date, time)
-    else:
-        return None
+def to_tz_datetime(date, time=None, from_tz=None, to_tz=None, to_orig=True):
+    if date is None:
+        return
 
-    if from_tz is not None:
-        from_dttm = from_tz.localize(from_dttm.replace(tzinfo=None))
+    dttm = pd.to_datetime(date)
+    if time is not None:
+        delta = pd.to_timedelta(validate_time(time).isoformat())
+        dttm = dttm.normalize() + delta
 
-    if to_tz is None:
-        return from_dttm
+    if dttm.tz is not None and from_tz is not None and dttm.tz != from_tz:
+        raise ValueError('Conflicting timezones: parameter [date].tzinfo and [from-tz] are both defined yet diff')
 
-    return from_dttm.astimezone(to_tz) if from_dttm.tzinfo is not None else to_tz.localize(from_dttm)
+    dttm = dttm.tz_localize(None).tz_localize(from_tz) if from_tz is not None else dttm
+    result = dttm.tz_convert(to_tz) if dttm.tz is not None else dttm.tz_localize(to_tz)
+
+    if to_orig and type(date) == dt.datetime:
+        result = result.to_pydatetime()
+    return result
 
 
 def to_tz_series(timeseries, from_tz=None, to_tz=pytz.UTC):

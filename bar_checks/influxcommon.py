@@ -1,4 +1,4 @@
-from commonlib import *
+from .commonlib import *
 
 TIME_IDX = 'time'
 

@@ -2,12 +2,12 @@ import datetime as dt
 import logging
 from numpy import cumsum
 
-import bar.enrichedOHLCVN as enriched
-import bar.frontmonthtask as fmtask
-from bar.csvcheck_config import *
-from bar.enrichedOHLCVN import TaskArguments
-from htmlprocessor import *
-from timeutils.commonfuncs import last_n_days
+import bar_checks.bar.enrichedOHLCVN as enriched
+import bar_checks.bar.frontmonthtask as fmtask
+from bar_checks.bar.csvcheck_config import *
+from bar_checks.bar.enrichedOHLCVN import TaskArguments
+from bar_checks.htmlprocessor import *
+from bar_checks.timeutils.commonfuncs import last_n_days
 
 
 def set_dbconfig(server):

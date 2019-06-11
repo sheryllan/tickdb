@@ -1,8 +1,8 @@
 import unittest as ut
 from unittest.mock import Mock, MagicMock
 
-from timeutils.scheduler import *
-from timeutils.holidayschedule import *
+from ..timeutils.scheduler import *
+from ..timeutils.holidayschedule import *
 
 
 class ScheduleTests(ut.TestCase):
@@ -60,7 +60,7 @@ class BScheduleTests(ut.TestCase):
         actual = list(bscheduler.get_schedules(dt.date(2018, 7, 1), dt.date(2018, 7, 1), dt.time(1), dt.time(22), pytz.UTC))
         self.assertTrue(not actual)
 
-        actual = list(bscheduler.get_schedules(dt.date(2018, 7, 4), dt.date(2018, 7, 4), dt.time(1), dt.time(22), pytz.UTC))
+        actual = list(bscheduler.get_schedules(dt.date(2018, 7, 4), dt.date(2018, 7, 5), dt.time(1), dt.time(22), pytz.UTC))
         expected = [(pd.Timestamp('2018-07-04 01:00:00+0000'), pd.Timestamp('2018-07-04 22:00:00+0000'))]
         self.assertListEqual(expected, actual)
 
@@ -82,25 +82,15 @@ class BScheduleTests(ut.TestCase):
     def test_cme_schedule_with_nonlocal_window(self):
         bscheduler = BScheduler(get_schedule('CMESchedule'))
 
-        # Mar 9 - March 12 CST -06:00, after March 12 CST -05:00
-        actual = list(bscheduler.get_schedules(dt.date(2018, 3, 9), dt.date(2018, 3, 19), dt.time(1), dt.time(21), pytz.UTC))
-        expected = [(pd.Timestamp('2018-03-09 01:00:00+0000'), pd.Timestamp('2018-03-09 21:00:00+0000')),
-                    (pd.Timestamp('2018-03-12 01:00:00+0000'), pd.Timestamp('2018-03-12 21:00:00+0000')),
-                    (pd.Timestamp('2018-03-13 01:00:00+0000'), pd.Timestamp('2018-03-13 21:00:00+0000')),
-                    (pd.Timestamp('2018-03-14 01:00:00+0000'), pd.Timestamp('2018-03-14 21:00:00+0000')),
-                    (pd.Timestamp('2018-03-15 01:00:00+0000'), pd.Timestamp('2018-03-15 21:00:00+0000')),
-                    (pd.Timestamp('2018-03-16 01:00:00+0000'), pd.Timestamp('2018-03-16 21:00:00+0000')),
-                    (pd.Timestamp('2018-03-19 01:00:00+0000'), pd.Timestamp('2018-03-19 21:00:00+0000'))]
-        self.assertListEqual(expected, actual)
-
-        actual = list(bscheduler.get_schedules(dt.date(2018, 3, 9), dt.date(2018, 3, 19), dt.time(1), dt.time(22), pytz.UTC))
+        # Mar 9 - March 11 2am CST -06:00, after March 11 2am CST -05:00
+        actual = list(bscheduler.get_schedules(dt.date(2018, 3, 9), dt.datetime(2018, 3, 19, 20), dt.time(1), dt.time(22), pytz.UTC))
         expected = [(pd.Timestamp('2018-03-09 01:00:00+0000'), pd.Timestamp('2018-03-09 22:00:00+0000')),
                     (pd.Timestamp('2018-03-12 01:00:00+0000'), pd.Timestamp('2018-03-12 21:00:00+0000')),
                     (pd.Timestamp('2018-03-13 01:00:00+0000'), pd.Timestamp('2018-03-13 21:00:00+0000')),
                     (pd.Timestamp('2018-03-14 01:00:00+0000'), pd.Timestamp('2018-03-14 21:00:00+0000')),
                     (pd.Timestamp('2018-03-15 01:00:00+0000'), pd.Timestamp('2018-03-15 21:00:00+0000')),
                     (pd.Timestamp('2018-03-16 01:00:00+0000'), pd.Timestamp('2018-03-16 21:00:00+0000')),
-                    (pd.Timestamp('2018-03-19 01:00:00+0000'), pd.Timestamp('2018-03-19 21:00:00+0000'))]
+                    (pd.Timestamp('2018-03-19 01:00:00+0000'), pd.Timestamp('2018-03-19 20:00:00+0000'))]
         self.assertListEqual(expected, actual)
 
 
@@ -110,11 +100,12 @@ class BScheduleTests(ut.TestCase):
 
         actual = list(
             bscheduler.get_schedules(dt.date(2018, 3, 8), dt.date(2018, 3, 19), dt.time(18), dt.time(15), cme_schedule.tzinfo))
-        expected = [(pd.Timestamp('2018-03-09 00:00:00+0000'), pd.Timestamp('2018-03-09 21:00:00+0000')),
+        expected = [(pd.Timestamp('2018-03-08 00:00:00+0000'), pd.Timestamp('2018-03-08 21:00:00+0000')),
+                    (pd.Timestamp('2018-03-09 00:00:00+0000'), pd.Timestamp('2018-03-09 21:00:00+0000')),
                     (pd.Timestamp('2018-03-11 23:00:00+0000'), pd.Timestamp('2018-03-12 20:00:00+0000')),
                     (pd.Timestamp('2018-03-12 23:00:00+0000'), pd.Timestamp('2018-03-13 20:00:00+0000')),
                     (pd.Timestamp('2018-03-13 23:00:00+0000'), pd.Timestamp('2018-03-14 20:00:00+0000')),
                     (pd.Timestamp('2018-03-14 23:00:00+0000'), pd.Timestamp('2018-03-15 20:00:00+0000')),
                     (pd.Timestamp('2018-03-15 23:00:00+0000'), pd.Timestamp('2018-03-16 20:00:00+0000')),
-                    (pd.Timestamp('2018-03-18 23:00:00+0000'), pd.Timestamp('2018-03-19 20:00:00+0000'))]
+                    (pd.Timestamp('2018-03-18 23:00:00+0000'), pd.Timestamp('2018-03-19 00:00:00+0000'))]
         self.assertListEqual(expected, actual)

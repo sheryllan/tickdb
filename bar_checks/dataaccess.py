@@ -10,7 +10,7 @@ import zipfile
 import io
 import os
 
-from influxcommon import *
+from .influxcommon import *
 
 
 class Accessor(object):

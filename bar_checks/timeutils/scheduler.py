@@ -1,7 +1,7 @@
 from pandas.core.tools.datetimes import to_datetime
-from timeutils.commonfuncs import *
-from timeutils.holidayschedule import get_schedule
-from commonlib import *
+from .commonfuncs import *
+from .holidayschedule import get_schedule
+from ..commonlib import *
 
 
 class BScheduler(object):
@@ -43,12 +43,11 @@ class BScheduler(object):
             last_schedule = schedule
 
     def captime_by_window(self, schedule_open, schedule_close, window_start, window_end, window_tz=None, to_tz=pytz.UTC):
-        schedule_open = pd.Timestamp(to_tz_datetime(schedule_open, to_tz=to_tz))
-        schedule_close = pd.Timestamp(to_tz_datetime(schedule_close, to_tz=to_tz))
+        schedule_open = to_tz_datetime(schedule_open, to_tz=to_tz, to_orig=False)
+        schedule_close = to_tz_datetime(schedule_close, to_tz=to_tz, to_orig=False)
 
         window = timedelta_between(window_end, window_start)
-        start_set = pd.Timestamp(
-            to_tz_datetime(date=schedule_open.date(), time=window_start, from_tz=window_tz, to_tz=to_tz))
+        start_set = to_tz_datetime(date=schedule_open.date(), time=window_start, from_tz=window_tz, to_tz=to_tz)
         if window < schedule_open - start_set:
             start_set += dt.timedelta(days=1)
         end_set = start_set + window
@@ -76,9 +75,8 @@ class BScheduler(object):
         ubound = to_tz_datetime(date=end_date, time=window_end, from_tz=window_tz, to_tz=tz)
         lbound, ubound = max(lbound, start_dt), min(ubound, end_dt)
 
-        for raw_open, raw_close in self.get_raw_schedules(start_date, end_date):
-            for start, end in self.captime_by_window(raw_open, raw_close, window_start, window_end, window_tz,
-                                                     tz):
+        for raw_open, raw_close in self.get_raw_schedules(start_date, end_date, tz):
+            for start, end in self.captime_by_window(raw_open, raw_close, window_start, window_end, window_tz, tz):
                 if end < lbound or start > ubound:
                     continue
 
@@ -88,28 +86,51 @@ class BScheduler(object):
 class ScheduleBound(object):
     def __init__(self, schedules, closed=None, tz=None):
         self.closed = closed
-        self.tz = tz
+        self._tz = tz
         self._schedule_list, self._schedule_dict = None, None
-        self.schedule_list = schedules
+        self.set_schedules(schedules)
 
     @property
     def schedule_list(self):
-        return self._schedule_list
+        return self._schedule_list.copy()
 
-    @schedule_list.setter
-    def schedule_list(self, value):
-        value = value if value is not None else []
-        self._schedule_list = SortedList(
-            [(to_tz_datetime(start, to_tz=self.tz), to_tz_datetime(end, to_tz=self.tz)) for start, end in value])
-        self._set_schedule_dict(self._schedule_list)
+    @property
+    def tz(self):
+        return self._tz
 
-    def _set_schedule_dict(self, schedules):
+    @tz.setter
+    def tz(self, value):
+        if isinstance(value, str):
+            value = pytz.timezone(value)
+        if value != self.tz:
+            self._tz = value
+            self.set_schedules(self._schedule_list)
+
+    def set_schedules(self, schedules):
+        self._schedule_list = SortedList()
         self._schedule_dict = defaultdict(SortedList)
-        for s in schedules:
-            start_date, end_date = s[0].date(), s[1].date()
-            self._schedule_dict[start_date].add(s)
+        self.update_schedules(schedules)
+
+    def update_schedules(self, schedules):
+        if not schedules:
+            return
+
+        for s in to_iter(schedules, ittype=iter):
+            s_tz = to_tz_datetime(s[0], to_tz=self.tz), to_tz_datetime(s[1], to_tz=self.tz)
+            start_date, end_date = s_tz[0].date(), s_tz[1].date()
+
+            if start_date in self._schedule_dict:
+                if s_tz in self._schedule_dict[start_date] and s_tz in self._schedule_dict[end_date]:
+                    continue
+
+                if end_date in self._schedule_dict:
+                    if s_tz in self._schedule_dict[start_date] != s_tz in self._schedule_dict[end_date]:
+                        raise KeyError('Inconsistent schedule time found in _schedule_dict')
+
+            self._schedule_list.add(s_tz)
+            self._schedule_dict[start_date].add(s_tz)
             if start_date != end_date:
-                self._schedule_dict[end_date].add(s)
+                self._schedule_dict[end_date].add(s_tz)
 
     def enclosing_schedule(self, ts):
         ts = to_tz_datetime(ts, to_tz=self.tz)
