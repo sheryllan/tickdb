@@ -3,6 +3,7 @@ from pandas.tseries.offsets import prefix_mapping, DateOffset
 from pandas.tseries.frequencies import to_offset
 
 from .scheduler import *
+from ..commonlib import normal_group_by
 
 
 class StepTimestampGenerator(object):

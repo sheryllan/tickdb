@@ -1,4 +1,4 @@
-from .commonlib import *
+from pythoncore.commonlib.iterations import *
 
 TIME_IDX = 'time'
 

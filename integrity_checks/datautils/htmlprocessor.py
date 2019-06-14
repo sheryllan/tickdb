@@ -8,6 +8,8 @@ from itertools import groupby
 import premailer
 
 from .xmlconverter import *
+from ..commonlib import func_grouper
+
 
 BODY = 'body'
 

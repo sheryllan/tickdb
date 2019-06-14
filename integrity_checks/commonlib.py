@@ -1,4 +1,4 @@
-from collections import Iterable, defaultdict
+from collections import defaultdict
 
 import pandas as pd
 from sortedcontainers import SortedDict, SortedList
@@ -9,34 +9,34 @@ def rreplace(s, old, new, occurrence=1):
     return new.join(li)
 
 
-def nontypes_iterable(arg, excl_types=(str,)):
-    return isinstance(arg, Iterable) and not isinstance(arg, excl_types)
-
-
-def to_iter(x, excl_types=(str,), ittype=list, dtype=None):
-    x_iter = [x] if not nontypes_iterable(x, excl_types) else x
-    return ittype(x_iter if dtype is None else map(dtype, x_iter))
-
-
-def find_first_n(arry, condition, n=1):
-    result = list()
-    for a in arry:
-        if n <= 0:
-            break
-        if condition(a):
-            result.append(a)
-            n -= 1
-    return result if len(result) != 1 else result[0]
-
-
-def flatten_iter(items, level=None, excl_types=(str,)):
-    if nontypes_iterable(items, excl_types):
-        level = None if level is None else level + 1
-        for sublist in items:
-            yield from flatten_iter(sublist, level, excl_types)
-    else:
-        level_item = items if level is None else (level - 1, items)
-        yield level_item
+# def nontypes_iterable(arg, excl_types=(str,)):
+#     return isinstance(arg, Iterable) and not isinstance(arg, excl_types)
+#
+#
+# def to_iter(x, excl_types=(str,), ittype=list, dtype=None):
+#     x_iter = [x] if not nontypes_iterable(x, excl_types) else x
+#     return ittype(x_iter if dtype is None else map(dtype, x_iter))
+#
+#
+# def find_first_n(arry, condition, n=1):
+#     result = list()
+#     for a in arry:
+#         if n <= 0:
+#             break
+#         if condition(a):
+#             result.append(a)
+#             n -= 1
+#     return result if len(result) != 1 else result[0]
+#
+#
+# def flatten_iter(items, level=None, excl_types=(str,)):
+#     if nontypes_iterable(items, excl_types):
+#         level = None if level is None else level + 1
+#         for sublist in items:
+#             yield from flatten_iter(sublist, level, excl_types)
+#     else:
+#         level_item = items if level is None else (level - 1, items)
+#         yield level_item
 
 
 def normal_group_by(items, key=lambda x: x, unique=False):

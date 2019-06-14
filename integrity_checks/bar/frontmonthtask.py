@@ -3,8 +3,6 @@ from pandas import DataFrame
 
 from . import enrichedOHLCVN as enriched
 from .enrichedOHLCVN import TaskArguments
-# import bar.enrichedOHLCVN as enriched
-# from bar.enrichedOHLCVN import TaskArguments
 
 
 def set_dbconfig(server):

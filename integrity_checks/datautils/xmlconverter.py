@@ -1,7 +1,9 @@
 from collections.abc import Mapping
 from lxml import etree
+import pandas as pd
 
-from .commonlib import *
+from ..commonlib import source_from
+from pythoncore.commonlib.iterations import *
 
 
 XSL_PI_TEXT_FMT = 'type="text/xsl" href="{}"'

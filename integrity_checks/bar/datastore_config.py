@@ -1,15 +1,17 @@
 from enum import Enum
 
 import pytz
+from pythoncore.commonlib.datastruct import StrEnum, InheritableEnumMeta
 
 
-class StrEnum(str, Enum):
-    def __str__(self):
-        return self._value_
-
-    @classmethod
-    def values(cls):
-        return [v.value for _, v in cls.__members__.items()]
+#
+# class StrEnum(str, Enum):
+#     def __str__(self):
+#         return self._value_
+#
+#     @classmethod
+#     def values(cls):
+#         return [v.value for _, v in cls.__members__.items()]
 
 
 class BaseTable(object):
@@ -20,7 +22,7 @@ class BaseTable(object):
 
 class EnrichedOHLCVN(BaseTable):
 
-    class Fields(StrEnum):
+    class Fields(StrEnum, metaclass=InheritableEnumMeta):
         OPEN = 'open'
         CLOSE = 'close'
 
@@ -64,7 +66,7 @@ class EnrichedOHLCVN(BaseTable):
         TRIGGER_TIME = 'trigger_time'
         EXCH_TIME = 'exch_time'
 
-    class Tags(StrEnum):
+    class Tags(StrEnum, metaclass=InheritableEnumMeta):
         PRODUCT = 'product'
         TYPE = 'type'
         EXPIRY = 'expiry'
@@ -171,12 +173,12 @@ class Lcmquantldn1(Basedb):
             self.FILENAME_STRUCTURE = [self.Tags.PRODUCT]
             self.FILENAME_FORMAT = '{}-continuous_contract.csv.gz'
 
-        class Fields(StrEnum):
+        class Fields(StrEnum, metaclass=InheritableEnumMeta):
             SHORT_CODE = 'short_code'
             TIME_ZONE = 'time_zone'
             EXPIRY = 'expiry'
 
-        class Tags(StrEnum):
+        class Tags(StrEnum, metaclass=InheritableEnumMeta):
             PRODUCT = 'product'
             ROLL_STRATEGY = 'roll_strategy'
             TYPE = 'type'

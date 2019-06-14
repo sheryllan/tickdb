@@ -1,8 +1,8 @@
 import unittest as ut
 from unittest.mock import Mock, MagicMock
 
-from ..timeutils.scheduler import *
-from ..timeutils.holidayschedule import *
+from ..scheduler import *
+from ..holidayschedule import *
 
 
 class ScheduleTests(ut.TestCase):

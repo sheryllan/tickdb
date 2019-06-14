@@ -60,6 +60,5 @@ class GroupbyTests(ut.TestCase):
         for k1 in expected:
             self.assertListEqual(list(expected[k1].keys()), list(actual[k1].keys()))
             for k2 in expected[k1]:
-                print(list(actual[k1][k2]))
                 self.assertListEqual(list(expected[k1][k2]), list(actual[k1][k2]))
 

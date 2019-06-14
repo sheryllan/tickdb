@@ -2,7 +2,7 @@ import unittest as ut
 
 from pandas.tseries import offsets
 
-from bar_checks.timeutils.timeseries import *
+from ..timeseries import *
 
 
 class SeriesValidationTests(ut.TestCase):

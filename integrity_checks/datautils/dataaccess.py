@@ -1,14 +1,13 @@
 import stat
 import posixpath
 from influxdb import DataFrameClient
-# from collections import defaultdict
+from collections import defaultdict
 
 import gzip
 import bz2
 import lzma
 import zipfile
 import io
-import os
 
 from .influxcommon import *
 

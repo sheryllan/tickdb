@@ -4,11 +4,12 @@ import os
 from collections import namedtuple
 from itertools import zip_longest
 from types import MappingProxyType
+import re
 
 from .bardataaccess import BarAccessor, ResultData
-from ..dataframeutils import *
+from ..datautils.dataframeutils import *
 from ..timeutils.timeseries import *
-from ..xmlconverter import *
+from ..datautils.xmlconverter import *
 
 
 def set_dbconfig(server):
