@@ -119,7 +119,8 @@ class Quantsim1(Basedb):
 
 
 class Lcmquantldn1(Basedb):
-    HOSTNAME = 'lcmquantldn1'
+    # HOSTNAME = 'lcmquantldn1'
+    HOSTNAME = 'lcmint-quantsim1'
 
     class FileConfig(BaseTable):
         BASEDIR = '/opt/data'

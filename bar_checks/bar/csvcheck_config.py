@@ -2,7 +2,8 @@ import os
 from enum import Enum
 from typing import NamedTuple
 
-SERVERNAME = 'lcmquantldn1'
+# SERVERNAME = 'lcmquantldn1'
+SERVERNAME = 'lcmint-quantsim1'
 
 
 class SourceSpecificConfigs(NamedTuple):
