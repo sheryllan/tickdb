@@ -1,6 +1,7 @@
 import os
 from enum import Enum
 from typing import NamedTuple
+import datetime as dt
 
 # SERVERNAME = 'lcmquantldn1'
 SERVERNAME = 'lcmint-quantsim1'
@@ -10,6 +11,7 @@ class SourceSpecificConfigs(NamedTuple):
     window: tuple = ('00:00', '23:59:59')
     window_tz: str = 'UTC'
     schedule: str = 'BaseSchedule'
+    max_interval: dt.timedelta = dt.timedelta(minutes=5)
 
 
 CME_CONFIGS = SourceSpecificConfigs(('18:00', '15:00'), 'America/Chicago', 'CMESchedule')

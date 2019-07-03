@@ -1,4 +1,3 @@
-import datetime as dt
 import logging
 from numpy import cumsum
 
@@ -199,15 +198,15 @@ class BarCheckTask(enriched.BarCheckTask, SubCheckTask):
 class SeriesChecker(enriched.SeriesChecker):
 
     @classmethod
-    def invalid(cls, irow):
-        error_dict = super().invalid(irow)
+    def invalid_dict(cls, irow):
+        error_dict = super().invalid_dict(irow)
         errorval = error_dict[cls.ERRORVAL]
         errorval.update({Fields.IN_FILE: irow[1][Fields.IN_FILE]})
         return error_dict
 
     @classmethod
-    def reversion(cls, irow, irow_pre):
-        error_dict = super().reversion(irow, irow_pre)
+    def reversion_dict(cls, irow, irow_pre):
+        error_dict = super().reversion_dict(irow, irow_pre)
         errorval = error_dict[cls.ERRORVAL]
         prior_ts, curr_ts = errorval[cls.PRIOR_TS], errorval[cls.CURR_TS]
         prior_ts.update({Fields.IN_FILE: irow_pre[1][Fields.IN_FILE]})

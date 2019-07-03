@@ -38,5 +38,8 @@ test/
 include/
 .idea/
 
-bar_checks/**/*.html
-bar_checks/**/*.xml
+
+bar_checks/**/reports/
+integrity_checks/**/reports/
+
+pythoncore/

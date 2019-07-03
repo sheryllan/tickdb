@@ -2,7 +2,7 @@ import argparse
 import logging
 import os
 from collections import namedtuple
-from itertools import zip_longest
+from itertools import zip_longest, groupby
 from types import MappingProxyType
 
 from pandas.tseries import offsets
@@ -327,13 +327,13 @@ class SeriesChecker(object):
                 cls.ERRORVAL: error_val}
 
     @classmethod
-    def invalid(cls, irow):
+    def invalid_dict(cls, irow):
         ts, _ = irow
         date, tz = ts.date(), ts.tz
         return cls.error_dict(date, tz, cls.INVALID, {cls.TIMESTAMP: ts})
 
     @classmethod
-    def reversion(cls, irow, irow_pre):
+    def reversion_dict(cls, irow, irow_pre):
         ts, row = irow
         ts_pre, row_pre = irow_pre
         date, tz = ts.date(), ts.tz
@@ -343,39 +343,73 @@ class SeriesChecker(object):
                                cls.CURR_TS: {cls.TIMESTAMP: ts, cls.EPOCH: row[Fields.TIME]}})
 
     @classmethod
-    def gap(cls, gap):
+    def gap_dict(cls, gap):
         date, tz = gap[0].date(), gap[0].tz
         return cls.error_dict(date, tz, cls.GAP,
                               {cls.START_TS: gap[0].round('s'),
                                cls.END_TS: gap[1].round('s')})
 
+    # TODO: differentiate back-filled data
     @classmethod
-    def validate_sequential(cls, df, tsgenerator: StepTimestampGenerator):
-        is_valid = SeriesValidation.is_valid(df.index, tsgenerator)
-        is_incremental = SeriesValidation.is_incremental(df.index)
+    def gaps(cls, df, tsgenerator: StepTimestampGenerator, schedule_bound: ScheduleBound,
+                  max_interval: dt.timedelta = None):
+        
+        max_interval = dt.timedelta(minutes=5) if max_interval is None else max_interval
+        closed, tz, slist = schedule_bound.closed, schedule_bound.tz, schedule_bound.schedule_list
+        seen = {b: {v: False for v in tsgenerator.valid_date_range(*b, closed, tz)} for b in slist}
+        
+        trigger_time = pd.to_datetime(df[Fields.TRIGGER_TIME])
+        not_backfill = (dt.timedelta(0) <= trigger_time - df.index) & (trigger_time - df.index < tsgenerator.freq)
+        not_gappy = [not_backfill]
+        if tsgenerator.freq < max_interval:
+            trigger_time_prev = SeriesValidation.rolling_max(trigger_time)
+            is_less_frequent = SeriesValidation.is_within_freq(trigger_time, trigger_time_prev,
+                                                               max_interval=max_interval, closed=(False, True))
+            not_gappy.append(is_less_frequent)
+
+        bound_prev = None
+        for ts, *eval in zip(df.index, *not_gappy):
+            bound = schedule_bound.enclosing_schedule(ts)
+            ok = all(eval) or (all([bound, bound_prev]) and bound[0] - bound_prev[1] > max_interval)
+            # if bound is not None and :
+
+            bound_prev = bound
+            if ok and bound in seen and ts in seen[bound]:
+                seen[bound][ts] = True
+                
+        for _, valids in seen.items():
+            for is_seen, grouper in groupby(valids.items(), lambda x: x[1]):
+                if not is_seen:
+                    ts_chunk = list(map(lambda x: x[0], grouper))
+                    yield ts_chunk[0], ts_chunk[-1]
+
+    @classmethod
+    def validate_sequential(cls, df, tsgenerator: StepTimestampGenerator, schedule_bound: ScheduleBound):
+        is_valid = SeriesValidation.is_valid(df.index, tsgenerator, schedule_bound)
+        is_incremental = SeriesValidation.is_within_freq(df.index)
 
         irow_pre = None
         for irow in df.iterrows():
             if not next(is_valid):
-                yield cls.invalid(irow)
+                yield cls.invalid_dict(irow)
             elif not next(is_incremental):
-                yield cls.reversion(irow, irow_pre)
+                yield cls.reversion_dict(irow, irow_pre)
             irow_pre = irow
 
     @classmethod
-    def validate_aggregated(cls, df, tsgenerator: StepTimestampGenerator, schedule_bound: ScheduleBound):
-        for gap in SeriesValidation.gaps(df.index, tsgenerator, schedule_bound):
-            yield cls.gap(gap)
+    def validate_aggregated(cls, df, tsgenerator: StepTimestampGenerator, schedule_bound: ScheduleBound, **kwargs):
+        for gap in cls.gaps(df, tsgenerator, schedule_bound, **kwargs):
+            yield cls.gap_dict(gap)
 
     @classmethod
-    def validate_bar_series(cls, barid, bardf: pd.DataFrame, schedule_bound: ScheduleBound):
+    def validate_bar_series(cls, barid, bardf: pd.DataFrame, schedule_bound: ScheduleBound, **kwargs):
         if any(x is None for x in [barid.width, barid.clock_type, barid.offset]):
             return iter('')
 
         unit = cls.OFFSET_MAPPING[barid.clock_type]
         tsgenerator = StepTimestampGenerator(barid.width, unit, barid.offset)
-        yield from cls.validate_sequential(bardf, tsgenerator)
-        yield from cls.validate_aggregated(bardf, tsgenerator, schedule_bound)
+        yield from cls.validate_sequential(bardf, tsgenerator, schedule_bound)
+        yield from cls.validate_aggregated(bardf, tsgenerator, schedule_bound, **kwargs)
 
 
 class TaskArguments(argparse.ArgumentParser):
@@ -523,7 +557,7 @@ class BarCheckTask(SubCheckTask):
                 BarChecker.VOL_ON_LV2_CHECK,
                 BarChecker.VOL_ON_LV3_CHECK,
                 # BarChecker.VWAP_CHECK
-    ]
+                ]
 
     def __init__(self, args):
         super().__init__(args, self.XSL)
@@ -544,7 +578,7 @@ class BarCheckTask(SubCheckTask):
                 BarChecker.check_volume(data_cap),
                 BarChecker.check_vol_on_lv(data_cap),
                 # BarChecker.check_vwap(data_cap)
-                ]
+            ]
             results = pd.concat(checks, axis=1)
 
         return results[self.OUT_COLS][~results.all(axis=1)] \
@@ -576,7 +610,8 @@ class TimeSeriesCheckTask(SubCheckTask):
         barid = Barid(bar)
 
         logging.info('Running time series check for {}'.format(barid))
-        validated = self.checker.validate_bar_series(barid, data, self.args.schedule_bound)
+        kwargs = dict(max_interval=getattr(self.args, 'max_interval', None))
+        validated = self.checker.validate_bar_series(barid, data, self.args.schedule_bound, **kwargs)
 
         curr_pos = 0
         for date_dict, dated_df in to_grouped_df(validated, [self.checker.DATE, self.checker.TIMEZONE]):
@@ -598,8 +633,17 @@ class TimeSeriesCheckTask(SubCheckTask):
         return xml
 
 
-class CheckTask(object):
+# class CheckTaskArgs(argparse.Namespace):
+#     def __init__(self, **kwargs):
+#         for k, v in kwargs.items():
+#             
+#             setattr(self, name, kwargs[name])
+#             
+#             
+#     
+            
 
+class CheckTask(object):
     BAR_CHECK = 'bar'
     TIMESERIESE_CHECK = 'timeseries'
 
