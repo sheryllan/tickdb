@@ -2,7 +2,6 @@ import datetime as dt
 import pandas as pd
 import pytz
 from dateutil.relativedelta import relativedelta
-# import re
 
 
 MIN_TIME = dt.time(0)
@@ -39,15 +38,16 @@ def validate_time(time):
         raise TypeError('Invalid time type: must be type of str, tuple/list, or datetime.time/timedelta')
 
 
-def to_tz_datetime(date, time=None, from_tz=None, to_tz=None, to_orig=True):
+def to_tz_datetime(date, time=None, from_tz=None, to_tz=None, to_orig=True, **kwargs):
     """Converts datetime from one timezone to another timezone
 
-        :param date: datetime/date/str
+        :param date: datetime/date/str/pandas.DatetimeIndex
         :param time: any valid type accepted by validate_time()
         :param from_tz: pytz.timezone
         :param to_tz: pytz.timezone
         :param to_orig: bool, whether cast the returned to the type of [date] if possible, set
         False to return a pandas.Timestamp object anyways
+        :param kwargs: the keyword arguments used by pandas.to_datetime
 
         :return: an object of pandas.Timestamp/datetime.datetime
     """
@@ -55,7 +55,7 @@ def to_tz_datetime(date, time=None, from_tz=None, to_tz=None, to_orig=True):
     if date is None:
         return
 
-    dttm = pd.to_datetime(date)
+    dttm = pd.to_datetime(date, **kwargs)
     if time is not None:
         delta = pd.to_timedelta(validate_time(time).isoformat()) if not isinstance(time, dt.timedelta) else time
         dttm = dttm.normalize() + delta
@@ -69,36 +69,6 @@ def to_tz_datetime(date, time=None, from_tz=None, to_tz=None, to_orig=True):
     if to_orig and type(date) == dt.datetime:
         result = result.to_pydatetime()
     return result
-
-# def validate_time(time):
-#     if isinstance(time, str):
-#         return dt.time(*map(int, re.findall('[0-9]+', time)))
-#     elif isinstance(time, (tuple, list)):
-#         return dt.time(*time)
-#     elif isinstance(time, dt.time):
-#         return time
-#     else:
-#         raise TypeError('Invalid time type: must be type of str, or tuple/list, or datetime.time')
-#
-#
-# def to_tz_datetime(dttm=None, date=None, time=None, from_tz=None, to_tz=pytz.UTC):
-#     if dttm is not None and date is not None:
-#         raise ValueError('Argument datetime and date and time together should not both be set')
-#     elif dttm is not None:
-#         from_dttm = dttm
-#     elif date is not None:
-#         time = MIN_TIME if time is None else validate_time(time)
-#         from_dttm = dt.datetime.combine(date, time)
-#     else:
-#         return None
-#
-#     if from_tz is not None:
-#         from_dttm = from_tz.localize(from_dttm.replace(tzinfo=None))
-#
-#     if to_tz is None:
-#         return from_dttm
-#
-#     return from_dttm.astimezone(to_tz) if from_dttm.tzinfo is not None else to_tz.localize(from_dttm)
 
 
 def to_tz_series(timeseries, from_tz=None, to_tz=pytz.UTC):
@@ -157,10 +127,22 @@ def isin_closed(value, start=None, end=None, closed=None):
 
 def to_num(value):
     if value is None:
-        return value
-    if isinstance(value, dt.timedelta):
-        return value.total_seconds()
-    return int(pd.to_datetime(value).asm8)
+        return None
+    try:
+        return pd.to_numeric(value)
+    except:
+        if isinstance(value, dt.timedelta):
+            return value.total_seconds()
+        return int(pd.to_datetime(value).asm8)
+
+
+def parse_datetime(value, tz=None, **kwargs):
+    try:
+        value = pd.to_numeric(value)
+    except:
+        pass
+
+    return to_tz_datetime(value, to_tz=tz, to_orig=False, **kwargs)
 
 
 

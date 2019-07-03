@@ -96,7 +96,7 @@ class SeriesValidationTests(ut.TestCase):
         expected_left = [False, False, False, True]
         self.assertListEqual(expected_left, actual_left)
 
-    def test_validations_of_tz(self):
+    def test_valid_of_different_tz(self):
         schedule_bound = ScheduleBound([(pd.Timestamp('2018-07-03 00:00:00'), pd.Timestamp('2018-07-03 22:00:00')),
                                         (pd.Timestamp('2018-07-01 00:00:00'), pd.Timestamp('2018-07-02 16:00:00'))],
                                        closed='right', tz=pytz.timezone('America/Chicago'))
@@ -121,22 +121,4 @@ class SeriesValidationTests(ut.TestCase):
         expected_valid = [True, False, False, True, False, True, True, True, True, True, True, True, True, True, True]
         self.assertListEqual(expected_valid, actual_valid)
 
-        # actual_gaps = list(self.validation.gaps(timestamps, tsgenerator, schedule_bound))
-        # expected_gaps = [(pd.Timestamp('2018-07-01 01:00:00', tz=pytz.timezone('America/Chicago')),
-        #                   pd.Timestamp('2018-07-02 15:00:00', tz=pytz.timezone('America/Chicago'))
-        #                   ),
-        #                  (pd.Timestamp('2018-07-03 01:00:00', tz=pytz.timezone('America/Chicago')),
-        #                   pd.Timestamp('2018-07-03 01:00:00', tz=pytz.timezone('America/Chicago'))
-        #                   ),
-        #                  (pd.Timestamp('2018-07-03 04:00:00', tz=pytz.timezone('America/Chicago')),
-        #                   pd.Timestamp('2018-07-03 04:00:00', tz=pytz.timezone('America/Chicago'))
-        #                   ),
-        #                  (pd.Timestamp('2018-07-03 08:00:00', tz=pytz.timezone('America/Chicago')),
-        #                   pd.Timestamp('2018-07-03 17:00:00', tz=pytz.timezone('America/Chicago'))
-        #                   ),
-        #                  (pd.Timestamp('2018-07-03 19:00:00', tz=pytz.timezone('America/Chicago')),
-        #                   pd.Timestamp('2018-07-03 22:00:00', tz=pytz.timezone('America/Chicago'))
-        #                   )
-        #                  ]
-        # self.assertListEqual(expected_gaps, actual_gaps)
 

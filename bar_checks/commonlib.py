@@ -1,5 +1,5 @@
 from collections import Iterable, defaultdict
-
+from numbers import Number
 import pandas as pd
 from sortedcontainers import SortedDict, SortedList
 
@@ -141,6 +141,8 @@ def bound_indices(items, bound_func):
             j -= 1
 
     return i, j
+
+
 
 # def hierarchical_group_by(items, keys, itemfunc=None):
 #     if isinstance(items, pd.DataFrame):

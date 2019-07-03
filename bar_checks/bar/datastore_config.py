@@ -132,6 +132,7 @@ class Lcmquantldn1(Basedb):
 
         TIMEZONE = pytz.UTC
         TIME_COL_IDX = 0
+        DATETIME_COLS = [0]
         SEPARATOR = ','
         FILE_STRUCTURE = []
 
@@ -146,6 +147,7 @@ class Lcmquantldn1(Basedb):
     class EnrichedOHLCVN(EnrichedOHLCVN, FileConfig):
         FILENAME_DATE_PATTERN = '[0-9]{8}'
         FILENAME_DATE_FORMAT = '%Y%m%d'
+        DATETIME_COLS = [0, 1, 2, 3]
 
         def __init__(self):
             self.FILE_STRUCTURE = [

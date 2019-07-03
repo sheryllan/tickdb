@@ -327,20 +327,17 @@ class SeriesChecker(object):
                 cls.ERRORVAL: error_val}
 
     @classmethod
-    def invalid_dict(cls, irow):
-        ts, _ = irow
+    def invalid_dict(cls, ts):
         date, tz = ts.date(), ts.tz
         return cls.error_dict(date, tz, cls.INVALID, {cls.TIMESTAMP: ts})
 
     @classmethod
-    def reversion_dict(cls, irow, irow_pre):
-        ts, row = irow
-        ts_pre, row_pre = irow_pre
+    def reversion_dict(cls, ts, ts_pre):
         date, tz = ts.date(), ts.tz
         return cls.error_dict(date, tz,
                               cls.REVERSION,
-                              {cls.PRIOR_TS: {cls.TIMESTAMP: ts_pre, cls.EPOCH: row_pre[Fields.TIME]},
-                               cls.CURR_TS: {cls.TIMESTAMP: ts, cls.EPOCH: row[Fields.TIME]}})
+                              {cls.PRIOR_TS: {cls.TIMESTAMP: ts_pre, cls.EPOCH: to_num(ts_pre)},
+                               cls.CURR_TS: {cls.TIMESTAMP: ts, cls.EPOCH: to_num(ts)}})
 
     @classmethod
     def gap_dict(cls, gap):
@@ -357,24 +354,19 @@ class SeriesChecker(object):
         max_interval = dt.timedelta(minutes=5) if max_interval is None else max_interval
         closed, tz, slist = schedule_bound.closed, schedule_bound.tz, schedule_bound.schedule_list
         seen = {b: {v: False for v in tsgenerator.valid_date_range(*b, closed, tz)} for b in slist}
-        
-        trigger_time = pd.to_datetime(df[Fields.TRIGGER_TIME])
+
+        trigger_time = df[Fields.TRIGGER_TIME]
         not_backfill = (dt.timedelta(0) <= trigger_time - df.index) & (trigger_time - df.index < tsgenerator.freq)
         not_gappy = [not_backfill]
         if tsgenerator.freq < max_interval:
-            trigger_time_prev = SeriesValidation.rolling_max(trigger_time)
+            trigger_time_prev = SeriesValidation.rolling_pre_max(trigger_time, schedule_bound)
             is_less_frequent = SeriesValidation.is_within_freq(trigger_time, trigger_time_prev,
-                                                               max_interval=max_interval, closed=(False, True))
+                                                               max_interval=max_interval, closed=(False, True), shift=0)
             not_gappy.append(is_less_frequent)
 
-        bound_prev = None
         for ts, *eval in zip(df.index, *not_gappy):
             bound = schedule_bound.enclosing_schedule(ts)
-            ok = all(eval) or (all([bound, bound_prev]) and bound[0] - bound_prev[1] > max_interval)
-            # if bound is not None and :
-
-            bound_prev = bound
-            if ok and bound in seen and ts in seen[bound]:
+            if all(eval) and bound in seen and ts in seen[bound]:
                 seen[bound][ts] = True
                 
         for _, valids in seen.items():
@@ -383,18 +375,18 @@ class SeriesChecker(object):
                     ts_chunk = list(map(lambda x: x[0], grouper))
                     yield ts_chunk[0], ts_chunk[-1]
 
-    @classmethod
-    def validate_sequential(cls, df, tsgenerator: StepTimestampGenerator, schedule_bound: ScheduleBound):
-        is_valid = SeriesValidation.is_valid(df.index, tsgenerator, schedule_bound)
-        is_incremental = SeriesValidation.is_within_freq(df.index)
 
-        irow_pre = None
-        for irow in df.iterrows():
-            if not next(is_valid):
-                yield cls.invalid_dict(irow)
-            elif not next(is_incremental):
-                yield cls.reversion_dict(irow, irow_pre)
-            irow_pre = irow
+    @classmethod
+    def validate_sequential(cls, df, tsgenerator: StepTimestampGenerator):
+        is_valid = SeriesValidation.is_valid(df.index, tsgenerator)
+        is_incremental = SeriesValidation.is_within_freq(df.index)
+        timestamps = SeriesValidation.zip_with_shift(df.index)
+
+        for (ts, ts_pre), valid, incremental in zip(timestamps, is_valid, is_incremental):
+            if not valid:
+                yield cls.invalid_dict(ts)
+            elif not incremental:
+                yield cls.reversion_dict(ts, ts_pre)
 
     @classmethod
     def validate_aggregated(cls, df, tsgenerator: StepTimestampGenerator, schedule_bound: ScheduleBound, **kwargs):
@@ -408,7 +400,7 @@ class SeriesChecker(object):
 
         unit = cls.OFFSET_MAPPING[barid.clock_type]
         tsgenerator = StepTimestampGenerator(barid.width, unit, barid.offset)
-        yield from cls.validate_sequential(bardf, tsgenerator, schedule_bound)
+        yield from cls.validate_sequential(bardf, tsgenerator)
         yield from cls.validate_aggregated(bardf, tsgenerator, schedule_bound, **kwargs)
 
 

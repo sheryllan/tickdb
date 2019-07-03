@@ -1,14 +1,12 @@
-import datetime as dt
 import re
 import paramiko
 from os.path import basename
 from itertools import zip_longest
 from collections import MutableMapping, Iterator
-from types import GeneratorType
 
 from dataaccess import *
 from bar.datastore_config import *
-from timeutils.commonfuncs import isin_closed, to_tz_datetime
+from timeutils.commonfuncs import isin_closed, to_tz_datetime, parse_datetime
 
 
 class FixedKwargs(MutableMapping):
@@ -166,17 +164,26 @@ class Lcmquantldn1Accessor(Accessor, BarAccessor):
             open_func = self.any_compressed_open(filepath, mode='rb')
             return open_func(filesys.open(filepath, mode='rb'))
 
-        def get_table(self, fhandle):
+        def parse_datetime(self, x, **kwargs):
+            return parse_datetime(x, self.config.TIMEZONE, **kwargs)
+
+        def get_table(self, fhandle, **kwargs):
             tbclass = self.config
-            df = pd.read_table(fhandle, sep=tbclass.SEPARATOR, comment='#',
-                               skipinitialspace=True, skip_blank_lines=True)
-            index = df.iloc[:, tbclass.TIME_COL_IDX].map(lambda x: tbclass.TIMEZONE.localize(pd.to_datetime(int(x))))
-            df = df.set_index(index)
+            default_kwargs = dict(
+                sep=tbclass.SEPARATOR,
+                comment='#',
+                index_col=tbclass.TIME_COL_IDX,
+                parse_dates=tbclass.DATETIME_COLS,
+                date_parser=self.parse_datetime,
+                skipinitialspace=True,
+                skip_blank_lines=True)
+            default_kwargs.update(kwargs)
+            df = pd.read_table(fhandle, **default_kwargs)
             return df
 
-        def read(self, filepath, filesys):
+        def read(self, filepath, filesys, **kwargs):
             with self.get_file_handle(filepath, filesys) as fhandle:
-                return self.get_table(fhandle)
+                return self.get_table(fhandle, **kwargs)
 
     class EnrichedManager(CommonFileManager):
         def __init__(self, arg_time_from, arg_time_to):
@@ -190,7 +197,7 @@ class Lcmquantldn1Accessor(Accessor, BarAccessor):
             match = re.search(self.config.FILENAME_DATE_PATTERN, basename(path))
             if match is None:
                 return None
-            return self.config.TIMEZONE.localize(dt.datetime.strptime(match.group(), self.config.FILENAME_DATE_FORMAT))
+            return self.parse_datetime(match.group(), format=self.config.FILENAME_DATE_FORMAT)
 
         def find_files(self, filesys, **kwargs):
             time_from, time_to = kwargs.get(self.arg_time_from), kwargs.get(self.arg_time_to)
@@ -229,8 +236,8 @@ class Lcmquantldn1Accessor(Accessor, BarAccessor):
             fhandle.seek(offset, 1)
             return fhandle
 
-        def read(self, filepath, filesys):
-            df = super().read(filepath, filesys)
+        def read(self, filepath, filesys, **kwargs):
+            df = super().read(filepath, filesys, **kwargs)
             df[self.in_file] = filepath
             return df
 
@@ -296,6 +303,7 @@ class Lcmquantldn1Accessor(Accessor, BarAccessor):
 
                 data_df.rename_axis(self.TIME_IDX, inplace=True)
                 results = self.bound_by_time(data_df, keys, time_from, time_to, closed)
+                results = list(results)
                 return self.ResultData(results, keys, invalid_files)
 
     def get_continuous_contracts(self, **kwargs):
