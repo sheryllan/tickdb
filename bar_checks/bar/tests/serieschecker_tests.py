@@ -2,16 +2,13 @@ import unittest as ut
 import pandas as pd
 from pandas.tseries import offsets
 import pytz
+import os
 
-# from ...timeutils.timeseries import StepTimestampGenerator
-# from ...timeutils.scheduler import ScheduleBound
-# from ..enrichedOHLCVN import SeriesChecker
-from timeutils.timeseries import StepTimestampGenerator
-from timeutils.scheduler import ScheduleBound
-
-import bar.enrichedOHLCVN as enriched
-from bar.enrichedOHLCVN import SeriesChecker
-from bar.datastore_config import EnrichedOHLCVN
+from ...timeutils.timeseries import StepTimestampGenerator
+from ...timeutils.scheduler import ScheduleBound
+from .. import enrichedOHLCVN as enriched
+from ..enrichedOHLCVN import SeriesChecker
+from ..datastore_config import EnrichedOHLCVN
 
 
 class SeriesCheckerTests(ut.TestCase):
@@ -99,7 +96,7 @@ class SeriesCheckerTests(ut.TestCase):
         self.assertListEqual(expected, actual)
 
     def test_gaps_with_backfill(self):
-        fname = 'NQ-20190612-5M.csv'
+        fname = os.path.join(os.path.dirname(__file__), 'NQ-20190612-5M.csv')
         df = pd.read_csv(fname, sep=',', parse_dates=[0, 1],
                          date_parser=lambda x: pytz.utc.localize(pd.to_datetime(int(x))), index_col=0)
         tsgenerator = StepTimestampGenerator(5, offsets.Minute)
