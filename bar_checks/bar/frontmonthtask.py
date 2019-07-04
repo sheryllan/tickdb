@@ -1,8 +1,8 @@
 import logging
 from pandas import DataFrame
 
-import bar.enrichedOHLCVN as enriched
-from bar.enrichedOHLCVN import TaskArguments
+from . import enrichedOHLCVN as enriched
+from .enrichedOHLCVN import TaskArguments
 
 
 def set_dbconfig(server):

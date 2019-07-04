@@ -1,6 +1,6 @@
 from pandas.tseries.holiday import *
 from pandas.tseries.offsets import CustomBusinessDay
-from timeutils.commonfuncs import *
+from .commonfuncs import *
 
 
 NewYear = Holiday('New Years Day', month=1, day=1, observance=nearest_workday)

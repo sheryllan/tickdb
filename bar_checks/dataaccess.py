@@ -8,7 +8,7 @@ import zipfile
 
 from influxdb import DataFrameClient
 
-from influxcommon import *
+from .influxcommon import *
 
 
 class Accessor(object):

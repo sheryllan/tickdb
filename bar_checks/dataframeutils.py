@@ -1,5 +1,5 @@
-from commonlib import *
 import numpy as np
+from .commonlib import *
 
 
 def format_expression(*args):

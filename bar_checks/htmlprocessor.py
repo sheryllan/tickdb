@@ -7,7 +7,7 @@ from itertools import groupby
 
 import premailer
 
-from xmlconverter import *
+from .xmlconverter import *
 
 BODY = 'body'
 

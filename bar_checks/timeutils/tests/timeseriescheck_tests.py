@@ -1,5 +1,4 @@
 import unittest as ut
-
 from pandas.tseries import offsets
 
 from ..timeseries import *

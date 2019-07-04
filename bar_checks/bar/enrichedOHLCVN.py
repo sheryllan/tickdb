@@ -6,10 +6,10 @@ from itertools import zip_longest, groupby
 from types import MappingProxyType
 import re
 
-from bar.bardataaccess import BarAccessor, ResultData
-from dataframeutils import *
-from timeutils.timeseries import *
-from xmlconverter import *
+from .bardataaccess import BarAccessor, ResultData
+from ..dataframeutils import *
+from ..timeutils.timeseries import *
+from ..xmlconverter import *
 
 
 def set_dbconfig(server):

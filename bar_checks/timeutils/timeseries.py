@@ -1,7 +1,8 @@
 from itertools import tee, chain
-from timeutils.scheduler import *
 from pandas.tseries.offsets import prefix_mapping, DateOffset
 from pandas.tseries.frequencies import to_offset
+
+from .scheduler import *
 
 
 class StepTimestampGenerator(object):
