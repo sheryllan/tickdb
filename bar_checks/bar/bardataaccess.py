@@ -2,7 +2,7 @@ import re
 import paramiko
 from os.path import basename
 from itertools import zip_longest
-from collections import MutableMapping, Iterator
+from collections import MutableMapping
 
 from dataaccess import *
 from bar.datastore_config import *
@@ -265,10 +265,12 @@ class Lcmquantldn1Accessor(Accessor, BarAccessor):
                              [Lcmquantldn1Accessor.ServerConfig.ContinuousContract.name()])
             self.tz = self.config.TIMEZONE
 
-        def data_file(self, path):
-            dirs = path[len(self.config.BASEDIR):].strip(posixpath.sep).split(posixpath.sep)
-            dirs_dict = {k: v for k, v in zip_longest(self.config.FILE_STRUCTURE, dirs)}
-            return self.config.FILENAME_FORMAT.format(*(dirs_dict.get(s, '') for s in self.config.FILENAME_STRUCTURE))
+        def data_file(self, path, files=None):
+            # the 'files' argument kept here just for consistency with the usage of callable dir in rcsv_listdir
+            basedir, *dirs = path.rsplit(posixpath.sep, len(self.config.FILE_STRUCTURE[:-1]))
+            dirs = {n: d for n, d in zip(self.config.FILE_STRUCTURE, dirs)}
+            product = dirs[self.config.Tags.PRODUCT]
+            return self.config.FILENAME_FORMAT.format(product)
 
         def find_files(self, filesys, **kwargs):
             kwargs[self.config.DATA_FILE] = self.data_file

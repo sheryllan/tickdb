@@ -1,7 +1,7 @@
 from itertools import tee, chain
+from timeutils.scheduler import *
 from pandas.tseries.offsets import prefix_mapping, DateOffset
 from pandas.tseries.frequencies import to_offset
-from timeutils.scheduler import *
 
 
 class StepTimestampGenerator(object):
@@ -67,12 +67,12 @@ class StepTimestampGenerator(object):
 
 class SeriesValidation(object):
     @staticmethod
-    def zip_with_shift(iter1, iter2=None, fill_value=None, shift=-1):
+    def zip_with_shift(iter1, iter2=None, fill_value=None, shift=1):
         if iter2 is None:
             iter1, iter2 = tee(iter1)
         
         iter_fill = [fill_value] * abs(shift)
-        iter2 = chain(iter_fill, iter2) if shift < 0 else chain(iter2, iter_fill)
+        iter2 = chain(iter_fill, iter2) if shift > 0 else chain(iter2, iter_fill)
         yield from zip(iter1, iter2)
 
     @staticmethod

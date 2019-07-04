@@ -1,5 +1,5 @@
 from collections import Iterable, defaultdict
-from numbers import Number
+
 import pandas as pd
 from sortedcontainers import SortedDict, SortedList
 
@@ -13,8 +13,9 @@ def nontypes_iterable(arg, excl_types=(str,)):
     return isinstance(arg, Iterable) and not isinstance(arg, excl_types)
 
 
-def to_iter(x, excl_types=(str,), ittype=list):
-    return ittype([x]) if not nontypes_iterable(x, excl_types) else ittype(x)
+def to_iter(x, excl_types=(str,), ittype=list, dtype=None):
+    x_iter = [x] if not nontypes_iterable(x, excl_types) else x
+    return ittype(x_iter if dtype is None else map(dtype, x_iter))
 
 
 def find_first_n(arry, condition, n=1):

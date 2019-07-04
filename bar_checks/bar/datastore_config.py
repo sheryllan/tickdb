@@ -172,7 +172,7 @@ class Lcmquantldn1(Basedb):
             ]
 
             self.FILENAME_STRUCTURE = [self.Tags.PRODUCT]
-            self.FILENAME_FORMAT = '{}-' + self.name() + '.csv.gz'
+            self.FILENAME_FORMAT = '{}-continuous_contract.csv.gz'
 
         class Fields(StrEnum):
             SHORT_CODE = 'short_code'

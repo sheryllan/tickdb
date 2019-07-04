@@ -4,8 +4,7 @@ import os
 from collections import namedtuple
 from itertools import zip_longest, groupby
 from types import MappingProxyType
-
-from pandas.tseries import offsets
+import re
 
 from bar.bardataaccess import BarAccessor, ResultData
 from dataframeutils import *
@@ -317,7 +316,7 @@ class SeriesChecker(object):
     ERRORTYPE = 'error_type'
     ERRORVAL = 'error_value'
 
-    UNIT_MAPPING = {'M': offsets.Minute}
+    UNIT_MAPPING = {'M': 'T'}
 
     @classmethod
     def error_dict(cls, date, tz, error_type, error_val):
@@ -327,12 +326,15 @@ class SeriesChecker(object):
                 cls.ERRORVAL: error_val}
 
     @classmethod
-    def invalid_dict(cls, ts):
+    def invalid_dict(cls, irow):
+        ts, _ = irow
         date, tz = ts.date(), ts.tz
         return cls.error_dict(date, tz, cls.INVALID, {cls.TIMESTAMP: ts})
 
     @classmethod
-    def reversion_dict(cls, ts, ts_pre):
+    def reversion_dict(cls, irow, irow_pre):
+        ts, row = irow
+        ts_pre, row_pre = irow_pre
         date, tz = ts.date(), ts.tz
         return cls.error_dict(date, tz,
                               cls.REVERSION,
@@ -380,13 +382,13 @@ class SeriesChecker(object):
     def validate_sequential(cls, df, tsgenerator: StepTimestampGenerator):
         is_valid = SeriesValidation.is_valid(df.index, tsgenerator)
         is_incremental = SeriesValidation.is_within_freq(df.index)
-        timestamps = SeriesValidation.zip_with_shift(df.index)
+        timestamps = SeriesValidation.zip_with_shift(df.iterrows())
 
-        for (ts, ts_pre), valid, incremental in zip(timestamps, is_valid, is_incremental):
+        for (irow, irow_pre), valid, incremental in zip(timestamps, is_valid, is_incremental):
             if not valid:
-                yield cls.invalid_dict(ts)
+                yield cls.invalid_dict(irow)
             elif not incremental:
-                yield cls.reversion_dict(ts, ts_pre)
+                yield cls.reversion_dict(irow, irow_pre)
 
     @classmethod
     def validate_aggregated(cls, df, tsgenerator: StepTimestampGenerator, schedule_bound: ScheduleBound, **kwargs):
@@ -399,7 +401,9 @@ class SeriesChecker(object):
             return iter('')
 
         unit = cls.UNIT_MAPPING[barid.clock_type]
-        tsgenerator = StepTimestampGenerator(barid.width, unit, barid.offset)
+        offset, offset_unit = re.match('^(.*?)([A-Za-z]*)$', str(barid.offset)).groups()
+        offset_unit = cls.UNIT_MAPPING.get(offset_unit, unit)
+        tsgenerator = StepTimestampGenerator(barid.width, unit, (offset, offset_unit))
         yield from cls.validate_sequential(bardf, tsgenerator)
         yield from cls.validate_aggregated(bardf, tsgenerator, schedule_bound, **kwargs)
 
@@ -467,7 +471,7 @@ class TaskArguments(argparse.ArgumentParser):
                 self._arg_dict[k] = getattr(self, '_' + k, lambda x: x)(v)
 
     def max_dtto(self):
-        return pd.Timestamp(to_tz_datetime(date=last_n_days(), time=MAX_TIME, to_tz=self.timezone))
+        return to_tz_datetime(last_n_days(), MAX_TIME, to_tz=self.timezone, to_orig=False)
 
     @property
     def arg_dict(self):
@@ -505,7 +509,7 @@ class TaskArguments(argparse.ArgumentParser):
         return pytz.timezone(value) if isinstance(value, str) else value
 
     def _check(self, value):
-        return to_iter(value)
+        return self.get_default(self.CHECK) if value is None else to_iter(value, dtype=str)
 
 
 class SubCheckTask(object):
@@ -524,7 +528,7 @@ class SubCheckTask(object):
 
     @property
     def xml_etree(self):
-        root = rcsv_addto_element({self.PRODUCT: ', '.join(to_iter(self.args.product)),
+        root = rcsv_addto_element({self.PRODUCT: ', '.join(to_iter(self.args.product, dtype=str)),
                                    self.TIME: f'{self.args.dtfrom.round("s")} - {self.args.dtto.round("s")}',
                                    self.WINDOW: '{} - {} ({})'.format(*self.args.window, str(self.args.window_tz))},
                                   self.REPORT)
@@ -684,7 +688,7 @@ class CheckTask(object):
                 if getattr(self, new_arg):
                     schedule_times = BScheduler(self.schedule).get_schedules(
                         self.dtfrom, self.dtto, *self.window, self.window_tz, self.timezone)
-                    self._schedule_bound.schedule_list = schedule_times
+                    self._schedule_bound.set_schedules(schedule_times)
                     setattr(self, new_arg, False)
 
                 return self._schedule_bound
