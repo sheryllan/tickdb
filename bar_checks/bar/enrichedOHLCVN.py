@@ -317,7 +317,7 @@ class SeriesChecker(object):
     ERRORTYPE = 'error_type'
     ERRORVAL = 'error_value'
 
-    OFFSET_MAPPING = {'M': offsets.Minute}
+    UNIT_MAPPING = {'M': offsets.Minute}
 
     @classmethod
     def error_dict(cls, date, tz, error_type, error_val):
@@ -398,7 +398,7 @@ class SeriesChecker(object):
         if any(x is None for x in [barid.width, barid.clock_type, barid.offset]):
             return iter('')
 
-        unit = cls.OFFSET_MAPPING[barid.clock_type]
+        unit = cls.UNIT_MAPPING[barid.clock_type]
         tsgenerator = StepTimestampGenerator(barid.width, unit, barid.offset)
         yield from cls.validate_sequential(bardf, tsgenerator)
         yield from cls.validate_aggregated(bardf, tsgenerator, schedule_bound, **kwargs)

@@ -1,12 +1,14 @@
 import stat
 import posixpath
 from influxdb import DataFrameClient
+# from collections import defaultdict
 
 import gzip
 import bz2
 import lzma
 import zipfile
 import io
+import os
 
 from influxcommon import *
 
@@ -34,8 +36,6 @@ class InfluxdbAccessor(Accessor):
 
 
 class FileManager(object):
-    def __init__(self, config):
-        self.config = config
 
     @classmethod
     def any_compressed_open(cls, filepath, **kwargs):
@@ -72,7 +72,57 @@ class FileManager(object):
             yield from cls.rcsv_listdir(filesys, subdir, dirs[1:])
         filesys.chdir('..')
 
+    @staticmethod
+    def tree():
+        return defaultdict(FileManager.tree)
+
+    @classmethod
+    def path_tree_from_lists(cls, dirs, root=None):
+        root = cls.tree() if root is None else root
+        if not dirs:
+            return None
+
+        for dir_name in to_iter(dirs[0], ittype=iter):
+            root[dir_name] = cls.path_tree_from_lists(dirs[1:], root[dir_name])
+
+        return root
+
+    @classmethod
+    def path_tree_from_str(cls, path, base_path='', root=None):
+        base_len = len(base_path) if path.startswith(base_path) else 0
+        dirs = list(filter(None, path[base_len:].split(posixpath.sep)))
+        return cls.path_tree_from_lists(dirs, root)
+
+    @classmethod
+    def missing_paths(cls, listed_paths, dir_struct, base_path=''):
+        dir_tree = cls.tree()
+        for lp in listed_paths:
+            if not lp.startswith(base_path):
+                raise ValueError(f'Invalid listed path: {lp} must have base path of {base_path}')
+            cls.path_tree_from_str(lp, base_path, dir_tree)
+
+        def rcsv_check(subdir_struct, subdir_tree, path_stack=None):
+            path_stack = [] if path_stack is None else path_stack
+            if not subdir_struct:
+                return
+            if subdir_tree is None:
+                raise ValueError('Incompatible input parameters: '
+                                 'the depth of subdir_tree is shorter than the length of subdir_struct')
+            subdirs = list(subdir_tree) if subdir_struct[0] is None else to_iter(subdir_struct[0], ittype=iter)
+            for subdir in subdirs:
+                path_stack.append(subdir)
+                if subdir in subdir_tree:
+                    yield from rcsv_check(subdir_struct[1:], subdir_tree[subdir], path_stack)
+                else:
+                    yield posixpath.join(base_path, *path_stack)
+                path_stack.pop()
+
+        yield from rcsv_check(to_iter(dir_struct), dir_tree)
+
     def find_files(self, **kwargs):
         raise NotImplementedError
 
 
+# print(list(FileManager.missing_paths(
+#     ['/home/user/foo/boo/temp/file.txt', '/home/user/foo/doo/beep.pdf', '/home/user/lll/hello.py'],
+#     ['user', ['foo', 'lll', 'kkk'], None], '/home')))

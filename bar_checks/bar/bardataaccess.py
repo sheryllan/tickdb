@@ -48,7 +48,7 @@ class FixedKwargs(MutableMapping):
 
 
 class ResultData(object):
-    def __init__(self, df_or_groupby_obj, keys, **kwargs):
+    def __init__(self, df_or_groupby_obj, keys=(), **kwargs):
         self._dataframe = None
         self._groupby_obj = None
         self.keys = to_iter(keys, ittype=tuple)
@@ -81,7 +81,7 @@ class ResultData(object):
 
     def __iter__(self):
         if self._groupby_obj is None:
-            self._groupby_obj = self.dataframe.groupby(self.keys)
+            self._groupby_obj = self.dataframe.groupby(self.keys) if self.keys else [None, self.dataframe]
         if not isinstance(self._groupby_obj, list):
             self._groupby_obj = list(self._groupby_obj)
 
@@ -165,6 +165,9 @@ class Lcmquantldn1Accessor(Accessor, BarAccessor):
             return self.ContinuousContractManager()
 
     class CommonFileManager(FileManager):
+        def __init__(self, config):
+            self.config = config
+
         def directories(self, **kwargs):
             kwargs[self.config.TABLE] = self.config.name()
             return [kwargs.get(x) for x in self.config.FILE_STRUCTURE]
@@ -230,12 +233,15 @@ class Lcmquantldn1Accessor(Accessor, BarAccessor):
                     except ValueError as e:
                         yield False, e, path
 
-            files = pd.DataFrame(parse_date(self.rcsv_listdir(filesys, self.config.BASEDIR, self.directories(**kwargs))))
+            dir_struct = self.directories(**kwargs)
+            files = pd.DataFrame(parse_date(self.rcsv_listdir(filesys, self.config.BASEDIR, dir_struct)))
             if files.empty:
-                return pd.Series(), None
+                files = pd.DataFrame(columns=[0, 1, 2])
 
             valid_files = files[files[0]].set_index(1).sort_index().loc[date_from: date_to, 2]
             invalid_files = files[~files[0]].set_index(1)[2]
+            missing_paths = list(self.missing_paths(valid_files, dir_struct, self.config.BASEDIR))
+            invalid_files.append(pd.Series(missing_paths, index=['missing directory'] * len(missing_paths)))
             return valid_files, None if invalid_files.empty else invalid_files
 
         def get_file_handle(self, filepath, filesys):
@@ -267,7 +273,13 @@ class Lcmquantldn1Accessor(Accessor, BarAccessor):
         def find_files(self, filesys, **kwargs):
             kwargs[self.config.DATA_FILE] = self.data_file
             try:
-                return pd.Series(self.rcsv_listdir(filesys, self.config.BASEDIR, self.directories(**kwargs))), None
+                dir_struct = self.directories(**kwargs)
+                valid_files = pd.Series(self.rcsv_listdir(filesys, self.config.BASEDIR, dir_struct))
+                missing_paths = list(self.missing_paths(valid_files, dir_struct, self.config.BASEDIR))
+                invalid_files = pd.Series(missing_paths, index=['missing directory'] * len(missing_paths))
+                return pd.Series(self.rcsv_listdir(filesys, self.config.BASEDIR, self.directories(**kwargs))), \
+                       (None if invalid_files.empty else invalid_files)
+
             except EnvironmentError as e:
                 return pd.Series(), pd.Series([e.filename], e)
 
@@ -316,26 +328,30 @@ class Lcmquantldn1Accessor(Accessor, BarAccessor):
         table_config = self.config.TABLES[self.config.ContinuousContract.name()]
         time_from, time_to = self.set_arg_time_range(kwargs, table_config.TIMEZONE)
         new_kwargs = {k: v for k, v in kwargs.items() if k not in [self.TIME_FROM, self.TIME_TO]}
-        for _, contracts in self.get_data(table_config.name(), empty=[], **new_kwargs):
-            contracts = contracts.sort_index()
-            filtered = contracts.loc[time_from: time_to]
+        results = self.get_data(table_config.name(), empty=[], **new_kwargs)
 
-            if not filtered.empty:
-                start, end = filtered.index[0], None
-                time_from = filtered.index[0] if time_from is None else time_from
-                if start > time_from:
-                    yield (time_from, start), contracts.loc[:time_from].iloc[-1]
+        def valid_contracts(data, tfrom, tto):
+            for _, contracts in data:
+                contracts = contracts.sort_index()
+                filtered = contracts.loc[tfrom: tto]
 
-                contract = filtered.iloc[0]
-                for i, row in filtered.iloc[1:].iterrows():
-                    end = i
-                    yield (start, end), contract
-                    start = end
-                    contract = row
+                if not filtered.empty:
+                    start, end = filtered.index[0], None
+                    tfrom = filtered.index[0] if tfrom is None else tfrom
+                    if start > tfrom:
+                        yield (tfrom, start), contracts.loc[:tfrom].iloc[-1]
 
-                if end != time_to:
-                    yield (start, time_to), contract
+                    contract = filtered.iloc[0]
+                    for i, row in filtered.iloc[1:].iterrows():
+                        end = i
+                        yield (start, end), contract
+                        start = end
+                        contract = row
 
-            elif not contracts.empty:
-                yield (time_from, time_to), contracts.loc[:time_from].iloc[-1]
+                    if end != tto:
+                        yield (start, tto), contract
 
+                elif not contracts.empty:
+                    yield (tfrom, tto), contracts.loc[:tfrom].iloc[-1]
+
+        return ResultData(valid_contracts(results, time_from, time_to), invalid_files=results.invalid_files)
