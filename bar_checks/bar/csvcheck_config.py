@@ -3,7 +3,6 @@ from enum import Enum
 from typing import NamedTuple
 import datetime as dt
 
-# SERVERNAME = 'lcmquantldn1'
 SERVERNAME = 'lcmint-quantsim1'
 
 

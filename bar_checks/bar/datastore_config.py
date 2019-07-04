@@ -118,8 +118,7 @@ class Quantsim1(Basedb):
                   ContinuousContract.name(): ContinuousContract()}
 
 
-class Lcmquantldn1(Basedb):
-    # HOSTNAME = 'lcmquantldn1'
+class LcmintQuantsim1(Basedb):
     HOSTNAME = 'lcmint-quantsim1'
 
     class FileConfig(BaseTable):

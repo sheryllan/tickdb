@@ -101,8 +101,8 @@ class BarAccessor(object):
 
     @classmethod
     def factory(cls, type_name):
-        if type_name == Lcmquantldn1.HOSTNAME:
-            return Lcmquantldn1Accessor()
+        if type_name == LcmintQuantsim1.HOSTNAME:
+            return LcmintQuantsim1Accessor()
         if type_name == Quantdb1.HOSTNAME:
             return InfluxBarAccessor(Quantdb1, Quantdb1.BarDatabase.DBNAME)
         if type_name == Quantsim1.HOSTNAME:
@@ -149,19 +149,18 @@ class InfluxBarAccessor(InfluxdbAccessor, BarAccessor):
             yield (row[start], row[end]), row
 
 
-class Lcmquantldn1Accessor(Accessor, BarAccessor):
-    ServerConfig = Lcmquantldn1()
-    ServerConfig.EnrichedOHLCVN.Fields = StrEnum('Fields',
-                                                 {**Lcmquantldn1.EnrichedOHLCVN.Fields.__members__,
-                                                  'IN_FILE': 'in_file'})
+class LcmintQuantsim1Accessor(Accessor, BarAccessor):
+    ServerConfig = LcmintQuantsim1()
+    ServerConfig.EnrichedOHLCVN.Fields = \
+        StrEnum('Fields', {**LcmintQuantsim1.EnrichedOHLCVN.Fields.__members__, 'IN_FILE': 'in_file'})
 
     def __init__(self):
         super().__init__(self.ServerConfig)
 
     def fmanager_factory(self, type_name):
-        if type_name == Lcmquantldn1.EnrichedOHLCVN.name():
+        if type_name == LcmintQuantsim1.EnrichedOHLCVN.name():
             return self.EnrichedManager(self.TIME_FROM, self.TIME_TO)
-        elif type_name == Lcmquantldn1.ContinuousContract.name():
+        elif type_name == LcmintQuantsim1.ContinuousContract.name():
             return self.ContinuousContractManager()
 
     class CommonFileManager(FileManager):
@@ -202,8 +201,8 @@ class Lcmquantldn1Accessor(Accessor, BarAccessor):
 
     class EnrichedManager(CommonFileManager):
         def __init__(self, arg_time_from, arg_time_to):
-            super().__init__(Lcmquantldn1Accessor.ServerConfig.TABLES
-                             [Lcmquantldn1Accessor.ServerConfig.EnrichedOHLCVN.name()])
+            super().__init__(LcmintQuantsim1Accessor.ServerConfig.TABLES
+                             [LcmintQuantsim1Accessor.ServerConfig.EnrichedOHLCVN.name()])
             self.arg_time_from = arg_time_from
             self.arg_time_to = arg_time_to
             self.in_file = self.config.Fields.IN_FILE
@@ -261,8 +260,8 @@ class Lcmquantldn1Accessor(Accessor, BarAccessor):
 
     class ContinuousContractManager(CommonFileManager):
         def __init__(self):
-            super().__init__(Lcmquantldn1Accessor.ServerConfig.TABLES
-                             [Lcmquantldn1Accessor.ServerConfig.ContinuousContract.name()])
+            super().__init__(LcmintQuantsim1Accessor.ServerConfig.TABLES
+                             [LcmintQuantsim1Accessor.ServerConfig.ContinuousContract.name()])
             self.tz = self.config.TIMEZONE
 
         def data_file(self, path, files=None):
