@@ -73,15 +73,17 @@ class ResultData(object):
             self._dataframe = pd.concat(v for _, v in group_obj) if self._groupby_obj else pd.DataFrame()
         return self._dataframe
 
-    def to_key_tuple(self, keys):
-        if isinstance(keys, dict):
-            return tuple(keys.get(k, None) for k in self.keys)
-        return keys if isinstance(keys, tuple) and len(self.keys) == len(keys) \
-            else tuple(k for _, k in zip_longest(self.keys, to_iter(keys, ittype=iter)))
+    def to_key_tuple(self, values):
+        if isinstance(values, dict):
+            return tuple(values.get(k, None) for k in self.keys)
+        if isinstance(values, tuple) and self._dataframe is not None:
+           return tuple(values[i] if k in self._dataframe else None for i, k in enumerate(self.keys))
+        return tuple(v for k, v in zip_longest(self.keys, values))
 
     def __iter__(self):
         if self._groupby_obj is None:
-            self._groupby_obj = self.dataframe.groupby(self.keys) if self.keys else [None, self.dataframe]
+            found_keys = tuple(k for k in self.keys if k in self.dataframe)
+            self._groupby_obj = self.dataframe.groupby(found_keys) if found_keys else [None, self.dataframe]
         if not isinstance(self._groupby_obj, list):
             self._groupby_obj = list(self._groupby_obj)
 

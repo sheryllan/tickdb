@@ -1,15 +1,19 @@
-from enum import Enum
+from enum import Enum, EnumMeta
 
 import pytz
 
 
-class StrEnum(str, Enum):
+class EnumMetaEx(EnumMeta):
+    def names(cls):
+        return list(cls.__members__.keys())
+
+    def values(cls):
+        return [v.value for v in cls.__members__.values()]
+
+
+class StrEnum(str, Enum, metaclass=EnumMetaEx):
     def __str__(self):
         return self._value_
-
-    @classmethod
-    def values(cls):
-        return [v.value for _, v in cls.__members__.items()]
 
 
 class BaseTable(object):
@@ -72,6 +76,7 @@ class EnrichedOHLCVN(BaseTable):
         CLOCK_TYPE = 'clock_type'
         WIDTH = 'width'
         OFFSET = 'offset'
+        EDGE = 'edge'
 
 
 class ContinuousContract(BaseTable):
@@ -137,7 +142,7 @@ class LcmintQuantsim1(Basedb):
 
         class SourceNames(StrEnum):
             cme_qtg = 'cme_qtg_bar',
-            cme_reactor = 'cme_reactor_bar',
+            cme_reactor = 'cme_reactor_bar_edge_new',
             china_reactor = 'china_reactor_bar',
             eurex_reactor = 'eurex_reactor_bar',
             ose_reactor = 'ose_reactor_bar',

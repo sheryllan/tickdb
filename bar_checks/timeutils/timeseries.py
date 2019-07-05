@@ -39,6 +39,8 @@ class StepTimestampGenerator(object):
         self.freq = self._to_timedelta(step)
 
     def _to_timedelta(self, value, unit=None):
+        if isinstance(value, dt.timedelta):
+            return value
         try:
             value = float(value)
             unit = self.unit if unit is None else unit
