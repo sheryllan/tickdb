@@ -13,7 +13,7 @@ influxdb==5.2.0
 lxml==4.2.5
 numpy==1.15.2
 pandas==0.23.4
-paramiko==2.4.2
+paramiko==2.10.1
 premailer==3.2.0
 py4j==0.10.7
 pyasn1==0.4.4
