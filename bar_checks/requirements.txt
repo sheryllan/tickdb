@@ -11,7 +11,7 @@ Cython==0.28.5
 idna==2.7
 influxdb==5.2.0
 lxml==4.2.5
-numpy==1.15.2
+numpy==1.22.0
 pandas==0.23.4
 paramiko==2.4.2
 premailer==3.2.0
